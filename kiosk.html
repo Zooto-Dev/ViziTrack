@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ViziTrack · Kiosk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+// ============ CONFIG — sirf yeh 2 values bharo ============
+window.VZT_CONFIG = {
+  MAIL_API_URL: 'https://script.google.com/macros/s/AKfycbzDCEFwXgNx2m-hn_CGxQzZdsMuhojHQnN38tPOMii5fzFYvAEyEU6QNtxVNjASjzEo/exec',
+  MAIL_API_KEY: 'vzt_a9f3k2m8x7q1w5e6r4t0y2u8i3o5p9',
+  FACE_MATCH_THRESHOLD: 0.45
+};
+// Supabase URL + Publishable Key yahan nahi — runtime pe Google Sheet se aati hai
+</script>
+<style>
+  :root {
+    --ink:#0B1526; --ink2:#101E33; --panel:#152540; --line:#22364F;
+    --cyan:#22C8FF; --cyan-dim:#0E7FAE; --text:#EAF2F9; --muted:#8AA0B8;
+    --ok:#2EE6A8; --warn:#FFB454; --err:#FF6B7A;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; }
+  body { font-family:'Inter',sans-serif; background:var(--ink); color:var(--text); }
+  .display { font-family:'Space Grotesk',sans-serif; }
+
+  .screen { position:absolute; inset:0; display:flex; flex-direction:column; }
+  .hidden { display:none !important; }
+
+  /* ---------- shared ---------- */
+  .btn { border:0; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; border-radius:14px; transition:transform .1s, opacity .15s; }
+  .btn:active { transform:scale(.97); }
+  .btn-cyan { background:var(--cyan); color:#04263A; }
+  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--line); }
+  .btn-ghost:active { color:var(--text); }
+  .btn-lg { padding:16px 24px; font-size:17px; width:100%; }
+  input, select { font-family:'Inter',sans-serif; width:100%; background:var(--ink2); border:1.5px solid var(--line); border-radius:12px; color:var(--text); padding:14px 16px; font-size:16px; outline:none; transition:border-color .15s; }
+  input:focus, select:focus { border-color:var(--cyan); }
+  input[readonly] { color:var(--muted); background:var(--panel); }
+  label { display:block; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 6px; }
+  .field { margin-bottom:14px; }
+
+  /* ---------- home ---------- */
+  #screen-home { align-items:center; justify-content:space-between; padding:6vh 20px 3vh; }
+  .logo-mark { width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,var(--cyan),#4AE0C9); display:inline-flex; align-items:center; justify-content:center; }
+  .logo-mark svg { width:26px; height:26px; }
+  .home-actions { display:flex; gap:clamp(24px,6vw,72px); }
+  .home-tile { display:flex; flex-direction:column; align-items:center; gap:16px; cursor:pointer; }
+  .home-ring { width:clamp(140px,26vw,220px); height:clamp(140px,26vw,220px); border-radius:50%; border:2px solid var(--line); background:var(--ink2); display:flex; align-items:center; justify-content:center; transition:border-color .2s, box-shadow .2s, transform .1s; }
+  .home-tile:active .home-ring { transform:scale(.96); }
+  .home-tile[data-action="check-in"] .home-ring:hover, .home-tile[data-action="check-in"]:active .home-ring { border-color:var(--cyan); box-shadow:0 0 40px rgba(34,200,255,.25); }
+  .home-tile[data-action="check-out"] .home-ring:hover, .home-tile[data-action="check-out"]:active .home-ring { border-color:var(--warn); box-shadow:0 0 40px rgba(255,180,84,.2); }
+  .home-ring svg { width:38%; height:38%; }
+  .home-label { font-size:clamp(20px,3.4vw,30px); font-weight:700; }
+
+  /* ---------- action screen ---------- */
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line); background:var(--ink); z-index:30; }
+  .topbar button { background:none; border:0; color:var(--cyan); font-weight:600; font-size:15px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+  .mode-tabs { display:flex; gap:22px; padding:0 18px; border-bottom:1px solid var(--line); background:var(--ink); z-index:30; }
+  .mode-tab { background:none; border:0; padding:13px 2px; font-size:14px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; font-family:'Inter',sans-serif; }
+  .mode-tab.active { color:var(--cyan); border-bottom-color:var(--cyan); }
+  .stage { flex:1; position:relative; overflow:hidden; background:#000; }
+  #video, #qr-reader { position:absolute; inset:0; width:100%; height:100%; }
+  #video { object-fit:cover; transform:scaleX(-1); }
+  #qr-reader video { object-fit:cover !important; width:100% !important; height:100% !important; }
+  #qr-reader__dashboard_section { display:none; }
+
+  /* signature: state-driven scan ring */
+  .scan-frame { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(72%,340px); aspect-ratio:3/4; pointer-events:none; z-index:20; }
+  .scan-frame .c { position:absolute; width:34px; height:34px; border:3px solid var(--cyan); filter:drop-shadow(0 0 8px rgba(34,200,255,.55)); transition:border-color .25s, filter .25s; }
+  .scan-frame.ok .c { border-color:var(--ok); filter:drop-shadow(0 0 10px rgba(46,230,168,.6)); }
+  .scan-frame.err .c { border-color:var(--err); filter:drop-shadow(0 0 10px rgba(255,107,122,.6)); }
+  .c.tl { top:0; left:0; border-right:0; border-bottom:0; border-radius:14px 0 0 0; }
+  .c.tr { top:0; right:0; border-left:0; border-bottom:0; border-radius:0 14px 0 0; }
+  .c.bl { bottom:0; left:0; border-right:0; border-top:0; border-radius:0 0 0 14px; }
+  .c.br { bottom:0; right:0; border-left:0; border-top:0; border-radius:0 0 14px 0; }
+  .scan-line { position:absolute; left:8%; right:8%; height:2px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); animation:sweep 2.6s ease-in-out infinite; opacity:.8; }
+  @keyframes sweep { 0%,100% { top:6%; } 50% { top:94%; } }
+  @media (prefers-reduced-motion: reduce) { .scan-line { animation:none; top:50%; } }
+
+  .instruction { position:absolute; left:0; right:0; bottom:0; padding:18px; text-align:center; z-index:25; background:linear-gradient(transparent, rgba(11,21,38,.92) 60%); }
+  .instruction p { font-size:16px; font-weight:600; }
+  .instruction small { color:var(--muted); font-size:13px; }
+
+  /* ---------- form panels ---------- */
+  .panel { flex:1; overflow-y:auto; padding:26px 22px 40px; max-width:520px; width:100%; margin:0 auto; }
+  .panel h3 { font-family:'Space Grotesk',sans-serif; font-size:24px; margin-bottom:4px; }
+  .panel .sub { color:var(--muted); font-size:14px; margin-bottom:22px; }
+  .otp-box { letter-spacing:12px; text-align:center; font-size:30px; font-weight:700; font-family:'Space Grotesk',monospace; }
+  .welcome-chip { display:inline-flex; align-items:center; gap:8px; background:rgba(46,230,168,.1); border:1px solid rgba(46,230,168,.35); color:var(--ok); border-radius:999px; padding:6px 14px; font-size:13px; font-weight:600; margin-bottom:18px; }
+
+  /* ---------- overlays ---------- */
+  .overlay { position:fixed; inset:0; background:rgba(5,10,20,.8); backdrop-filter:blur(4px); z-index:90; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:20px; width:100%; max-width:440px; padding:26px; }
+  .spinner { width:44px; height:44px; border:4px solid var(--line); border-top-color:var(--cyan); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 14px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  #capture-video { width:100%; border-radius:14px; background:#000; transform:scaleX(-1); aspect-ratio:4/3; object-fit:cover; }
+  .status-pill { position:fixed; top:14px; left:50%; transform:translateX(-50%); background:var(--panel); border:1px solid var(--line); color:var(--muted); font-size:12.5px; padding:7px 16px; border-radius:999px; z-index:60; display:none; }
+</style>
+</head>
+<body>
+
+<!-- ================= DEVICE LOGIN ================= -->
+<div id="screen-login" class="screen hidden" style="align-items:center;justify-content:center;padding:20px;">
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#04263A" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8l5 9 5-9"/><circle cx="12" cy="5" r="1.6" fill="#04263A"/></svg></span>
+      <div>
+        <div class="display" style="font-size:20px;font-weight:700;">ViziTrack Kiosk</div>
+        <div style="font-size:13px;color:var(--muted);">Device sign-in (one time)</div>
+      </div>
+    </div>
+    <div class="field"><label>Kiosk email</label><input id="login-email" type="email" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input id="login-password" type="password" autocomplete="current-password"></div>
+    <p id="login-error" class="hidden" style="color:var(--err);font-size:13.5px;margin-bottom:12px;"></p>
+    <button class="btn btn-cyan btn-lg" data-action="device-login">Sign in this device</button>
+  </div>
+</div>
+
+<!-- ================= HOME ================= -->
+<div id="screen-home" class="screen hidden">
+  <div style="text-align:center;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
+      <span class="logo-mark" style="width:56px;height:56px;border-radius:16px;"><svg viewBox="0 0 24 24" fill="none" stroke="#04263A" stroke-width="2.4" style="width:32px;height:32px;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8l5 9 5-9"/><circle cx="12" cy="5" r="1.6" fill="#04263A"/></svg></span>
+      <h1 class="display" style="font-size:clamp(38px,7vw,64px);font-weight:700;letter-spacing:-.02em;">ViziTrack</h1>
+    </div>
+    <p style="color:var(--muted);font-size:clamp(15px,2.2vw,19px);margin-top:6px;">Welcome — tap to begin</p>
+  </div>
+
+  <div class="home-actions">
+    <div class="home-tile" data-action="check-out">
+      <div class="home-ring">
+        <svg fill="none" stroke="var(--warn)" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </div>
+      <span class="home-label" style="color:var(--warn);">Check-out</span>
+    </div>
+    <div class="home-tile" data-action="check-in">
+      <div class="home-ring">
+        <svg fill="none" stroke="var(--cyan)" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </div>
+      <span class="home-label" style="color:var(--cyan);">Check-in</span>
+    </div>
+  </div>
+
+  <div style="color:var(--muted);font-size:12.5px;opacity:.7;">© ViziTrack · Enterprise</div>
+</div>
+
+<!-- ================= ACTION ================= -->
+<div id="screen-action" class="screen hidden">
+  <div class="topbar">
+    <button data-action="go-back"><svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>Back</button>
+    <h2 id="screen-title" class="display" style="font-size:19px;font-weight:700;">Check-in</h2>
+    <button data-action="switch-camera" title="Switch camera"><svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-3M20 15a8 8 0 01-14 3"/></svg></button>
+  </div>
+
+  <div class="mode-tabs">
+    <button class="mode-tab active" data-mode="face">Face</button>
+    <button class="mode-tab" data-mode="qr">QR Badge</button>
+    <button class="mode-tab" data-mode="otp">OTP</button>
+  </div>
+
+  <!-- camera stage -->
+  <div id="stage" class="stage">
+    <video id="video" autoplay muted playsinline></video>
+    <div id="qr-reader" class="hidden"></div>
+    <div id="scan-frame" class="scan-frame">
+      <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
+      <div class="scan-line"></div>
+    </div>
+    <div class="instruction">
+      <p id="instruction-text">Look at the camera</p>
+      <small id="instruction-sub">We'll recognise you automatically</small>
+    </div>
+  </div>
+
+  <!-- otp request form -->
+  <div id="otp-request-form" class="panel hidden">
+    <h3>Verify yourself</h3>
+    <p class="sub">We'll send a 6-digit code.</p>
+    <div style="display:flex;gap:18px;border-bottom:1px solid var(--line);margin-bottom:20px;">
+      <button class="mode-tab active" data-channel="whatsapp" style="padding:11px 2px;">WhatsApp</button>
+      <button class="mode-tab" data-channel="email" style="padding:11px 2px;">Email</button>
+    </div>
+    <div id="ch-whatsapp">
+      <div class="field"><label>Mobile number</label><input id="mobile-input" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit mobile"></div>
+    </div>
+    <div id="ch-email" class="hidden">
+      <div class="field"><label>Email address</label><input id="email-input" type="email" placeholder="you@example.com"></div>
+    </div>
+    <button class="btn btn-cyan btn-lg" data-action="send-otp">Send code</button>
+  </div>
+
+  <!-- otp form -->
+  <div id="otp-form" class="panel hidden">
+    <h3>Enter your code</h3>
+    <p class="sub">Sent to <span id="otp-email-display" style="color:var(--text);font-weight:600;"></span></p>
+    <div class="field"><input id="otp-input" class="otp-box" type="text" inputmode="numeric" maxlength="6" placeholder="000000"></div>
+    <button class="btn btn-cyan btn-lg" data-action="verify-otp">Verify</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:14px;">
+      <button class="btn btn-ghost" style="padding:9px 16px;" data-action="back-to-otp-request">Change</button>
+      <span id="otp-timer" style="color:var(--muted);">03:00</span>
+      <button class="btn btn-ghost hidden" style="padding:9px 16px;" id="resend-btn" data-action="resend-otp">Resend</button>
+    </div>
+  </div>
+
+  <!-- data form -->
+  <div id="data-form" class="panel hidden">
+    <span class="welcome-chip"><svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span id="visitor-name-display">Visitor</span></span>
+    <h3 id="data-form-title">Confirm your details</h3>
+    <p class="sub">Details from your invitation.</p>
+    <div class="field"><label>Visitor name</label><input id="f-name" readonly></div>
+    <div class="field"><label>Mobile</label><input id="f-mobile" readonly></div>
+    <div class="field"><label>Email</label><input id="f-email" readonly></div>
+    <div class="field"><label>Address</label><input id="f-address" readonly></div>
+    <div class="field"><label>Purpose</label><input id="f-purpose" readonly></div>
+    <div class="field"><label>Host</label><input id="f-host" readonly></div>
+    <button class="btn btn-cyan btn-lg" data-action="open-photo" id="capture-btn" style="margin-top:8px;">Capture photo & check in</button>
+  </div>
+
+  <!-- request form -->
+  <div id="request-form" class="panel hidden">
+    <h3>Request access</h3>
+    <p class="sub">No invitation found — fill this and the host will approve.</p>
+    <div class="field"><label>Visitor name *</label><input id="r-name" placeholder="Full name"></div>
+    <div class="field"><label>Mobile *</label><input id="r-mobile" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit mobile"></div>
+    <div class="field"><label>Email *</label><input id="r-email" type="email" placeholder="you@example.com"></div>
+    <div class="field"><label>Address</label><input id="r-address" placeholder="City / company"></div>
+    <div class="field"><label>Purpose *</label>
+      <select id="r-purpose">
+        <option value="">Select purpose</option><option>Meeting</option><option>Interview</option>
+        <option>Delivery</option><option>Service</option><option>Other</option>
+      </select>
+    </div>
+    <div class="field"><label>Host name *</label><input id="r-host" list="host-list" placeholder="Whom are you visiting?"><datalist id="host-list"></datalist></div>
+    <button class="btn btn-cyan btn-lg" data-action="submit-request">Submit request</button>
+  </div>
+</div>
+
+<!-- ================= PHOTO MODAL ================= -->
+<div id="photo-modal" class="overlay hidden">
+  <div class="card" style="max-width:480px;">
+    <h3 class="display" style="font-size:19px;margin-bottom:14px;">Look at the camera</h3>
+    <video id="capture-video" autoplay muted playsinline></video>
+    <canvas id="capture-canvas" class="hidden"></canvas>
+    <div style="display:flex;gap:12px;margin-top:16px;">
+      <button class="btn btn-ghost btn-lg" data-action="cancel-photo">Cancel</button>
+      <button class="btn btn-cyan btn-lg" data-action="take-photo">Capture</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MESSAGE / LOADING ================= -->
+<div id="msg-modal" class="overlay hidden">
+  <div class="card" style="text-align:center;">
+    <h3 id="msg-title" class="display" style="font-size:20px;margin-bottom:8px;"></h3>
+    <p id="msg-body" style="color:var(--muted);font-size:15px;margin-bottom:20px;"></p>
+    <button class="btn btn-cyan btn-lg" data-action="close-msg">OK</button>
+  </div>
+</div>
+<div id="loading" class="overlay hidden">
+  <div style="text-align:center;"><div class="spinner"></div><p id="loading-text" style="color:var(--muted);font-size:15px;">Loading…</p></div>
+</div>
+<div id="status-pill" class="status-pill"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var CFG = window.VZT_CONFIG;
+  var db = null; // Supabase client — remote config aane ke baad banta hai
+  var MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+
+  // ---------- state ----------
+  var S = {
+    checkType: 'Check-in',        // 'Check-in' | 'Check-out'
+    mode: 'face',                 // 'face' | 'qr' | 'otp'
+    otpChannel: 'whatsapp',       // 'whatsapp' | 'email'
+    otpTarget: null,
+    stream: null,
+    facingMode: 'user',
+    detectTimer: null,
+    qr: null, qrRunning: false,
+    faceReady: false, matcher: null,
+    matchedEmail: null,
+    visitor: null,                // { name, mobile, email, address }
+    invitation: null,             // row from invitations
+    otpTimer: null, otpLeft: 180,
+    busy: false
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  // ---------- boot ----------
+  document.addEventListener('DOMContentLoaded', function () {
+    bindEvents();
+    loading('Connecting…');
+    jsonp({ action: 'getPublicConfig' }, async function (res) {
+      hideLoading();
+      if (!res.success) {
+        showMsg('Setup error', res.error || 'Config load failed. Check MAIL_API_URL/KEY in this file.');
+        return;
+      }
+      db = supabase.createClient(res.url, res.key);
+      var sess = (await db.auth.getSession()).data.session;
+      if (!sess) { show('screen-login'); return; }
+      startApp();
+    });
+  });
+
+  async function startApp() {
+    show('screen-home');
+    loadFaceModels();
+    loadDescriptors();
+    loadHosts();
+  }
+
+  // ---------- event delegation (no inline onclick) ----------
+  function bindEvents() {
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest('[data-action],[data-mode],[data-channel]');
+      if (!el) return;
+      if (el.dataset.mode) { switchMode(el.dataset.mode); return; }
+      if (el.dataset.channel) { switchChannel(el.dataset.channel); return; }
+      var a = el.dataset.action;
+      if (a === 'device-login')   deviceLogin();
+      else if (a === 'check-in')  openAction('Check-in');
+      else if (a === 'check-out') openAction('Check-out');
+      else if (a === 'go-back')   goBack();
+      else if (a === 'switch-camera') { S.facingMode = S.facingMode === 'user' ? 'environment' : 'user'; if (S.mode === 'face') startCamera(); }
+      else if (a === 'send-otp')   sendOtp();
+      else if (a === 'verify-otp') verifyOtp();
+      else if (a === 'resend-otp') sendOtp();
+      else if (a === 'back-to-otp-request') { hidePanels(); $('otp-request-form').classList.remove('hidden'); }
+      else if (a === 'open-photo')  openPhoto();
+      else if (a === 'take-photo')  takePhoto();
+      else if (a === 'cancel-photo') closePhoto();
+      else if (a === 'submit-request') submitRequest();
+      else if (a === 'close-msg') closeMsg();
+    });
+    $('otp-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
+    $('r-mobile').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
+    $('mobile-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
+  }
+
+  // ---------- device login ----------
+  async function deviceLogin() {
+    if (!db) { showMsg('Connecting…', 'Ek second — config load ho rahi hai.'); return; }
+    var email = $('login-email').value.trim(), pw = $('login-password').value;
+    if (!email || !pw) return;
+    loading('Signing in…');
+    var res = await db.auth.signInWithPassword({ email: email, password: pw });
+    hideLoading();
+    if (res.error) { $('login-error').textContent = res.error.message; $('login-error').classList.remove('hidden'); return; }
+    startApp();
+  }
+
+  // ---------- face models + descriptors ----------
+  async function loadFaceModels() {
+    try {
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+      ]);
+      S.faceReady = true;
+    } catch (e) { console.error('Face models failed', e); }
+  }
+
+  async function loadDescriptors() {
+    if (!db) return;
+    var res = await db.from('face_data').select('email,descriptor');
+    if (res.error || !res.data || !res.data.length) { S.matcher = null; return; }
+    var labeled = res.data.map(function (r) {
+      return new faceapi.LabeledFaceDescriptors(r.email, [new Float32Array(r.descriptor)]);
+    });
+    S.matcher = new faceapi.FaceMatcher(labeled, CFG.FACE_MATCH_THRESHOLD);
+    pill(labeled.length + ' faces ready');
+  }
+
+  async function loadHosts() {
+    var res = await db.from('hosts').select('host_name,role').neq('role', 'Kiosk');
+    if (res.error || !res.data) return;
+    $('host-list').innerHTML = res.data.map(function (h) {
+      return '<option value="' + esc(h.host_name) + '"></option>';
+    }).join('');
+  }
+
+  // refresh descriptors every 5 min
+  setInterval(loadDescriptors, 5 * 60 * 1000);
+
+  // ---------- navigation ----------
+  function show(id) {
+    ['screen-login','screen-home','screen-action'].forEach(function (s) { $(s).classList.add('hidden'); });
+    $(id).classList.remove('hidden');
+  }
+  function hidePanels() {
+    ['otp-request-form','otp-form','data-form','request-form'].forEach(function (p) { $(p).classList.add('hidden'); });
+    $('stage').classList.add('hidden');
+  }
+
+  function switchChannel(ch) {
+    S.otpChannel = ch;
+    document.querySelectorAll('[data-channel]').forEach(function (t) {
+      t.classList.toggle('active', t.dataset.channel === ch);
+    });
+    $('ch-whatsapp').classList.toggle('hidden', ch !== 'whatsapp');
+    $('ch-email').classList.toggle('hidden', ch !== 'email');
+  }
+
+  function openAction(type) {
+    S.checkType = type;
+    S.matchedEmail = null; S.visitor = null; S.invitation = null;
+    $('screen-title').textContent = type;
+    show('screen-action');
+    switchMode('face');
+  }
+
+  function goBack() {
+    stopAll();
+    show('screen-home');
+  }
+
+  function switchMode(mode) {
+    S.mode = mode;
+    document.querySelectorAll('.mode-tab').forEach(function (t) {
+      t.classList.toggle('active', t.dataset.mode === mode);
+    });
+    stopAll(true);
+    hidePanels();
+    frameState('');
+    if (mode === 'face') {
+      $('stage').classList.remove('hidden');
+      $('video').classList.remove('hidden'); $('qr-reader').classList.add('hidden');
+      setInstruction('Look at the camera', "We'll recognise you automatically");
+      startCamera();
+    } else if (mode === 'qr') {
+      $('stage').classList.remove('hidden');
+      $('video').classList.add('hidden'); $('qr-reader').classList.remove('hidden');
+      setInstruction('Show your badge QR', 'Hold it inside the frame');
+      startQr();
+    } else {
+      $('otp-request-form').classList.remove('hidden');
+      switchChannel(S.otpChannel);
+    }
+  }
+
+  function setInstruction(t, s) { $('instruction-text').textContent = t; $('instruction-sub').textContent = s || ''; }
+  function frameState(st) { var f = $('scan-frame'); f.classList.remove('ok','err'); if (st) f.classList.add(st); }
+
+  function stopAll(keepScreen) {
+    if (S.detectTimer) { clearInterval(S.detectTimer); S.detectTimer = null; }
+    if (S.stream) { S.stream.getTracks().forEach(function (t) { t.stop(); }); S.stream = null; }
+    if (S.qr && S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function () {}); }
+    if (S.otpTimer) { clearInterval(S.otpTimer); S.otpTimer = null; }
+    if (!keepScreen) hidePanels();
+  }
+
+  // ---------- face flow ----------
+  async function startCamera() {
+    try {
+      if (S.stream) S.stream.getTracks().forEach(function (t) { t.stop(); });
+      S.stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: S.facingMode, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false
+      });
+      $('video').srcObject = S.stream;
+      startDetection();
+    } catch (e) {
+      showMsg('Camera error', 'Camera access failed. Check permissions and try again.');
+    }
+  }
+
+  function startDetection() {
+    if (S.detectTimer) clearInterval(S.detectTimer);
+    S.detectTimer = setInterval(async function () {
+      if (!S.faceReady || S.busy) return;
+      var video = $('video');
+      if (video.readyState < 2) return;
+      try {
+        var det = await faceapi
+          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+          .withFaceLandmarks().withFaceDescriptor();
+        if (!det) return;
+        if (!S.matcher) { setInstruction('Face not registered', 'Use QR badge or OTP'); return; }
+        var best = S.matcher.findBestMatch(det.descriptor);
+        if (best.label === 'unknown') { setInstruction('Not recognised yet…', 'Try QR badge or OTP'); return; }
+        // matched
+        clearInterval(S.detectTimer); S.detectTimer = null;
+        frameState('ok');
+        onIdentified('email', best.label);
+      } catch (e) { /* transient frame errors ignore */ }
+    }, 700);
+  }
+
+  // ---------- qr flow ----------
+  function startQr() {
+    S.qr = S.qr || new Html5Qrcode('qr-reader');
+    S.qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } },
+      function (text) { if (S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function(){}); onQr(text); } },
+      function () {}
+    ).then(function () { S.qrRunning = true; })
+     .catch(function () { showMsg('Camera error', 'Could not start QR scanner.'); });
+  }
+
+  async function onQr(text) {
+    frameState('ok');
+    // New format: "VZT:<uuid>" — legacy JSON bhi tolerate
+    var m = /^VZT:([0-9a-f-]{36})$/i.exec(text.trim());
+    if (m) {
+      loading('Checking invitation…');
+      var res = await db.from('invitations').select('*').eq('id', m[1]).limit(1);
+      hideLoading();
+      var inv = res.data && res.data[0];
+      if (!inv) { frameState('err'); showMsg('Invalid badge', 'This invitation was not found.', function(){ switchMode('qr'); }); return; }
+      handleInvitation(inv, inv.email);
+      return;
+    }
+    try {
+      var j = JSON.parse(text);
+      var email = j.email || j['e-Mail'] || j['Visitor e-Mail'];
+      if (email) { onIdentified('email', String(email).toLowerCase()); return; }
+    } catch (e) {}
+    frameState('err');
+    showMsg('Invalid QR', 'This QR is not a ViziTrack badge.', function(){ switchMode('qr'); });
+  }
+
+  // ---------- otp flow ----------
+  function sendOtp() {
+    var params = { action: 'sendOtp', channel: S.otpChannel };
+    var display;
+    if (S.otpChannel === 'whatsapp') {
+      var mob = ($('mobile-input').value || '').replace(/\D/g, '');
+      if (!/^\d{10}$/.test(mob)) { showMsg('Invalid mobile', 'Enter a 10-digit mobile number.'); return; }
+      params.mobile = mob; S.otpTarget = mob;
+      display = 'WhatsApp on +91 ' + mob;
+    } else {
+      var email = ($('email-input').value || '').trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showMsg('Invalid email', 'Please enter a valid email address.'); return; }
+      params.email = email; S.otpTarget = email;
+      display = email;
+    }
+    loading('Sending code…');
+    jsonp(params, function (res) {
+      hideLoading();
+      if (!res.success) { showMsg('Error', res.error); return; }
+      hidePanels();
+      $('otp-form').classList.remove('hidden');
+      $('otp-email-display').textContent = display;
+      $('otp-input').value = '';
+      startOtpTimer();
+    });
+  }
+
+  function startOtpTimer() {
+    S.otpLeft = 180;
+    $('resend-btn').classList.add('hidden');
+    if (S.otpTimer) clearInterval(S.otpTimer);
+    S.otpTimer = setInterval(function () {
+      S.otpLeft--;
+      var m = String(Math.floor(S.otpLeft / 60)).padStart(2, '0');
+      var s = String(S.otpLeft % 60).padStart(2, '0');
+      $('otp-timer').textContent = m + ':' + s;
+      if (S.otpLeft <= 0) { clearInterval(S.otpTimer); S.otpTimer = null; $('resend-btn').classList.remove('hidden'); $('otp-timer').textContent = 'Expired'; }
+    }, 1000);
+  }
+
+  function verifyOtp() {
+    var otp = $('otp-input').value.trim();
+    if (otp.length !== 6) { showMsg('Invalid code', 'Enter the 6-digit code.'); return; }
+    loading('Verifying…');
+    jsonp({ action: 'verifyOtp', channel: S.otpChannel, target: S.otpTarget, otp: otp }, function (res) {
+      hideLoading();
+      if (!res.success) { showMsg('Verification failed', res.error); return; }
+      if (S.otpTimer) { clearInterval(S.otpTimer); S.otpTimer = null; }
+      if (S.otpChannel === 'whatsapp') onIdentified('mobile', S.otpTarget);
+      else onIdentified('email', S.otpTarget);
+    });
+  }
+
+  // ---------- identified → invitation lookup ----------
+  // key: 'email' | 'mobile', val: identifier value
+  async function onIdentified(key, val) {
+    if (key === 'email') S.matchedEmail = val;
+    loading(S.checkType === 'Check-in' ? 'Checking invitation…' : 'Finding your check-in…');
+
+    if (S.checkType === 'Check-out') {
+      var open = await findOpenLog(key, val);
+      hideLoading();
+      if (!open) { showMsg('No check-in found', 'No active check-in found today for ' + val + '.', function(){ goBack(); }); return; }
+      S.visitor = { name: open.visitor_name, mobile: open.mobile, email: open.email, address: open.address };
+      S.invitation = { purpose: open.purpose, host_name: open.host_name };
+      S.openLog = open;
+      showDataForm();
+      return;
+    }
+
+    // Check-in: already in?
+    var open2 = await findOpenLog(key, val);
+    if (open2) { hideLoading(); showMsg('Already checked in', 'You are already checked in today. Use Check-out when leaving.', function(){ goBack(); }); return; }
+
+    var nowIso = new Date().toISOString();
+    var q = db.from('invitations').select('*').eq('status', 'active')
+      .lte('from_time', nowIso).gte('to_time', nowIso);
+    q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
+    var res = await q.order('from_time', { ascending: false }).limit(1);
+    hideLoading();
+    var inv = res.data && res.data[0];
+    if (!inv) { promptNoInvitation(key, val); return; }
+    handleInvitation(inv, (key === 'email') ? val : null);
+  }
+
+  async function handleInvitation(inv, email) {
+    var now = new Date();
+    var idKey = email ? 'email' : (inv.mobile ? 'mobile' : 'email');
+    var idVal = email || inv.mobile || inv.email;
+    if (S.checkType === 'Check-in') {
+      if (new Date(inv.from_time) > now || new Date(inv.to_time) < now) {
+        showMsg('Invitation not active', 'This invitation is valid ' + fmtDT(inv.from_time) + ' – ' + fmtDT(inv.to_time) + '.', function(){ goBack(); });
+        return;
+      }
+      var open = await findOpenLog(idKey, idVal);
+      if (open) { showMsg('Already checked in', 'You are already checked in today.', function(){ goBack(); }); return; }
+    }
+    S.matchedEmail = (email || inv.email || '').toLowerCase();
+    S.invitation = inv;
+    // face_data se saved profile bhi mila lo (address/mobile fill)
+    var f = null;
+    if (S.matchedEmail) {
+      var fd = await db.from('face_data').select('visitor_name,mobile,address').ilike('email', S.matchedEmail).limit(1);
+      f = fd.data && fd.data[0];
+    }
+    S.visitor = {
+      name: inv.visitor_name || (f && f.visitor_name) || '',
+      mobile: inv.mobile || (f && f.mobile) || '',
+      email: S.matchedEmail,
+      address: inv.address || (f && f.address) || ''
+    };
+    showDataForm();
+  }
+
+  async function findOpenLog(key, val) {
+    var start = new Date(); start.setHours(0,0,0,0);
+    var q = db.from('visitor_logs').select('*')
+      .gte('check_in_time', start.toISOString())
+      .is('check_out_time', null);
+    q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
+    var res = await q.order('check_in_time', { ascending: false }).limit(1);
+    return res.data && res.data[0];
+  }
+
+  function promptNoInvitation(key, val) {
+    showMsg('No invitation found', 'No active invitation for ' + val + '. You can request access instead.', function () {
+      stopAll(true); hidePanels();
+      $('request-form').classList.remove('hidden');
+      if (key === 'mobile') $('r-mobile').value = val || '';
+      else $('r-email').value = val || '';
+      if (S.visitor) {
+        $('r-name').value = S.visitor.name || '';
+        if (key !== 'mobile') $('r-mobile').value = S.visitor.mobile || '';
+        if (key !== 'email' && S.visitor.email) $('r-email').value = S.visitor.email;
+        $('r-address').value = S.visitor.address || '';
+      }
+    });
+  }
+
+  function showDataForm() {
+    stopAll(true); hidePanels();
+    $('data-form').classList.remove('hidden');
+    $('visitor-name-display').textContent = S.visitor.name || 'Visitor';
+    $('data-form-title').textContent = S.checkType === 'Check-out' ? 'Confirm check-out' : 'Confirm your details';
+    $('f-name').value = S.visitor.name || '';
+    $('f-mobile').value = S.visitor.mobile || '';
+    $('f-email').value = S.visitor.email || '';
+    $('f-address').value = S.visitor.address || '';
+    $('f-purpose').value = (S.invitation && S.invitation.purpose) || '';
+    $('f-host').value = (S.invitation && S.invitation.host_name) || '';
+    $('capture-btn').textContent = S.checkType === 'Check-out' ? 'Capture photo & check out' : 'Capture photo & check in';
+  }
+
+  // ---------- photo + submit ----------
+  var captureStream = null;
+
+  function openPhoto() {
+    $('photo-modal').classList.remove('hidden');
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+      .then(function (st) { captureStream = st; $('capture-video').srcObject = st; })
+      .catch(function () { $('photo-modal').classList.add('hidden'); showMsg('Camera error', 'Camera access failed.'); });
+  }
+
+  function closePhoto() {
+    if (captureStream) { captureStream.getTracks().forEach(function (t) { t.stop(); }); captureStream = null; }
+    $('photo-modal').classList.add('hidden');
+  }
+
+  async function takePhoto() {
+    if (S.busy) return;
+    S.busy = true;
+    loading('Processing…');
+    try {
+      var v = $('capture-video'), c = $('capture-canvas');
+      c.width = 320; c.height = 240;
+      var ctx = c.getContext('2d');
+      ctx.translate(320, 0); ctx.scale(-1, 1);
+      ctx.drawImage(v, 0, 0, 320, 240);
+      var blob = await new Promise(function (r) { c.toBlob(r, 'image/jpeg', 0.6); });
+      closePhoto();
+
+      var descriptor = null;
+      if (S.checkType === 'Check-in' && S.faceReady) {
+        try {
+          var img = await createImageBitmap(blob);
+          var det = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+            .withFaceLandmarks().withFaceDescriptor();
+          if (det) descriptor = Array.from(det.descriptor);
+        } catch (e) {}
+      }
+
+      // Photo ko base64 data URL mein convert karo (bucket nahi — seedha column mein)
+      var photoB64 = await new Promise(function (res, rej) {
+        var fr = new FileReader();
+        fr.onload = function () { res(fr.result); };
+        fr.onerror = rej;
+        fr.readAsDataURL(blob);
+      });
+
+      if (S.checkType === 'Check-out') await doCheckOut(photoB64);
+      else await doCheckIn(photoB64, descriptor);
+    } catch (e) {
+      hideLoading();
+      showMsg('Error', e.message || String(e));
+    } finally {
+      S.busy = false;
+    }
+  }
+
+  async function doCheckIn(photoB64, descriptor) {
+    var ins = await db.from('visitor_logs').insert({
+      invitation_id: (S.invitation && S.invitation.id) || null,
+      visitor_name: S.visitor.name, mobile: S.visitor.mobile, email: S.visitor.email,
+      address: S.visitor.address, purpose: S.invitation && S.invitation.purpose,
+      host_name: S.invitation && S.invitation.host_name,
+      photo_in: photoB64
+    });
+    if (ins.error) throw new Error(ins.error.message);
+
+    // auto-save/update face descriptor (skip agar already hai — upsert only when new/empty)
+    if (descriptor && descriptor.length === 128 && S.visitor.email) {
+      var ex = await db.from('face_data').select('id').ilike('email', S.visitor.email).limit(1);
+      if (!ex.data || !ex.data.length) {
+        await db.from('face_data').insert({
+          email: S.visitor.email, visitor_name: S.visitor.name,
+          mobile: S.visitor.mobile, address: S.visitor.address, descriptor: descriptor
+        });
+        loadDescriptors();
+      }
+    }
+    hideLoading();
+    showMsg('Checked in ✓', 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.', goBack);
+  }
+
+  async function doCheckOut(photoB64) {
+    if (!S.openLog) throw new Error('No open check-in found');
+    var up = await db.from('visitor_logs')
+      .update({ check_out_time: new Date().toISOString(), photo_out: photoB64 })
+      .eq('id', S.openLog.id).is('check_out_time', null);
+    if (up.error) throw new Error(up.error.message);
+    hideLoading();
+    showMsg('Checked out ✓', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', goBack);
+  }
+
+  // ---------- request ----------
+  async function submitRequest() {
+    var data = {
+      visitor_name: $('r-name').value.trim(),
+      mobile: $('r-mobile').value.trim(),
+      email: $('r-email').value.trim().toLowerCase(),
+      address: $('r-address').value.trim(),
+      purpose: $('r-purpose').value,
+      host_name: $('r-host').value.trim()
+    };
+    if (!data.visitor_name || !data.mobile || !data.email || !data.purpose || !data.host_name) {
+      showMsg('Missing details', 'Please fill all required fields.'); return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) { showMsg('Invalid email', 'Enter a valid email address.'); return; }
+    if (!/^\d{10}$/.test(data.mobile)) { showMsg('Invalid mobile', 'Enter a 10-digit mobile number.'); return; }
+    loading('Submitting…');
+    var res = await db.from('requests').insert(data);
+    hideLoading();
+    if (res.error) { showMsg('Error', res.error.message); return; }
+    showMsg('Request sent ✓', 'Your host will review it. You\'ll receive a badge email once approved.', goBack);
+  }
+
+  // ---------- jsonp (Apps Script mail API) ----------
+  var jsonpN = 0;
+  function jsonp(params, cb) {
+    var name = 'vztcb' + (++jsonpN);
+    params.key = CFG.MAIL_API_KEY;
+    params.callback = name;
+    var q = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
+    var s = document.createElement('script');
+    var done = false;
+    window[name] = function (res) { done = true; delete window[name]; s.remove(); cb(res); };
+    s.onerror = function () { if (!done) { delete window[name]; s.remove(); cb({ success: false, error: 'Network error' }); } };
+    s.src = CFG.MAIL_API_URL + '?' + q;
+    document.body.appendChild(s);
+    setTimeout(function () { if (!done && window[name]) { delete window[name]; s.remove(); cb({ success: false, error: 'Request timed out' }); } }, 30000);
+  }
+
+  // ---------- ui helpers ----------
+  function loading(t) { $('loading-text').textContent = t || 'Loading…'; $('loading').classList.remove('hidden'); }
+  function hideLoading() { $('loading').classList.add('hidden'); }
+  var msgCb = null;
+  function showMsg(title, body, cb) { $('msg-title').textContent = title; $('msg-body').textContent = body; msgCb = cb || null; $('msg-modal').classList.remove('hidden'); }
+  function closeMsg() { $('msg-modal').classList.add('hidden'); var c = msgCb; msgCb = null; if (c) c(); }
+  function pill(t) { var p = $('status-pill'); p.textContent = t; p.style.display = 'block'; setTimeout(function () { p.style.display = 'none'; }, 3000); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDT(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+  }
+})();
+</script>
+</body>
+</html>

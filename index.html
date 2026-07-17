@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ViziTrack · Host Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ============ CONFIG — sirf yeh 2 values bharo ============
+window.VZT_CONFIG = {
+  MAIL_API_URL: 'https://script.google.com/macros/s/AKfycbzDCEFwXgNx2m-hn_CGxQzZdsMuhojHQnN38tPOMii5fzFYvAEyEU6QNtxVNjASjzEo/exec',
+  MAIL_API_KEY: 'vzt_a9f3k2m8x7q1w5e6r4t0y2u8i3o5p9'
+};
+// Supabase URL + Publishable Key yahan nahi — runtime pe Google Sheet se aati hai
+</script>
+<style>
+  :root {
+    --bg:#F6F8FB; --card:#FFFFFF; --line:#E6EBF2; --ink:#111C2E; --muted:#64748B;
+    --cyan:#0A84C1; --cyan-soft:#E5F4FC; --ok:#0F9D6E; --ok-soft:#E6F7F0;
+    --warn:#C2660A; --warn-soft:#FDF0E1; --err:#D23B4E; --err-soft:#FCEAEC;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--ink); font-size:14px; min-height:100vh; }
+  .display { font-family:'Space Grotesk',sans-serif; }
+  .hidden { display:none !important; }
+  button { font-family:'Inter',sans-serif; cursor:pointer; }
+
+  .btn { border:0; border-radius:10px; font-weight:600; font-size:14px; padding:10px 18px; transition:opacity .15s, transform .1s; }
+  .btn:active { transform:scale(.98); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-primary { background:var(--cyan); color:#fff; }
+  .btn-ghost { background:#fff; color:var(--ink); border:1px solid var(--line); }
+  .btn-danger { background:var(--err); color:#fff; }
+  .btn-ok { background:var(--ok); color:#fff; }
+  .btn-sm { padding:6px 12px; font-size:13px; border-radius:8px; }
+
+  input, select { font-family:'Inter',sans-serif; width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; background:#fff; color:var(--ink); outline:none; transition:border-color .15s, box-shadow .15s; }
+  input:focus, select:focus { border-color:var(--cyan); box-shadow:0 0 0 3px rgba(10,132,193,.12); }
+  input[readonly] { background:var(--bg); color:var(--muted); }
+  label { display:block; font-size:12px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .field { margin-bottom:16px; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; }
+  .pad { padding:24px; }
+
+  /* login */
+  #login-page { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; background:linear-gradient(180deg,#0B1526 0%,#0B1526 42%,var(--bg) 42%); }
+  .logo-mark { width:40px; height:40px; border-radius:11px; background:linear-gradient(135deg,#22C8FF,#4AE0C9); display:inline-flex; align-items:center; justify-content:center; flex:none; }
+
+  /* shell */
+  .shell { max-width:1180px; margin:0 auto; padding:0 20px 60px; }
+  header.appbar { background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:40; }
+  .appbar-inner { max-width:1180px; margin:0 auto; padding:0 20px; display:flex; align-items:center; justify-content:space-between; height:62px; }
+  nav.tabs { display:flex; gap:24px; overflow-x:auto; }
+  .nav-tab { background:none; border:0; padding:20px 2px; font-size:14px; font-weight:600; color:var(--muted); border-bottom:3px solid transparent; white-space:nowrap; }
+  .nav-tab.active { color:var(--cyan); border-bottom-color:var(--cyan); }
+  .sub-tabs { display:flex; gap:20px; border-bottom:1px solid var(--line); margin-bottom:20px; }
+  .sub-tab { background:none; border:0; padding:11px 2px; font-size:14px; font-weight:600; color:var(--muted); border-bottom:3px solid transparent; }
+  .sub-tab.active { color:var(--cyan); border-bottom-color:var(--cyan); }
+
+  /* table */
+  .tbl-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th { text-align:left; font-size:11.5px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:10px 14px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  td { padding:12px 14px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tr:last-child td { border-bottom:0; }
+  tbody tr:hover { background:#FAFCFE; }
+  .badge { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .b-ok { background:var(--ok-soft); color:var(--ok); }
+  .b-warn { background:var(--warn-soft); color:var(--warn); }
+  .b-cyan { background:var(--cyan-soft); color:var(--cyan); }
+  .b-err { background:var(--err-soft); color:var(--err); }
+
+  /* stats */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+  .stat { padding:18px 20px; }
+  .stat .n { font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; line-height:1.1; }
+  .stat .l { font-size:12.5px; color:var(--muted); font-weight:600; margin-top:4px; }
+  .stat .accent { width:34px; height:4px; border-radius:2px; margin-bottom:12px; }
+
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:820px) { .grid-2 { grid-template-columns:1fr; } }
+
+  /* toast */
+  #toasts { position:fixed; top:16px; right:16px; z-index:200; display:flex; flex-direction:column; gap:10px; }
+  .toast { background:#fff; border:1px solid var(--line); border-left:4px solid var(--cyan); border-radius:12px; padding:12px 16px; box-shadow:0 8px 24px rgba(15,30,50,.12); min-width:260px; max-width:360px; animation:tin .25s ease; }
+  .toast.ok { border-left-color:var(--ok); } .toast.err { border-left-color:var(--err); } .toast.warn { border-left-color:var(--warn); }
+  @keyframes tin { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:none; } }
+  .toast b { display:block; font-size:13.5px; } .toast span { font-size:12.5px; color:var(--muted); }
+
+  /* modal */
+  .overlay { position:fixed; inset:0; background:rgba(10,18,32,.45); z-index:100; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .modal { background:#fff; border-radius:18px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; padding:26px; }
+  .modal h3 { font-family:'Space Grotesk',sans-serif; font-size:19px; margin-bottom:16px; }
+
+  .spinner { width:40px; height:40px; border:4px solid var(--line); border-top-color:var(--cyan); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 12px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  .multi-row { display:grid; grid-template-columns:1.2fr 1.2fr 1fr 1fr 1fr auto; gap:10px; align-items:center; padding:10px 0; border-bottom:1px dashed var(--line); }
+  @media (max-width:900px) { .multi-row { grid-template-columns:1fr 1fr; } }
+  .empty { text-align:center; color:var(--muted); padding:40px 20px; font-size:14px; }
+  .photo-thumb { width:120px; height:90px; object-fit:cover; border-radius:10px; border:1px solid var(--line); background:var(--bg); }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login-page">
+  <div class="card pad" style="width:100%;max-width:400px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
+      <span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#04263A" stroke-width="2.4" style="width:24px;height:24px;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8l5 9 5-9"/><circle cx="12" cy="5" r="1.6" fill="#04263A"/></svg></span>
+      <div>
+        <div class="display" style="font-size:19px;font-weight:700;">ViziTrack</div>
+        <div style="font-size:12.5px;color:var(--muted);">Host Portal</div>
+      </div>
+    </div>
+
+    <div id="login-form">
+      <div class="field"><label>Email</label><input id="login-email" type="email" autocomplete="username"></div>
+      <div class="field"><label>Password</label><input id="login-password" type="password" autocomplete="current-password"></div>
+      <button class="btn btn-primary" style="width:100%;padding:12px;" data-action="login">Sign in</button>
+      <button class="btn" style="width:100%;background:none;color:var(--cyan);font-size:13px;margin-top:10px;" data-action="show-forgot">Forgot password?</button>
+    </div>
+
+    <div id="forgot-form" class="hidden">
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:16px;">Enter your email — we'll send a password reset link.</p>
+      <div class="field"><label>Email</label><input id="forgot-email" type="email"></div>
+      <button class="btn btn-primary" style="width:100%;padding:12px;" data-action="send-reset">Send reset link</button>
+      <button class="btn" style="width:100%;background:none;color:var(--muted);font-size:13px;margin-top:10px;" data-action="back-to-login">Back to sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="main-app" class="hidden">
+  <header class="appbar">
+    <div class="appbar-inner">
+      <div style="display:flex;align-items:center;gap:26px;min-width:0;">
+        <div style="display:flex;align-items:center;gap:10px;flex:none;">
+          <span class="logo-mark" style="width:32px;height:32px;border-radius:9px;"><svg viewBox="0 0 24 24" fill="none" stroke="#04263A" stroke-width="2.4" style="width:19px;height:19px;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8l5 9 5-9"/><circle cx="12" cy="5" r="1.6" fill="#04263A"/></svg></span>
+          <span class="display" style="font-weight:700;font-size:16px;">ViziTrack</span>
+        </div>
+        <nav class="tabs" id="main-nav"></nav>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex:none;">
+        <div style="text-align:right;line-height:1.25;">
+          <div id="user-name" style="font-weight:600;font-size:13.5px;"></div>
+          <div id="user-role" style="font-size:11.5px;color:var(--muted);"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" data-action="show-changepw" title="Change password">Password</button>
+        <button class="btn btn-ghost btn-sm" data-action="logout">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell" style="padding-top:26px;">
+
+    <!-- ========== INVITES ========== -->
+    <section id="sec-invites" class="hidden">
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-invtab="single">Single invite</button>
+        <button class="sub-tab" data-invtab="multiple">Multiple invites</button>
+        <button class="sub-tab" data-invtab="list">Sent invitations</button>
+      </div>
+
+      <!-- single -->
+      <div id="inv-single" class="card pad" style="max-width:640px;">
+        <div class="grid-2">
+          <div class="field"><label>Visitor name *</label><input id="i-name" placeholder="Full name"></div>
+          <div class="field"><label>Mobile</label><input id="i-mobile" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit"></div>
+          <div class="field"><label>Email</label><input id="i-email" type="email" placeholder="visitor@email.com"></div>
+          <div class="field"><label>Host *</label><input id="i-host" list="host-list" placeholder="Host name"><datalist id="host-list"></datalist></div>
+          <div class="field"><label>Purpose *</label>
+            <select id="i-purpose"><option value="">Select</option><option>Meeting</option><option>Interview</option><option>Delivery</option><option>Service</option><option>Other</option></select>
+          </div>
+          <div class="field"><label>Address</label><input id="i-address" placeholder="City / company"></div>
+          <div class="field"><label>From *</label><input id="i-from" type="datetime-local"></div>
+          <div class="field"><label>To *</label><input id="i-to" type="datetime-local"></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">Email ya mobile — kam se kam ek chahiye. Badge email + QR automatically bhej diya jayega.</p>
+        <button class="btn btn-primary" id="i-submit" data-action="submit-invite">Send invitation & badge</button>
+      </div>
+
+      <!-- multiple -->
+      <div id="inv-multiple" class="card pad hidden">
+        <div class="grid-2" style="max-width:640px;margin-bottom:14px;">
+          <div class="field"><label>Host (all rows) *</label><input id="m-host" list="host-list" placeholder="Host name"></div>
+          <div class="field"><label>Purpose (all rows) *</label>
+            <select id="m-purpose"><option value="">Select</option><option>Meeting</option><option>Interview</option><option>Delivery</option><option>Service</option><option>Other</option></select>
+          </div>
+          <div class="field"><label>From *</label><input id="m-from" type="datetime-local"></div>
+          <div class="field"><label>To *</label><input id="m-to" type="datetime-local"></div>
+        </div>
+        <div id="multi-rows"></div>
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button class="btn btn-ghost" data-action="add-multi-row">+ Add visitor</button>
+          <button class="btn btn-primary" id="m-submit" data-action="submit-multi">Send all invitations</button>
+        </div>
+      </div>
+
+      <!-- list -->
+      <div id="inv-list" class="card hidden">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Visitor</th><th>Host</th><th>Purpose</th><th>Valid from</th><th>Valid to</th><th>Sent</th><th></th></tr></thead>
+            <tbody id="inv-list-body"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== ACTIVITIES ========== -->
+    <section id="sec-activities" class="hidden">
+      <div class="card pad" style="display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin-bottom:16px;">
+        <div style="min-width:160px;"><label>Date</label><input id="a-date" type="date"></div>
+        <div style="min-width:180px;" id="a-host-wrap"><label>Host</label><select id="a-host"><option value="">All hosts</option></select></div>
+        <div style="min-width:160px;"><label>Status</label><select id="a-status"><option value="">All</option><option value="in">Inside</option><option value="out">Checked out</option></select></div>
+        <button class="btn btn-primary" data-action="load-activities">Apply</button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Visitor</th><th>Host</th><th>Purpose</th><th>Check-in</th><th>Check-out</th><th>Status</th><th></th></tr></thead>
+            <tbody id="act-body"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== REQUESTS ========== -->
+    <section id="sec-requests" class="hidden">
+      <div class="sub-tabs">
+        <button class="sub-tab active" data-reqtab="pending">Pending</button>
+        <button class="sub-tab" data-reqtab="approved">Approved</button>
+        <button class="sub-tab" data-reqtab="rejected">Rejected</button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Requested</th><th>Visitor</th><th>Mobile</th><th>Email</th><th>Purpose</th><th>Host</th><th></th></tr></thead>
+            <tbody id="req-body"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== ANALYTICS ========== -->
+    <section id="sec-analytics" class="hidden">
+      <div class="stats">
+        <div class="card stat"><div class="accent" style="background:var(--cyan);"></div><div class="n" id="s-today">–</div><div class="l">Visitors today</div></div>
+        <div class="card stat"><div class="accent" style="background:var(--ok);"></div><div class="n" id="s-inside">–</div><div class="l">Currently inside</div></div>
+        <div class="card stat"><div class="accent" style="background:var(--warn);"></div><div class="n" id="s-pending">–</div><div class="l">Pending requests</div></div>
+        <div class="card stat"><div class="accent" style="background:#7C5CFC;"></div><div class="n" id="s-week">–</div><div class="l">This week</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card pad"><h4 style="font-size:14px;margin-bottom:14px;">Visits — last 7 days</h4><canvas id="ch-week" height="220"></canvas></div>
+        <div class="card pad"><h4 style="font-size:14px;margin-bottom:14px;">Purpose split (30 days)</h4><canvas id="ch-purpose" height="220"></canvas></div>
+        <div class="card pad" style="grid-column:1/-1;"><h4 style="font-size:14px;margin-bottom:14px;">Host-wise visitors (30 days)</h4><canvas id="ch-host" height="140"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ========== AUDIT ========== -->
+    <section id="sec-audit" class="hidden">
+      <div class="card pad" style="display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin-bottom:16px;">
+        <div style="min-width:160px;"><label>From</label><input id="au-from" type="date"></div>
+        <div style="min-width:160px;"><label>To</label><input id="au-to" type="date"></div>
+        <button class="btn btn-primary" data-action="load-audit">Load</button>
+        <button class="btn btn-ghost" data-action="export-audit">Download CSV</button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Visitor</th><th>Host</th><th>Purpose</th><th>Check-in</th><th>Check-out</th><th>Duration</th></tr></thead>
+            <tbody id="au-body"><tr><td colspan="6" class="empty">Select a date range and load</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div id="detail-modal" class="overlay hidden">
+  <div class="modal">
+    <h3>Visit details</h3>
+    <div id="detail-body" style="font-size:14px;"></div>
+    <button class="btn btn-ghost" style="width:100%;margin-top:18px;" data-action="close-detail">Close</button>
+  </div>
+</div>
+
+<div id="approve-modal" class="overlay hidden">
+  <div class="modal">
+    <h3>Approve request</h3>
+    <p id="ap-summary" style="font-size:13.5px;color:var(--muted);margin-bottom:16px;"></p>
+    <div class="grid-2">
+      <div class="field"><label>Valid from *</label><input id="ap-from" type="datetime-local"></div>
+      <div class="field"><label>Valid to *</label><input id="ap-to" type="datetime-local"></div>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-ghost" style="flex:1;" data-action="close-approve">Cancel</button>
+      <button class="btn btn-ok" style="flex:1;" data-action="confirm-approve">Approve & send badge</button>
+    </div>
+  </div>
+</div>
+
+<div id="pw-modal" class="overlay hidden">
+  <div class="modal">
+    <h3>Change password</h3>
+    <div class="field"><label>New password</label><input id="pw-new" type="password" autocomplete="new-password"></div>
+    <div class="field"><label>Confirm new password</label><input id="pw-confirm" type="password" autocomplete="new-password"></div>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-ghost" style="flex:1;" data-action="close-changepw">Cancel</button>
+      <button class="btn btn-primary" style="flex:1;" data-action="save-changepw">Update password</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirm-modal" class="overlay hidden">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <h3 id="cf-title"></h3>
+    <p id="cf-text" style="font-size:13.5px;color:var(--muted);margin-bottom:18px;"></p>
+    <div style="display:flex;gap:12px;">
+      <button class="btn btn-ghost" style="flex:1;" data-action="cf-cancel">Cancel</button>
+      <button class="btn btn-danger" style="flex:1;" id="cf-yes" data-action="cf-yes">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="loading" class="overlay hidden">
+  <div style="text-align:center;background:#fff;border-radius:16px;padding:26px 40px;">
+    <div class="spinner"></div><p id="loading-text" style="color:var(--muted);font-size:14px;">Loading…</p>
+  </div>
+</div>
+<div id="toasts"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var CFG = window.VZT_CONFIG;
+  var db = null; // Supabase client — remote config aane ke baad banta hai
+  var $ = function (id) { return document.getElementById(id); };
+
+  var S = {
+    user: null,          // hosts row { host_name, email, role }
+    section: 'invites',
+    reqTab: 'pending',
+    approveTarget: null,
+    confirmCb: null,
+    charts: {},
+    lastAudit: []
+  };
+
+  var IS_ADMIN = function () { return S.user && S.user.role === 'Admin'; };
+
+  // ================= BOOT =================
+  document.addEventListener('DOMContentLoaded', function () {
+    bindEvents();
+    loading('Connecting…');
+    jsonp({ action: 'getPublicConfig' }, async function (res) {
+      hideLoading();
+      if (!res.success) {
+        toast('err', 'Setup error', res.error || 'Config load failed. Check MAIL_API_URL/KEY in this file.');
+        return;
+      }
+      db = supabase.createClient(res.url, res.key);
+      var sess = (await db.auth.getSession()).data.session;
+      if (sess) await enterApp(sess.user);
+    });
+  });
+
+  async function enterApp(authUser) {
+    var res = await db.from('hosts').select('*').eq('auth_user_id', authUser.id).limit(1);
+    var host = res.data && res.data[0];
+    if (!host) { toast('err', 'No access', 'Your account is not mapped in the hosts table.'); await db.auth.signOut(); return; }
+    if (host.role === 'Kiosk') { toast('err', 'Kiosk account', 'Use kiosk.html for this account.'); await db.auth.signOut(); return; }
+    S.user = host;
+    $('login-page').classList.add('hidden');
+    $('main-app').classList.remove('hidden');
+    $('user-name').textContent = host.host_name;
+    $('user-role').textContent = host.role;
+    buildNav();
+    loadHosts();
+    // employee: host locked
+    if (!IS_ADMIN()) {
+      $('i-host').value = host.host_name; $('i-host').readOnly = true;
+      $('m-host').value = host.host_name; $('m-host').readOnly = true;
+      $('a-host-wrap').classList.add('hidden');
+    }
+    initDefaults();
+    switchSection('invites');
+  }
+
+  function buildNav() {
+    var items = [['invites','Invites'],['activities','Activities'],['requests','Requests']];
+    if (IS_ADMIN()) items.push(['analytics','Analytics'],['audit','Audit log']);
+    $('main-nav').innerHTML = items.map(function (it) {
+      return '<button class="nav-tab" data-section="' + it[0] + '">' + it[1] + '</button>';
+    }).join('');
+  }
+
+  function initDefaults() {
+    var now = new Date();
+    $('a-date').value = dstr(now);
+    $('au-to').value = dstr(now);
+    var wk = new Date(now); wk.setDate(wk.getDate() - 7);
+    $('au-from').value = dstr(wk);
+    var from = new Date(now); from.setMinutes(0,0,0); from.setHours(from.getHours() + 1);
+    var to = new Date(from); to.setHours(to.getHours() + 2);
+    $('i-from').value = dtLocal(from); $('i-to').value = dtLocal(to);
+    $('m-from').value = dtLocal(from); $('m-to').value = dtLocal(to);
+    if (!$('multi-rows').children.length) addMultiRow();
+  }
+
+  // ================= EVENTS (delegation — no inline onclick) =================
+  function bindEvents() {
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest('[data-action],[data-section],[data-invtab],[data-reqtab]');
+      if (!el) return;
+      if (el.dataset.section) { switchSection(el.dataset.section); return; }
+      if (el.dataset.invtab) { switchInvTab(el.dataset.invtab); return; }
+      if (el.dataset.reqtab) { switchReqTab(el.dataset.reqtab); return; }
+      var a = el.dataset.action, d = el.dataset;
+      var map = {
+        'login': doLogin, 'logout': doLogout,
+        'show-forgot': function(){ $('login-form').classList.add('hidden'); $('forgot-form').classList.remove('hidden'); },
+        'back-to-login': function(){ $('forgot-form').classList.add('hidden'); $('login-form').classList.remove('hidden'); },
+        'send-reset': sendReset,
+        'show-changepw': function(){ $('pw-modal').classList.remove('hidden'); },
+        'close-changepw': function(){ $('pw-modal').classList.add('hidden'); },
+        'save-changepw': savePassword,
+        'submit-invite': submitInvite,
+        'add-multi-row': addMultiRow,
+        'submit-multi': submitMulti,
+        'load-activities': loadActivities,
+        'load-audit': loadAudit, 'export-audit': exportAudit,
+        'close-detail': function(){ $('detail-modal').classList.add('hidden'); },
+        'close-approve': function(){ $('approve-modal').classList.add('hidden'); },
+        'confirm-approve': confirmApprove,
+        'cf-cancel': function(){ $('confirm-modal').classList.add('hidden'); S.confirmCb = null; },
+        'cf-yes': function(){ $('confirm-modal').classList.add('hidden'); var c = S.confirmCb; S.confirmCb = null; if (c) c(); }
+      };
+      if (map[a]) { map[a](); return; }
+      if (a === 'remove-multi-row') { el.closest('.multi-row').remove(); }
+      else if (a === 'view-log') { showDetail(d.id); }
+      else if (a === 'force-out') { askConfirm('Force check-out?', 'Visitor ko abhi checked-out mark kar diya jayega.', function(){ forceOut(d.id); }); }
+      else if (a === 'resend-badge') { resendBadge(d.id); }
+      else if (a === 'open-approve') { openApprove(d.id); }
+      else if (a === 'reject-req') { askConfirm('Reject request?', 'Visitor ko access nahi milega.', function(){ rejectReq(d.id); }); }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !$('login-page').classList.contains('hidden')) {
+        if (!$('login-form').classList.contains('hidden')) doLogin();
+      }
+    });
+  }
+
+  function askConfirm(title, text, cb) {
+    $('cf-title').textContent = title; $('cf-text').textContent = text;
+    S.confirmCb = cb; $('confirm-modal').classList.remove('hidden');
+  }
+
+  // ================= AUTH =================
+  async function doLogin() {
+    if (!db) { toast('warn', 'Connecting…', 'Ek second — config load ho rahi hai.'); return; }
+    var email = $('login-email').value.trim(), pw = $('login-password').value;
+    if (!email || !pw) { toast('warn', 'Missing fields', 'Email aur password dono chahiye.'); return; }
+    loading('Signing in…');
+    var res = await db.auth.signInWithPassword({ email: email, password: pw });
+    hideLoading();
+    if (res.error) { toast('err', 'Sign-in failed', res.error.message); return; }
+    enterApp(res.data.user);
+  }
+
+  async function doLogout() {
+    await db.auth.signOut();
+    location.reload();
+  }
+
+  async function sendReset() {
+    var email = $('forgot-email').value.trim();
+    if (!email) return;
+    loading('Sending…');
+    var res = await db.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    hideLoading();
+    if (res.error) { toast('err', 'Failed', res.error.message); return; }
+    toast('ok', 'Reset link sent', 'Email check karo — link se naya password set hoga.');
+    $('forgot-form').classList.add('hidden'); $('login-form').classList.remove('hidden');
+  }
+
+  async function savePassword() {
+    var p1 = $('pw-new').value, p2 = $('pw-confirm').value;
+    if (p1.length < 8) { toast('warn', 'Weak password', 'Kam se kam 8 characters.'); return; }
+    if (p1 !== p2) { toast('warn', 'Mismatch', 'Dono passwords same nahi hain.'); return; }
+    loading('Updating…');
+    var res = await db.auth.updateUser({ password: p1 });
+    hideLoading();
+    if (res.error) { toast('err', 'Failed', res.error.message); return; }
+    $('pw-modal').classList.add('hidden'); $('pw-new').value = ''; $('pw-confirm').value = '';
+    toast('ok', 'Password updated', '');
+  }
+
+  // ================= NAV =================
+  function switchSection(sec) {
+    S.section = sec;
+    document.querySelectorAll('.nav-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.section === sec); });
+    ['invites','activities','requests','analytics','audit'].forEach(function (s) {
+      $('sec-' + s).classList.toggle('hidden', s !== sec);
+    });
+    if (sec === 'activities') loadActivities();
+    else if (sec === 'requests') loadRequests();
+    else if (sec === 'analytics') loadAnalytics();
+    else if (sec === 'invites' && !$('inv-list').classList.contains('hidden')) loadInvList();
+  }
+
+  function switchInvTab(tab) {
+    document.querySelectorAll('[data-invtab]').forEach(function (t) { t.classList.toggle('active', t.dataset.invtab === tab); });
+    $('inv-single').classList.toggle('hidden', tab !== 'single');
+    $('inv-multiple').classList.toggle('hidden', tab !== 'multiple');
+    $('inv-list').classList.toggle('hidden', tab !== 'list');
+    if (tab === 'list') loadInvList();
+  }
+
+  function switchReqTab(tab) {
+    S.reqTab = tab;
+    document.querySelectorAll('[data-reqtab]').forEach(function (t) { t.classList.toggle('active', t.dataset.reqtab === tab); });
+    loadRequests();
+  }
+
+  // ================= HOSTS =================
+  async function loadHosts() {
+    var res = await db.from('hosts').select('host_name,role').neq('role', 'Kiosk').order('host_name');
+    if (res.error || !res.data) return;
+    $('host-list').innerHTML = res.data.map(function (h) { return '<option value="' + esc(h.host_name) + '"></option>'; }).join('');
+    $('a-host').innerHTML = '<option value="">All hosts</option>' + res.data.map(function (h) {
+      return '<option value="' + esc(h.host_name) + '">' + esc(h.host_name) + '</option>';
+    }).join('');
+  }
+
+  // ================= INVITES =================
+  function readInviteForm() {
+    return {
+      visitor_name: $('i-name').value.trim(),
+      mobile: $('i-mobile').value.trim(),
+      email: $('i-email').value.trim().toLowerCase(),
+      address: $('i-address').value.trim(),
+      purpose: $('i-purpose').value,
+      host_name: $('i-host').value.trim(),
+      from_time: $('i-from').value, to_time: $('i-to').value
+    };
+  }
+
+  function validateInvite(d) {
+    if (!d.visitor_name || !d.purpose || !d.host_name || !d.from_time || !d.to_time) return 'Sab required fields bharo.';
+    if (!d.email && !d.mobile) return 'Email ya mobile — kam se kam ek do.';
+    if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) return 'Email valid nahi hai.';
+    if (d.mobile && !/^\d{10}$/.test(d.mobile)) return 'Mobile 10 digit ka hona chahiye.';
+    if (new Date(d.to_time) <= new Date(d.from_time)) return '"To" time "From" ke baad hona chahiye.';
+    return null;
+  }
+
+  async function submitInvite() {
+    var d = readInviteForm();
+    var err = validateInvite(d);
+    if (err) { toast('warn', 'Check form', err); return; }
+    $('i-submit').disabled = true;
+    loading('Creating invitation…');
+    var res = await db.from('invitations').insert({
+      visitor_name: d.visitor_name, mobile: d.mobile || null, email: d.email || null,
+      address: d.address || null, purpose: d.purpose, host_name: d.host_name,
+      from_time: new Date(d.from_time).toISOString(), to_time: new Date(d.to_time).toISOString(),
+      created_by: S.user.host_name
+    }).select('id').single();
+    if (res.error) { hideLoading(); $('i-submit').disabled = false; toast('err', 'Failed', res.error.message); return; }
+    audit('invitation_created', { visitor: d.visitor_name, host: d.host_name });
+    sendBadge(res.data.id, function (ok, msg) {
+      hideLoading(); $('i-submit').disabled = false;
+      if (ok) {
+        toast('ok', 'Invitation sent', 'Badge email bhej diya gaya.');
+        ['i-name','i-mobile','i-email','i-address'].forEach(function (id) { $(id).value = ''; });
+        $('i-purpose').value = '';
+        if (IS_ADMIN()) $('i-host').value = '';
+      } else {
+        toast('warn', 'Invitation created', 'Par badge email fail hua: ' + msg);
+      }
+    });
+  }
+
+  function addMultiRow() {
+    var div = document.createElement('div');
+    div.className = 'multi-row';
+    div.innerHTML =
+      '<input class="mr-name" placeholder="Visitor name *">' +
+      '<input class="mr-email" type="email" placeholder="Email">' +
+      '<input class="mr-mobile" type="tel" inputmode="numeric" maxlength="10" placeholder="Mobile">' +
+      '<input class="mr-address" placeholder="Address">' +
+      '<span></span>' +
+      '<button class="btn btn-ghost btn-sm" data-action="remove-multi-row" title="Remove">✕</button>';
+    $('multi-rows').appendChild(div);
+  }
+
+  async function submitMulti() {
+    var host = $('m-host').value.trim(), purpose = $('m-purpose').value;
+    var from = $('m-from').value, to = $('m-to').value;
+    if (!host || !purpose || !from || !to) { toast('warn', 'Check form', 'Host, purpose, from, to — sab bharo.'); return; }
+    if (new Date(to) <= new Date(from)) { toast('warn', 'Check dates', '"To" time "From" ke baad hona chahiye.'); return; }
+
+    var rows = [], bad = 0;
+    document.querySelectorAll('#multi-rows .multi-row').forEach(function (r) {
+      var name = r.querySelector('.mr-name').value.trim();
+      var email = r.querySelector('.mr-email').value.trim().toLowerCase();
+      var mobile = r.querySelector('.mr-mobile').value.trim();
+      if (!name) return;
+      if (!email && !mobile) { bad++; return; }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { bad++; return; }
+      if (mobile && !/^\d{10}$/.test(mobile)) { bad++; return; }
+      rows.push({
+        visitor_name: name, email: email || null, mobile: mobile || null,
+        address: r.querySelector('.mr-address').value.trim() || null,
+        purpose: purpose, host_name: host,
+        from_time: new Date(from).toISOString(), to_time: new Date(to).toISOString(),
+        created_by: S.user.host_name
+      });
+    });
+    if (bad) { toast('warn', 'Invalid rows', bad + ' row(s) mein email/mobile invalid ya missing.'); return; }
+    if (!rows.length) { toast('warn', 'Empty', 'Kam se kam ek visitor add karo.'); return; }
+
+    $('m-submit').disabled = true;
+    loading('Creating ' + rows.length + ' invitations…');
+    var res = await db.from('invitations').insert(rows).select('id');
+    if (res.error) { hideLoading(); $('m-submit').disabled = false; toast('err', 'Failed', res.error.message); return; }
+    audit('invitations_bulk_created', { count: rows.length, host: host });
+
+    // badges sequentially
+    var ids = res.data.map(function (r) { return r.id; }), sent = 0, failed = 0;
+    (function next(idx) {
+      if (idx >= ids.length) {
+        hideLoading(); $('m-submit').disabled = false;
+        toast(failed ? 'warn' : 'ok', 'Done', sent + ' badge(s) sent' + (failed ? ', ' + failed + ' failed' : '') + '.');
+        $('multi-rows').innerHTML = ''; addMultiRow();
+        return;
+      }
+      loading('Sending badge ' + (idx + 1) + '/' + ids.length + '…');
+      sendBadge(ids[idx], function (ok) { ok ? sent++ : failed++; next(idx + 1); });
+    })(0);
+  }
+
+  async function loadInvList() {
+    var q = db.from('invitations').select('*').order('created_at', { ascending: false }).limit(100);
+    if (!IS_ADMIN()) q = q.eq('host_name', S.user.host_name);
+    var res = await q;
+    var body = $('inv-list-body');
+    if (res.error) { body.innerHTML = '<tr><td colspan="7" class="empty">' + esc(res.error.message) + '</td></tr>'; return; }
+    if (!res.data.length) { body.innerHTML = '<tr><td colspan="7" class="empty">Abhi tak koi invitation nahi bheji.</td></tr>'; return; }
+    body.innerHTML = res.data.map(function (r) {
+      return '<tr><td><b>' + esc(r.visitor_name) + '</b><br><span style="color:var(--muted);font-size:12px;">' + esc(r.email || r.mobile || '') + '</span></td>' +
+        '<td>' + esc(r.host_name) + '</td><td>' + esc(r.purpose || '—') + '</td>' +
+        '<td>' + fmt(r.from_time) + '</td><td>' + fmt(r.to_time) + '</td><td>' + fmt(r.created_at) + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" data-action="resend-badge" data-id="' + r.id + '">Resend badge</button></td></tr>';
+    }).join('');
+  }
+
+  function resendBadge(id) {
+    loading('Sending badge…');
+    sendBadge(id, function (ok, msg) {
+      hideLoading();
+      toast(ok ? 'ok' : 'err', ok ? 'Badge sent' : 'Failed', ok ? '' : msg);
+    });
+  }
+
+  // ================= ACTIVITIES =================
+  async function loadActivities() {
+    var dateStr = $('a-date').value || dstr(new Date());
+    var start = new Date(dateStr + 'T00:00:00'), end = new Date(dateStr + 'T23:59:59.999');
+    var q = db.from('visitor_logs').select('id,invitation_id,visitor_name,mobile,email,address,purpose,host_name,check_in_time,check_out_time,forced_out')
+      .gte('check_in_time', start.toISOString()).lte('check_in_time', end.toISOString())
+      .order('check_in_time', { ascending: false });
+    if (!IS_ADMIN()) q = q.eq('host_name', S.user.host_name);
+    else if ($('a-host').value) q = q.eq('host_name', $('a-host').value);
+    var st = $('a-status').value;
+    if (st === 'in') q = q.is('check_out_time', null);
+    else if (st === 'out') q = q.not('check_out_time', 'is', null);
+
+    var res = await q;
+    var body = $('act-body');
+    if (res.error) { body.innerHTML = '<tr><td colspan="7" class="empty">' + esc(res.error.message) + '</td></tr>'; return; }
+    if (!res.data.length) { body.innerHTML = '<tr><td colspan="7" class="empty">Is din koi activity nahi.</td></tr>'; return; }
+    body.innerHTML = res.data.map(function (r) {
+      var inside = !r.check_out_time;
+      return '<tr><td><b>' + esc(r.visitor_name) + '</b><br><span style="color:var(--muted);font-size:12px;">' + esc(r.mobile || r.email || '') + '</span></td>' +
+        '<td>' + esc(r.host_name || '—') + '</td><td>' + esc(r.purpose || '—') + '</td>' +
+        '<td>' + tfmt(r.check_in_time) + '</td><td>' + (r.check_out_time ? tfmt(r.check_out_time) : '—') + '</td>' +
+        '<td><span class="badge ' + (inside ? 'b-ok' : 'b-cyan') + '">' + (inside ? 'Inside' : (r.forced_out ? 'Forced out' : 'Checked out')) + '</span></td>' +
+        '<td style="white-space:nowrap;"><button class="btn btn-ghost btn-sm" data-action="view-log" data-id="' + r.id + '">Details</button> ' +
+        (inside ? '<button class="btn btn-danger btn-sm" data-action="force-out" data-id="' + r.id + '">Force out</button>' : '') +
+        '</td></tr>';
+    }).join('');
+  }
+
+  async function showDetail(id) {
+    loading('Loading…');
+    var res = await db.from('visitor_logs').select('*').eq('id', id).single();
+    hideLoading();
+    if (res.error) { toast('err', 'Failed', res.error.message); return; }
+    var r = res.data;
+    var photoIn = r.photo_in ? '<div><label>Check-in photo</label><img class="photo-thumb" src="' + r.photo_in + '"></div>' : '';
+    var photoOut = r.photo_out ? '<div><label>Check-out photo</label><img class="photo-thumb" src="' + r.photo_out + '"></div>' : '';
+    $('detail-body').innerHTML =
+      drow('Visitor', esc(r.visitor_name)) + drow('Mobile', esc(r.mobile || '—')) +
+      drow('Email', esc(r.email || '—')) + drow('Address', esc(r.address || '—')) +
+      drow('Purpose', esc(r.purpose || '—')) + drow('Host', esc(r.host_name || '—')) +
+      drow('Check-in', fmt(r.check_in_time)) + drow('Check-out', r.check_out_time ? fmt(r.check_out_time) : '—') +
+      '<div style="display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;">' + photoIn + photoOut + '</div>';
+    $('detail-modal').classList.remove('hidden');
+  }
+
+  function drow(k, v) {
+    return '<div style="display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid var(--line);">' +
+      '<span style="color:var(--muted);">' + k + '</span><span style="font-weight:600;text-align:right;">' + v + '</span></div>';
+  }
+
+  async function forceOut(id) {
+    loading('Updating…');
+    var res = await db.from('visitor_logs')
+      .update({ check_out_time: new Date().toISOString(), forced_out: true })
+      .eq('id', id).is('check_out_time', null);
+    hideLoading();
+    if (res.error) { toast('err', 'Failed', res.error.message); return; }
+    audit('force_checkout', { log_id: id });
+    toast('ok', 'Checked out', 'Visitor forced out.');
+    loadActivities();
+  }
+
+  // ================= REQUESTS =================
+  async function loadRequests() {
+    var q = db.from('requests').select('*').eq('status', S.reqTab).order('created_at', { ascending: false }).limit(100);
+    if (!IS_ADMIN()) q = q.eq('host_name', S.user.host_name);
+    var res = await q;
+    var body = $('req-body');
+    if (res.error) { body.innerHTML = '<tr><td colspan="7" class="empty">' + esc(res.error.message) + '</td></tr>'; return; }
+    if (!res.data.length) { body.innerHTML = '<tr><td colspan="7" class="empty">Koi ' + S.reqTab + ' request nahi.</td></tr>'; return; }
+    body.innerHTML = res.data.map(function (r) {
+      var actions = '';
+      if (r.status === 'pending') {
+        actions = '<button class="btn btn-ok btn-sm" data-action="open-approve" data-id="' + r.id + '">Approve</button> ' +
+                  '<button class="btn btn-ghost btn-sm" data-action="reject-req" data-id="' + r.id + '">Reject</button>';
+      } else if (r.status === 'approved') {
+        actions = '<span class="badge b-ok">Approved ' + (r.approved_at ? tfmt(r.approved_at) : '') + '</span>';
+      } else {
+        actions = '<span class="badge b-err">Rejected</span>';
+      }
+      return '<tr><td>' + fmt(r.created_at) + '</td><td><b>' + esc(r.visitor_name) + '</b></td>' +
+        '<td>' + esc(r.mobile || '—') + '</td><td>' + esc(r.email || '—') + '</td>' +
+        '<td>' + esc(r.purpose || '—') + '</td><td>' + esc(r.host_name || '—') + '</td>' +
+        '<td style="white-space:nowrap;">' + actions + '</td></tr>';
+    }).join('');
+  }
+
+  function openApprove(id) {
+    S.approveTarget = id;
+    var now = new Date(); now.setMinutes(0,0,0);
+    var to = new Date(now); to.setHours(to.getHours() + 4);
+    $('ap-from').value = dtLocal(now); $('ap-to').value = dtLocal(to);
+    $('ap-summary').textContent = 'Approve karne par invitation banegi aur badge email chala jayega.';
+    $('approve-modal').classList.remove('hidden');
+  }
+
+  async function confirmApprove() {
+    var id = S.approveTarget;
+    var from = $('ap-from').value, to = $('ap-to').value;
+    if (!from || !to || new Date(to) <= new Date(from)) { toast('warn', 'Check dates', 'Valid from/to bharo.'); return; }
+    $('approve-modal').classList.add('hidden');
+    loading('Approving…');
+
+    var rq = await db.from('requests').select('*').eq('id', id).single();
+    if (rq.error) { hideLoading(); toast('err', 'Failed', rq.error.message); return; }
+    var r = rq.data;
+
+    var inv = await db.from('invitations').insert({
+      visitor_name: r.visitor_name, email: r.email, mobile: r.mobile, address: r.address,
+      purpose: r.purpose, host_name: r.host_name,
+      from_time: new Date(from).toISOString(), to_time: new Date(to).toISOString(),
+      created_by: S.user.host_name
+    }).select('id').single();
+    if (inv.error) { hideLoading(); toast('err', 'Failed', inv.error.message); return; }
+
+    var up = await db.from('requests').update({
+      status: 'approved', approved_at: new Date().toISOString(), approved_by: S.user.host_name
+    }).eq('id', id);
+    if (up.error) { hideLoading(); toast('err', 'Partial', 'Invitation bani par request update fail: ' + up.error.message); return; }
+
+    audit('request_approved', { request_id: id, visitor: r.visitor_name });
+    sendBadge(inv.data.id, function (ok, msg) {
+      hideLoading();
+      toast(ok ? 'ok' : 'warn', 'Request approved', ok ? 'Badge email sent.' : 'Badge email fail: ' + msg);
+      loadRequests();
+    });
+  }
+
+  async function rejectReq(id) {
+    loading('Updating…');
+    var res = await db.from('requests').update({ status: 'rejected', approved_by: S.user.host_name }).eq('id', id);
+    hideLoading();
+    if (res.error) { toast('err', 'Failed', res.error.message); return; }
+    audit('request_rejected', { request_id: id });
+    toast('ok', 'Request rejected', '');
+    loadRequests();
+  }
+
+  // ================= ANALYTICS =================
+  async function loadAnalytics() {
+    var now = new Date();
+    var dayStart = new Date(now); dayStart.setHours(0,0,0,0);
+    var weekStart = new Date(dayStart); weekStart.setDate(weekStart.getDate() - 6);
+    var monthStart = new Date(dayStart); monthStart.setDate(monthStart.getDate() - 29);
+
+    var logs = await db.from('visitor_logs').select('check_in_time,check_out_time,host_name,purpose')
+      .gte('check_in_time', monthStart.toISOString());
+    var pend = await db.from('requests').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+
+    if (logs.error) { toast('err', 'Analytics failed', logs.error.message); return; }
+    var data = logs.data || [];
+
+    var today = 0, inside = 0, week = 0;
+    var byDay = {}, byHost = {}, byPurpose = {};
+    for (var i = 6; i >= 0; i--) { var d = new Date(dayStart); d.setDate(d.getDate() - i); byDay[dstr(d)] = 0; }
+
+    data.forEach(function (r) {
+      var t = new Date(r.check_in_time);
+      if (t >= dayStart) { today++; if (!r.check_out_time) inside++; }
+      if (t >= weekStart) { week++; var k = dstr(t); if (k in byDay) byDay[k]++; }
+      var h = r.host_name || '—'; byHost[h] = (byHost[h] || 0) + 1;
+      var p = r.purpose || 'Other'; byPurpose[p] = (byPurpose[p] || 0) + 1;
+    });
+
+    $('s-today').textContent = today;
+    $('s-inside').textContent = inside;
+    $('s-pending').textContent = pend.count != null ? pend.count : '–';
+    $('s-week').textContent = week;
+
+    chart('ch-week', 'bar', Object.keys(byDay).map(function (k) { return k.slice(5); }), Object.values(byDay), '#0A84C1');
+    var hostKeys = Object.keys(byHost).sort(function (a, b) { return byHost[b] - byHost[a]; }).slice(0, 10);
+    chart('ch-host', 'bar', hostKeys, hostKeys.map(function (k) { return byHost[k]; }), '#0F9D6E', true);
+    doughnut('ch-purpose', Object.keys(byPurpose), Object.values(byPurpose));
+  }
+
+  function chart(id, type, labels, values, color, horizontal) {
+    if (S.charts[id]) S.charts[id].destroy();
+    S.charts[id] = new Chart($(id), {
+      type: type,
+      data: { labels: labels, datasets: [{ data: values, backgroundColor: color, borderRadius: 6, maxBarThickness: 34 }] },
+      options: {
+        indexAxis: horizontal ? 'y' : 'x',
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } },
+        responsive: true, maintainAspectRatio: true
+      }
+    });
+  }
+
+  function doughnut(id, labels, values) {
+    if (S.charts[id]) S.charts[id].destroy();
+    S.charts[id] = new Chart($(id), {
+      type: 'doughnut',
+      data: { labels: labels, datasets: [{ data: values, backgroundColor: ['#0A84C1','#0F9D6E','#C2660A','#7C5CFC','#D23B4E','#64748B'] }] },
+      options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } } }, cutout: '62%' }
+    });
+  }
+
+  // ================= AUDIT =================
+  async function loadAudit() {
+    var from = $('au-from').value, to = $('au-to').value;
+    if (!from || !to) { toast('warn', 'Dates', 'From/To dates select karo.'); return; }
+    loading('Loading…');
+    var res = await db.from('visitor_logs').select('id,invitation_id,visitor_name,mobile,email,address,purpose,host_name,check_in_time,check_out_time,forced_out')
+      .gte('check_in_time', new Date(from + 'T00:00:00').toISOString())
+      .lte('check_in_time', new Date(to + 'T23:59:59.999').toISOString())
+      .order('check_in_time', { ascending: false }).limit(2000);
+    hideLoading();
+    var body = $('au-body');
+    if (res.error) { body.innerHTML = '<tr><td colspan="6" class="empty">' + esc(res.error.message) + '</td></tr>'; return; }
+    S.lastAudit = res.data || [];
+    if (!S.lastAudit.length) { body.innerHTML = '<tr><td colspan="6" class="empty">Is range mein koi record nahi.</td></tr>'; return; }
+    body.innerHTML = S.lastAudit.map(function (r) {
+      return '<tr><td><b>' + esc(r.visitor_name) + '</b></td><td>' + esc(r.host_name || '—') + '</td>' +
+        '<td>' + esc(r.purpose || '—') + '</td><td>' + fmt(r.check_in_time) + '</td>' +
+        '<td>' + (r.check_out_time ? fmt(r.check_out_time) : '—') + '</td>' +
+        '<td>' + dur(r.check_in_time, r.check_out_time) + '</td></tr>';
+    }).join('');
+  }
+
+  function exportAudit() {
+    if (!S.lastAudit.length) { toast('warn', 'Nothing to export', 'Pehle Load karo.'); return; }
+    var head = ['Visitor','Mobile','Email','Address','Purpose','Host','Check-in','Check-out','Duration','Forced out'];
+    var rows = S.lastAudit.map(function (r) {
+      return [r.visitor_name, r.mobile, r.email, r.address, r.purpose, r.host_name,
+        fmt(r.check_in_time), r.check_out_time ? fmt(r.check_out_time) : '', dur(r.check_in_time, r.check_out_time),
+        r.forced_out ? 'Yes' : ''];
+    });
+    var csv = [head].concat(rows).map(function (row) {
+      return row.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'vizitrack_audit_' + $('au-from').value + '_to_' + $('au-to').value + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // ================= HELPERS =================
+  function sendBadge(invitationId, cb) {
+    jsonp({ action: 'sendBadge', invitationId: invitationId }, function (res) {
+      cb(!!res.success, res.error || '');
+    });
+  }
+
+  async function audit(action, details) {
+    try { await db.from('audit_log').insert({ actor: S.user.host_name, action: action, details: details || {} }); } catch (e) {}
+  }
+
+  var jsonpN = 0;
+  function jsonp(params, cb) {
+    var name = 'vztcb' + (++jsonpN);
+    params.key = CFG.MAIL_API_KEY; params.callback = name;
+    var q = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
+    var s = document.createElement('script');
+    var done = false;
+    window[name] = function (res) { done = true; delete window[name]; s.remove(); cb(res); };
+    s.onerror = function () { if (!done) { delete window[name]; s.remove(); cb({ success: false, error: 'Network error' }); } };
+    s.src = CFG.MAIL_API_URL + '?' + q;
+    document.body.appendChild(s);
+    setTimeout(function () { if (!done && window[name]) { delete window[name]; s.remove(); cb({ success: false, error: 'Timed out' }); } }, 30000);
+  }
+
+  function loading(t) { $('loading-text').textContent = t || 'Loading…'; $('loading').classList.remove('hidden'); }
+  function hideLoading() { $('loading').classList.add('hidden'); }
+
+  function toast(type, title, msg) {
+    var t = document.createElement('div');
+    t.className = 'toast ' + (type || '');
+    t.innerHTML = '<b>' + esc(title) + '</b>' + (msg ? '<span>' + esc(msg) + '</span>' : '');
+    $('toasts').appendChild(t);
+    setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(function () { t.remove(); }, 320); }, 4200);
+  }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function dstr(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  function dtLocal(d) { return dstr(d) + 'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+  function fmt(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    return d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) + ', ' + d.toLocaleTimeString('en-IN', { hour:'numeric', minute:'2-digit' });
+  }
+  function tfmt(iso) { return new Date(iso).toLocaleTimeString('en-IN', { hour:'numeric', minute:'2-digit' }); }
+  function dur(a, b) {
+    if (!a || !b) return '—';
+    var ms = new Date(b) - new Date(a);
+    if (ms < 0) return '—';
+    var m = Math.round(ms / 60000);
+    return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+  }
+})();
+</script>
+</body>
+</html>
