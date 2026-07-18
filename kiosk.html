@@ -712,11 +712,11 @@ window.VZT_CONFIG = {
       var descriptor = null;
       if (S.checkType === 'Check-in' && S.faceReady) {
         try {
-          var img = await createImageBitmap(blob);
-          var det = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+          // canvas 'c' pe hi detect karo — face-api ImageBitmap accept nahi karta
+          var det = await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
             .withFaceLandmarks().withFaceDescriptor();
           if (det) descriptor = Array.from(det.descriptor);
-        } catch (e) {}
+        } catch (e) { console.warn('Face descriptor skip:', e); }
       }
 
       // Photo ko base64 data URL mein convert karo (bucket nahi — seedha column mein)
