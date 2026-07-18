@@ -1,167 +1,275 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>ViziTrack · Kiosk</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
-<script>
-// ============ CONFIG — sirf yeh 2 values bharo ============
-window.VZT_CONFIG = {
-  MAIL_API_URL: 'https://script.google.com/macros/s/AKfycbzDCEFwXgNx2m-hn_CGxQzZdsMuhojHQnN38tPOMii5fzFYvAEyEU6QNtxVNjASjzEo/exec',
-  MAIL_API_KEY: 'vzt_a9f3k2m8x7q1w5e6r4t0y2u8i3o5p9',
-  FACE_MATCH_THRESHOLD: 0.45
-};
-// Supabase URL + Publishable Key yahan nahi — runtime pe Google Sheet se aati hai
-</script>
-<style>
-  :root {
-    --ink:#0B1526; --ink2:#101E33; --panel:#152540; --line:#22364F;
-    --cyan:#22C8FF; --cyan-dim:#0E7FAE; --text:#EAF2F9; --muted:#8AA0B8;
-    --ok:#2EE6A8; --warn:#FFB454; --err:#FF6B7A;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html, body { height:100%; overflow:hidden; }
-  body { font-family:'Inter',sans-serif; background:var(--ink); color:var(--text); }
-  .display { font-family:'Space Grotesk',sans-serif; }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Nexus · Gate Kiosk</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script>
+    // ============ CONFIG — sirf yeh 2 values bharo ============
+    window.VZT_CONFIG = {
+      MAIL_API_URL: 'https://script.google.com/macros/s/AKfycbzDCEFwXgNx2m-hn_CGxQzZdsMuhojHQnN38tPOMii5fzFYvAEyEU6QNtxVNjASjzEo/exec',
+      MAIL_API_KEY: 'vzt_a9f3k2m8x7q1w5e6r4t0y2u8i3o5p9',
+      FACE_MATCH_THRESHOLD: 0.45
+    };
+    // Supabase URL + Publishable Key yahan nahi — runtime pe Google Sheet se aati hai
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    * { font-family: 'Inter', system-ui, sans-serif; }
+    .hidden { display: none !important; }
+    html, body { background-color: #f3f6f9; overflow-x: hidden; width: 100%; position: relative; }
 
-  .screen { position:absolute; inset:0; display:flex; flex-direction:column; }
-  .hidden { display:none !important; }
+    .custom-input { border-radius: 0.375rem; border: 1px solid #e2e8f0; background: #fff; padding: 0.3rem 0.5rem; font-size: 0.75rem; transition: all 0.15s; outline: none; width: 100%; }
+    .custom-input:focus { border-color: #17c1e8; box-shadow: 0 0 0 3px rgba(23, 193, 232, 0.15); }
+    .custom-input:read-only { background: #f8fafc; cursor: default; border-color: #e2e8f0; }
+    .custom-input:disabled { background: #f1f5f9; cursor: not-allowed; opacity: 0.7; }
+    .text-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; color: #7b809a; margin-bottom: 0.15rem; display: block; }
 
-  /* ---------- shared ---------- */
-  .btn { border:0; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; border-radius:14px; transition:transform .1s, opacity .15s; }
-  .btn:active { transform:scale(.97); }
-  .btn-cyan { background:var(--cyan); color:#04263A; }
-  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--line); }
-  .btn-ghost:active { color:var(--text); }
-  .btn-lg { padding:16px 24px; font-size:17px; width:100%; }
-  input, select { font-family:'Inter',sans-serif; width:100%; background:var(--ink2); border:1.5px solid var(--line); border-radius:12px; color:var(--text); padding:14px 16px; font-size:16px; outline:none; transition:border-color .15s; }
-  input:focus, select:focus { border-color:var(--cyan); }
-  input[readonly] { color:var(--muted); background:var(--panel); }
-  label { display:block; font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 6px; }
-  .field { margin-bottom:14px; }
+    .btn-brand, .btn-outline { font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 0.375rem; transition: 0.15s; display: inline-flex; align-items: center; gap: 0.25rem; cursor: pointer; }
+    .btn-brand { background: #0d5c75; color: white; font-size: 0.7rem; border: none; }
+    .btn-brand:hover { background: #0a485c; }
+    .btn-brand:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline { background: white; border: 1px solid #e2e8f0; color: #1e293b; padding: 0.3rem 0.6rem; font-size: 0.7rem; }
+    .btn-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .btn-outline:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-danger { background: #ef4444; color: #fff; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 0.375rem; font-size: 0.7rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-ok { background: #10b981; color: #fff; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 0.375rem; font-size: 0.7rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; }
+    .btn-ok:hover { background: #059669; }
 
-  /* ---------- home ---------- */
-  #screen-home { align-items:center; justify-content:space-between; padding:6vh 20px 3vh; }
-  .logo-mark { width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,var(--cyan),#4AE0C9); display:inline-flex; align-items:center; justify-content:center; }
-  .logo-mark svg { width:26px; height:26px; }
-  .home-actions { display:flex; gap:clamp(24px,6vw,72px); }
-  .home-tile { display:flex; flex-direction:column; align-items:center; gap:16px; cursor:pointer; }
-  .home-ring { width:clamp(140px,26vw,220px); height:clamp(140px,26vw,220px); border-radius:50%; border:2px solid var(--line); background:var(--ink2); display:flex; align-items:center; justify-content:center; transition:border-color .2s, box-shadow .2s, transform .1s; }
-  .home-tile:active .home-ring { transform:scale(.96); }
-  .home-tile[data-action="check-in"] .home-ring:hover, .home-tile[data-action="check-in"]:active .home-ring { border-color:var(--cyan); box-shadow:0 0 40px rgba(34,200,255,.25); }
-  .home-tile[data-action="check-out"] .home-ring:hover, .home-tile[data-action="check-out"]:active .home-ring { border-color:var(--warn); box-shadow:0 0 40px rgba(255,180,84,.2); }
-  .home-ring svg { width:38%; height:38%; }
-  .home-label { font-size:clamp(20px,3.4vw,30px); font-weight:700; }
+    .card-premium { background: white; border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #f0f2f5; }
 
-  /* ---------- action screen ---------- */
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--line); background:var(--ink); z-index:30; }
-  .topbar button { background:none; border:0; color:var(--cyan); font-weight:600; font-size:15px; cursor:pointer; display:flex; align-items:center; gap:6px; }
-  .mode-tabs { display:flex; gap:22px; padding:0 18px; border-bottom:1px solid var(--line); background:var(--ink); z-index:30; }
-  .mode-tab { background:none; border:0; padding:13px 2px; font-size:14px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:3px solid transparent; font-family:'Inter',sans-serif; }
-  .mode-tab.active { color:var(--cyan); border-bottom-color:var(--cyan); }
-  .stage { flex:1; position:relative; overflow:hidden; background:#000; }
-  #video, #qr-reader { position:absolute; inset:0; width:100%; height:100%; }
-  #video { object-fit:cover; transform:scaleX(-1); }
-  #qr-reader video { object-fit:cover !important; width:100% !important; height:100% !important; }
-  #qr-reader__dashboard_section { display:none; }
+    .table-premium { width: 100%; border-collapse: collapse; font-size: 0.7rem; white-space: nowrap; }
+    .table-premium th { background: #f8fafc; font-weight: 600; color: #334155; text-transform: uppercase; font-size: 0.65rem; padding: 0.4rem 0.5rem; border-bottom: 1px solid #e9edf2; text-align: left; }
+    .table-premium td { padding: 0.35rem 0.5rem; border-bottom: 1px solid #f0f3f7; color: #1e293b; }
+    .table-scroll { max-height: 70vh; overflow: auto; }
+    .table-premium thead th { position: sticky; top: 0; z-index: 5; box-shadow: inset 0 -1px 0 #e9edf2, 0 2px 3px rgba(0,0,0,0.04); }
 
-  /* signature: state-driven scan ring */
-  .scan-frame { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(72%,340px); aspect-ratio:3/4; pointer-events:none; z-index:20; }
-  .scan-frame .c { position:absolute; width:34px; height:34px; border:3px solid var(--cyan); filter:drop-shadow(0 0 8px rgba(34,200,255,.55)); transition:border-color .25s, filter .25s; }
-  .scan-frame.ok .c { border-color:var(--ok); filter:drop-shadow(0 0 10px rgba(46,230,168,.6)); }
-  .scan-frame.err .c { border-color:var(--err); filter:drop-shadow(0 0 10px rgba(255,107,122,.6)); }
-  .c.tl { top:0; left:0; border-right:0; border-bottom:0; border-radius:14px 0 0 0; }
-  .c.tr { top:0; right:0; border-left:0; border-bottom:0; border-radius:0 14px 0 0; }
-  .c.bl { bottom:0; left:0; border-right:0; border-top:0; border-radius:0 0 0 14px; }
-  .c.br { bottom:0; right:0; border-left:0; border-top:0; border-radius:0 0 14px 0; }
-  .scan-line { position:absolute; left:8%; right:8%; height:2px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); animation:sweep 2.6s ease-in-out infinite; opacity:.8; }
-  @keyframes sweep { 0%,100% { top:6%; } 50% { top:94%; } }
-  @media (prefers-reduced-motion: reduce) { .scan-line { animation:none; top:50%; } }
+    .custom-scroll::-webkit-scrollbar { height: 5px; width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-  .instruction { position:absolute; left:0; right:0; bottom:0; padding:18px; text-align:center; z-index:25; background:linear-gradient(transparent, rgba(11,21,38,.92) 60%); }
-  .instruction p { font-size:16px; font-weight:600; }
-  .instruction small { color:var(--muted); font-size:13px; }
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 99999; }
+    .toast { background: white; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 0.75rem; min-width: 280px; max-width: 400px; animation: slideIn 0.3s ease; border-left: 4px solid; }
+    .toast.success { border-left-color: #10b981; } .toast.error { border-left-color: #ef4444; } .toast.warning { border-left-color: #f59e0b; } .toast.info { border-left-color: #3b82f6; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-  /* ---------- form panels ---------- */
-  .panel { flex:1; overflow-y:auto; padding:26px 22px 40px; max-width:520px; width:100%; margin:0 auto; }
-  .panel h3 { font-family:'Space Grotesk',sans-serif; font-size:24px; margin-bottom:4px; }
-  .panel .sub { color:var(--muted); font-size:14px; margin-bottom:22px; }
-  .otp-box { letter-spacing:12px; text-align:center; font-size:30px; font-weight:700; font-family:'Space Grotesk',monospace; }
-  .welcome-chip { display:inline-flex; align-items:center; gap:8px; background:rgba(46,230,168,.1); border:1px solid rgba(46,230,168,.35); color:var(--ok); border-radius:999px; padding:6px 14px; font-size:13px; font-weight:600; margin-bottom:18px; }
+    #global-loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); backdrop-filter: blur(3px); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+    .spinner { width: 38px; height: 38px; border: 3px solid #e2e8f0; border-top: 3px solid #0d5c75; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-  /* ---------- overlays ---------- */
-  .overlay { position:fixed; inset:0; background:rgba(5,10,20,.8); backdrop-filter:blur(4px); z-index:90; display:flex; align-items:center; justify-content:center; padding:20px; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:20px; width:100%; max-width:440px; padding:26px; }
-  .spinner { width:44px; height:44px; border:4px solid var(--line); border-top-color:var(--cyan); border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 14px; }
-  @keyframes spin { to { transform:rotate(360deg); } }
-  #capture-video { width:100%; border-radius:14px; background:#000; transform:scaleX(-1); aspect-ratio:4/3; object-fit:cover; }
-  .status-pill { position:fixed; top:14px; left:50%; transform:translateX(-50%); background:var(--panel); border:1px solid var(--line); color:var(--muted); font-size:12.5px; padding:7px 16px; border-radius:999px; z-index:60; display:none; }
-</style>
+    .nav-link { font-weight: 500; color: #475569; padding: 0.4rem 0.8rem; border-radius: 0.5rem; transition: 0.2s; font-size: 0.9rem; cursor: pointer; border: 1px solid transparent; background: transparent; }
+    .nav-link:hover, .nav-link.active { color: #ec4899; border-color: #ec4899; }
+
+    .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; margin-top: 0.25rem; background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-width: 200px; z-index: 100; }
+    .dropdown-menu.show { display: block; }
+    .dropdown-item { display: block; width: 100%; text-align: left; padding: 0.5rem 1rem; font-size: 0.85rem; color: #334155; transition: 0.1s; background: none; border: none; cursor: pointer; }
+    .dropdown-item:hover { background: #f1f5f9; color: #ec4899; }
+    .dropdown-item i { width: 1.5rem; color: #64748b; transition: 0.1s; }
+    .dropdown-item:hover i { color: #ec4899; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 1rem; }
+    .modal.show { display: flex; }
+    .modal-content { background: white; border-radius: 1rem; max-width: 560px; width: 95%; max-height: 90%; overflow: auto; padding: 1.5rem; }
+
+    .chip { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.01em; }
+    .chip-red { background: #fee2e2; color: #b91c1c; }
+    .chip-indigo { background: #e0e7ff; color: #4338ca; }
+    .chip-blue { background: #dbeafe; color: #1e40af; }
+    .chip-green { background: #dcfce7; color: #166534; }
+    .chip-yellow { background: #fef3c7; color: #b45309; }
+
+    .photo-thumb { width: 120px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; }
+
+    .table-toolbar { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f3f7; background: #fdfdfe; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end; }
+    .filter-label { font-size: 0.7rem; font-weight: 600; color: #7b809a; text-transform: uppercase; white-space: nowrap; }
+    .no-data-row td { text-align: center; padding: 2.5rem; color: #94a3b8; font-style: italic; }
+
+    .btn-processing { position: relative; pointer-events: none !important; opacity: 0.7 !important; }
+    .btn-spinner { display: none; width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.4); border-top: 2px solid white; border-radius: 50%; animation: spin 0.6s linear infinite; flex-shrink: 0; }
+    .btn-brand.btn-processing .btn-spinner, .btn-outline.btn-processing .btn-spinner, .btn-ok.btn-processing .btn-spinner { display: inline-block; }
+
+    /* ===== MOBILE SIDEBAR NAV (Nexus pattern) ===== */
+    .mobile-sidebar { position: fixed; top: 0; left: 0; height: 100%; width: 280px; background: white; z-index: 100000; transform: translateX(-100%); transition: transform 0.3s ease-in-out; overflow-y: auto; box-shadow: 2px 0 20px rgba(0,0,0,0.1); }
+    .mobile-sidebar.open { transform: translateX(0); }
+    .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99999; display: none; backdrop-filter: blur(2px); }
+    .sidebar-overlay.active { display: block; }
+    .mobile-header { display: none; position: sticky; top: 0; z-index: 9000; background: white; border-bottom: 1px solid #e2e8f0; padding: 12px 16px; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .desktop-header { display: block; }
+    .sidebar-sub-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px 24px; color: #475569; font-size: 0.85rem; font-weight: 500; width: 100%; background: none; border: none; border-bottom: 1px solid #f1f5f9; cursor: pointer; text-align: left; transition: color 0.2s; }
+    .sidebar-sub-item:hover, .sidebar-sub-item.active { color: #0d5c75; background: #f8fafc; }
+    .sidebar-sub-item i { width: 1.25rem; color: #64748b; }
+
+    @media (max-width: 767px) {
+      .desktop-header { display: none !important; }
+      .mobile-header { display: flex !important; }
+      button, .btn-brand, .btn-outline { min-height: 38px; }
+      .custom-input, input[type=text], input[type=email], input[type=number],
+      input[type=date], input[type=datetime-local], input[type=tel], input[type=password], select, textarea { font-size: 16px; }
+      .table-premium thead { display: none; }
+      .table-premium, .table-premium tbody, .table-premium tr, .table-premium td { display: block; width: 100%; }
+      .table-premium tr { margin-bottom: 10px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 4px 12px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+      .table-premium tr.no-data-row { padding: 20px; text-align: center; }
+      .table-premium td { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border: none; border-bottom: 1px solid #f1f5f9; text-align: right; min-height: 38px; }
+      .table-premium td:last-child { border-bottom: none; }
+      .table-premium td::before { content: attr(data-label); font-weight: 700; color: #64748b; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.02em; text-align: left; flex: 0 0 38%; white-space: nowrap; }
+      .table-premium td[colspan]::before { content: ""; display: none; }
+      .table-premium td[colspan] { justify-content: center; text-align: center; }
+    }
+    @media (min-width: 768px) {
+      .mobile-header { display: none !important; }
+      .desktop-header { display: block !important; }
+      .mobile-sidebar, .sidebar-overlay { display: none !important; }
+    }
+
+    /* ================= NEXUS CINEMATIC INTRO ================= */
+    #nexus-splash { position:fixed; inset:0; z-index:999999; background:#0b1121; display:flex; align-items:center; justify-content:center; overflow:hidden; opacity:1; }
+    #nexus-splash.hidden { display:none !important; }
+    #nexus-splash.done { animation:nx-exit .75s cubic-bezier(.65,0,.35,1) forwards; }
+    @keyframes nx-exit { to { opacity:0; visibility:hidden; } }
+    #nexus-splash .nx-aura { position:absolute; width:min(70vw,760px); aspect-ratio:1; background:radial-gradient(circle, rgba(34,211,238,.16) 0%, rgba(34,211,238,0) 62%); filter:blur(28px); opacity:0; animation:nx-aura 3s ease-out forwards; }
+    @keyframes nx-aura { 0% { opacity:0; transform:scale(.72); } 45% { opacity:1; transform:scale(1); } 100% { opacity:.55; transform:scale(1.06); } }
+    #nexus-splash .nx-sweep { position:absolute; top:0; bottom:0; width:32%; background:linear-gradient(90deg, transparent, rgba(255,255,255,.09), transparent); transform:skewX(-14deg); left:-40%; animation:nx-sweep 1.5s cubic-bezier(.4,0,.2,1) .95s forwards; }
+    @keyframes nx-sweep { to { left:130%; } }
+    #nexus-splash .nx-word { position:relative; display:flex; user-select:none; font-family:'Syncopate',sans-serif; font-weight:700; text-transform:uppercase; font-size:clamp(2.4rem,10vw,8rem); letter-spacing:.2em; color:#fff; padding-left:.2em; animation:nx-word 3.1s cubic-bezier(.22,1,.36,1) forwards; }
+    @keyframes nx-word { 0% { transform:scale(.97); } 70% { transform:scale(1); } 100% { transform:scale(1.05); } }
+    #nexus-splash .nx-l { display:inline-block; opacity:0; transform:translateY(26px); filter:blur(14px); animation:nx-letter .95s cubic-bezier(.16,1,.3,1) forwards; }
+    @keyframes nx-letter { to { opacity:1; transform:translateY(0); filter:blur(0); } }
+    #nexus-splash .nx-l:nth-child(1) { animation-delay:.10s; }
+    #nexus-splash .nx-l:nth-child(2) { animation-delay:.22s; }
+    #nexus-splash .nx-l:nth-child(3) { animation-delay:.34s; }
+    #nexus-splash .nx-l:nth-child(4) { animation-delay:.46s; }
+    #nexus-splash .nx-l:nth-child(5) { animation-delay:.58s; }
+    #nexus-splash .nx-l.accent { color:#22d3ee; text-shadow:0 0 18px rgba(34,211,238,.55); }
+    #nexus-splash .nx-sub { position:absolute; left:0; right:0; text-align:center; top:calc(50% + clamp(3rem,9vw,7rem)); font-size:clamp(10px,1.5vw,13px); letter-spacing:.42em; text-transform:uppercase; color:rgba(255,255,255,.42); opacity:0; animation:nx-sub 1.4s ease-out 1.25s forwards; }
+    @keyframes nx-sub { to { opacity:1; } }
+    #nexus-splash .nx-rule { position:absolute; left:50%; transform:translateX(-50%); top:calc(50% + clamp(4.6rem,12vw,9.5rem)); height:1px; width:0; background:linear-gradient(90deg,transparent,#22d3ee,transparent); animation:nx-rule 1.9s cubic-bezier(.4,0,.2,1) 1.1s forwards; }
+    @keyframes nx-rule { to { width:min(300px,52vw); } }
+    @media (prefers-reduced-motion: reduce) {
+      #nexus-splash .nx-aura, #nexus-splash .nx-sweep, #nexus-splash .nx-word, #nexus-splash .nx-l, #nexus-splash .nx-sub, #nexus-splash .nx-rule { animation-duration:.01s !important; animation-delay:0s !important; }
+      #nexus-splash .nx-l { opacity:1; transform:none; filter:none; }
+    }
+
+    /* ===== KIOSK-SPECIFIC (Nexus tokens pe based) ===== */
+    html, body { height: 100%; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+    .screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
+    .kiosk-input { border-radius: 0.5rem; border: 1.5px solid #e2e8f0; background: #fff; padding: 0.7rem 0.85rem; font-size: 1rem; outline: none; width: 100%; transition: all 0.15s; color: #1e293b; }
+    .kiosk-input:focus { border-color: #17c1e8; box-shadow: 0 0 0 3px rgba(23,193,232,0.15); }
+    .kiosk-input:read-only { background: #f8fafc; color: #64748b; }
+    .btn-kiosk { background: #0d5c75; color: #fff; font-weight: 600; font-size: 1rem; padding: 0.9rem 1.25rem; border-radius: 0.6rem; border: none; width: 100%; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+    .btn-kiosk:hover { background: #0a485c; }
+    .btn-kiosk:active { transform: scale(0.985); }
+    .btn-kiosk-ghost { background: #fff; color: #334155; border: 1px solid #e2e8f0; font-weight: 600; font-size: 0.9rem; padding: 0.7rem 1rem; border-radius: 0.6rem; cursor: pointer; }
+
+    .home-actions { display: flex; gap: clamp(24px,6vw,72px); }
+    .home-tile { display: flex; flex-direction: column; align-items: center; gap: 16px; cursor: pointer; }
+    .home-ring { width: clamp(140px,26vw,220px); height: clamp(140px,26vw,220px); border-radius: 50%; background: #fff; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; transition: border-color .2s, box-shadow .2s, transform .1s; box-shadow: 0 4px 16px rgba(15,30,50,.06); }
+    .home-tile:active .home-ring { transform: scale(.96); }
+    .home-tile[data-action="check-in"] .home-ring:hover { border-color: #0d5c75; box-shadow: 0 0 0 6px rgba(13,92,117,.08); }
+    .home-tile[data-action="check-out"] .home-ring:hover { border-color: #f59e0b; box-shadow: 0 0 0 6px rgba(245,158,11,.1); }
+    .home-ring i { font-size: clamp(38px,7vw,64px); }
+    .home-label { font-size: clamp(18px,3vw,26px); font-weight: 700; }
+
+    .kiosk-topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; background: #fff; z-index: 30; }
+    .mode-tabs { display: flex; gap: 22px; padding: 0 16px; border-bottom: 1px solid #e2e8f0; background: #fff; z-index: 30; }
+    .mode-tab { background: none; border: 0; padding: 12px 2px; font-size: 0.85rem; font-weight: 600; color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent; }
+    .mode-tab.active { color: #0d5c75; border-bottom-color: #0d5c75; }
+
+    .stage { flex: 1; position: relative; overflow: hidden; background: #0f172a; }
+    #video, #qr-reader { position: absolute; inset: 0; width: 100%; height: 100%; }
+    #video { object-fit: cover; transform: scaleX(-1); }
+    #qr-reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
+    #qr-reader__dashboard_section { display: none; }
+
+    .scan-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(72%,340px); aspect-ratio: 3/4; pointer-events: none; z-index: 20; }
+    .scan-frame .c { position: absolute; width: 34px; height: 34px; border: 3px solid #17c1e8; filter: drop-shadow(0 0 8px rgba(23,193,232,.55)); transition: border-color .25s, filter .25s; }
+    .scan-frame.ok .c { border-color: #10b981; filter: drop-shadow(0 0 10px rgba(16,185,129,.6)); }
+    .scan-frame.err .c { border-color: #ef4444; filter: drop-shadow(0 0 10px rgba(239,68,68,.6)); }
+    .c.tl { top:0; left:0; border-right:0; border-bottom:0; border-radius:14px 0 0 0; }
+    .c.tr { top:0; right:0; border-left:0; border-bottom:0; border-radius:0 14px 0 0; }
+    .c.bl { bottom:0; left:0; border-right:0; border-top:0; border-radius:0 0 0 14px; }
+    .c.br { bottom:0; right:0; border-left:0; border-top:0; border-radius:0 0 14px 0; }
+    .scan-line { position: absolute; left: 8%; right: 8%; height: 2px; background: linear-gradient(90deg,transparent,#17c1e8,transparent); animation: sweep 2.6s ease-in-out infinite; opacity: .85; }
+    @keyframes sweep { 0%,100% { top:6%; } 50% { top:94%; } }
+    @media (prefers-reduced-motion: reduce) { .scan-line { animation: none; top: 50%; } }
+
+    .instruction { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px; text-align: center; z-index: 25; background: linear-gradient(transparent, rgba(15,23,42,.9) 60%); color: #fff; }
+    .instruction p { font-size: 1rem; font-weight: 600; }
+    .instruction small { color: #cbd5e1; font-size: 0.8rem; }
+
+    .panel { flex: 1; overflow-y: auto; padding: 22px 18px 40px; max-width: 520px; width: 100%; margin: 0 auto; }
+    .otp-box { letter-spacing: 12px; text-align: center; font-size: 1.9rem; font-weight: 700; }
+    #capture-video { width: 100%; border-radius: 12px; background: #0f172a; transform: scaleX(-1); aspect-ratio: 4/3; object-fit: cover; }
+  </style>
 </head>
-<body>
+<body class="antialiased text-slate-800">
+
+<div id="toast-container"></div>
+<div id="global-loader"><div class="spinner"></div><div class="mt-3 font-semibold text-slate-700 text-sm" id="loader-text">Processing...</div></div>
+
+<!-- ================= NEXUS CINEMATIC INTRO ================= -->
+<div id="nexus-splash" class="hidden">
+  <div class="nx-aura"></div>
+  <div class="nx-sweep"></div>
+  <div class="nx-word">
+    <span class="nx-l">N</span><span class="nx-l accent">E</span><span class="nx-l">X</span><span class="nx-l accent">U</span><span class="nx-l">S</span>
+  </div>
+  <div class="nx-sub">Gate Kiosk</div>
+  <div class="nx-rule"></div>
+</div>
 
 <!-- ================= DEVICE LOGIN ================= -->
-<div id="screen-login" class="screen hidden" style="align-items:center;justify-content:center;padding:20px;">
-  <div class="card">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-      <span class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#04263A" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8l5 9 5-9"/><circle cx="12" cy="5" r="1.6" fill="#04263A"/></svg></span>
-      <div>
-        <div class="display" style="font-size:20px;font-weight:700;">ViziTrack Kiosk</div>
-        <div style="font-size:13px;color:var(--muted);">Device sign-in (one time)</div>
-      </div>
+<div id="screen-login" class="screen hidden items-center justify-center p-4">
+  <div class="card-premium w-full max-w-sm p-6">
+    <div class="text-center mb-6">
+      <span class="font-bold text-2xl tracking-tight"><span class="text-cyan-600">Ne</span><span class="text-amber-500">X</span><span class="text-sky-600">uS</span></span>
+      <p class="text-xs text-slate-500 mt-1">Gate Kiosk · device sign-in (one time)</p>
     </div>
-    <div class="field"><label>Kiosk email</label><input id="login-email" type="email" autocomplete="username"></div>
-    <div class="field"><label>Password</label><input id="login-password" type="password" autocomplete="current-password"></div>
-    <p id="login-error" class="hidden" style="color:var(--err);font-size:13.5px;margin-bottom:12px;"></p>
-    <button class="btn btn-cyan btn-lg" data-action="device-login">Sign in this device</button>
+    <div class="mb-3"><label class="text-label">Kiosk email</label><input id="login-email" type="email" class="kiosk-input" autocomplete="username" /></div>
+    <div class="mb-4"><label class="text-label">Password</label><input id="login-password" type="password" class="kiosk-input" autocomplete="current-password" /></div>
+    <button class="btn-kiosk" data-action="device-login"><i class="fa-solid fa-right-to-bracket"></i> Sign in this device</button>
   </div>
 </div>
 
 <!-- ================= HOME ================= -->
-<div id="screen-home" class="screen hidden">
-  <div style="text-align:center;">
-    <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
-      <span class="logo-mark" style="width:56px;height:56px;border-radius:16px;"><svg viewBox="0 0 24 24" fill="none" stroke="#04263A" stroke-width="2.4" style="width:32px;height:32px;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8l5 9 5-9"/><circle cx="12" cy="5" r="1.6" fill="#04263A"/></svg></span>
-      <h1 class="display" style="font-size:clamp(38px,7vw,64px);font-weight:700;letter-spacing:-.02em;">ViziTrack</h1>
-    </div>
-    <p style="color:var(--muted);font-size:clamp(15px,2.2vw,19px);margin-top:6px;">Welcome — tap to begin</p>
+<div id="screen-home" class="screen hidden items-center justify-between" style="padding:6vh 20px 3vh;">
+  <div class="text-center">
+    <span class="font-bold tracking-tight" style="font-size:clamp(34px,6vw,58px);"><span class="text-cyan-600">Ne</span><span class="text-amber-500">X</span><span class="text-sky-600">uS</span></span>
+    <p class="text-slate-500 mt-1" style="font-size:clamp(14px,2vw,18px);">Welcome — tap to begin</p>
   </div>
 
   <div class="home-actions">
     <div class="home-tile" data-action="check-out">
-      <div class="home-ring">
-        <svg fill="none" stroke="var(--warn)" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-      </div>
-      <span class="home-label" style="color:var(--warn);">Check-out</span>
+      <div class="home-ring"><i class="fa-solid fa-right-from-bracket text-amber-500"></i></div>
+      <span class="home-label text-amber-600">Check-out</span>
     </div>
     <div class="home-tile" data-action="check-in">
-      <div class="home-ring">
-        <svg fill="none" stroke="var(--cyan)" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-      </div>
-      <span class="home-label" style="color:var(--cyan);">Check-in</span>
+      <div class="home-ring"><i class="fa-solid fa-right-to-bracket" style="color:#0d5c75;"></i></div>
+      <span class="home-label" style="color:#0d5c75;">Check-in</span>
     </div>
   </div>
 
-  <div style="color:var(--muted);font-size:12.5px;opacity:.7;">© ViziTrack · Enterprise</div>
+  <div class="text-slate-400 text-xs">Nexus · Visitor Management</div>
 </div>
 
 <!-- ================= ACTION ================= -->
 <div id="screen-action" class="screen hidden">
-  <div class="topbar">
-    <button data-action="go-back"><svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>Back</button>
-    <h2 id="screen-title" class="display" style="font-size:19px;font-weight:700;">Check-in</h2>
-    <button data-action="switch-camera" title="Switch camera"><svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-3M20 15a8 8 0 01-14 3"/></svg></button>
+  <div class="kiosk-topbar">
+    <button class="text-sm font-semibold flex items-center gap-2" style="color:#0d5c75;" data-action="go-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
+    <h2 id="screen-title" class="text-base font-bold text-slate-800">Check-in</h2>
+    <button class="text-slate-500" data-action="switch-camera" title="Switch camera"><i class="fa-solid fa-camera-rotate text-lg"></i></button>
   </div>
 
   <div class="mode-tabs">
-    <button class="mode-tab active" data-mode="face">Face</button>
-    <button class="mode-tab" data-mode="qr">QR Badge</button>
-    <button class="mode-tab" data-mode="otp">OTP</button>
+    <button class="mode-tab active" data-mode="face"><i class="fa-solid fa-face-smile mr-1"></i> Face</button>
+    <button class="mode-tab" data-mode="qr"><i class="fa-solid fa-qrcode mr-1"></i> QR Badge</button>
+    <button class="mode-tab" data-mode="otp"><i class="fa-solid fa-shield-halved mr-1"></i> OTP</button>
   </div>
 
   <!-- camera stage -->
@@ -178,131 +286,127 @@ window.VZT_CONFIG = {
     </div>
   </div>
 
-  <!-- otp request form -->
+  <!-- otp request -->
   <div id="otp-request-form" class="panel hidden">
-    <h3>Verify yourself</h3>
-    <p class="sub">We'll send a 6-digit code.</p>
-    <div style="display:flex;gap:18px;border-bottom:1px solid var(--line);margin-bottom:20px;">
-      <button class="mode-tab active" data-channel="whatsapp" style="padding:11px 2px;">WhatsApp</button>
-      <button class="mode-tab" data-channel="email" style="padding:11px 2px;">Email</button>
+    <h3 class="text-lg font-bold text-slate-800">Verify yourself</h3>
+    <p class="text-sm text-slate-500 mb-4">We'll send a 6-digit code.</p>
+    <div class="flex gap-5 border-b border-slate-200 mb-5">
+      <button class="mode-tab active" data-channel="whatsapp"><i class="fa-brands fa-whatsapp mr-1"></i> WhatsApp</button>
+      <button class="mode-tab" data-channel="email"><i class="fa-solid fa-envelope mr-1"></i> Email</button>
     </div>
     <div id="ch-whatsapp">
-      <div class="field"><label>Mobile number</label><input id="mobile-input" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit mobile"></div>
+      <label class="text-label">Mobile number</label>
+      <input id="mobile-input" type="tel" inputmode="numeric" maxlength="10" class="kiosk-input mb-4" placeholder="10-digit mobile" />
     </div>
     <div id="ch-email" class="hidden">
-      <div class="field"><label>Email address</label><input id="email-input" type="email" placeholder="you@example.com"></div>
+      <label class="text-label">Email address</label>
+      <input id="email-input" type="email" class="kiosk-input mb-4" placeholder="you@example.com" />
     </div>
-    <button class="btn btn-cyan btn-lg" data-action="send-otp">Send code</button>
+    <button class="btn-kiosk" data-action="send-otp"><i class="fa-solid fa-paper-plane"></i> Send code</button>
   </div>
 
-  <!-- otp form -->
+  <!-- otp entry -->
   <div id="otp-form" class="panel hidden">
-    <h3>Enter your code</h3>
-    <p class="sub">Sent to <span id="otp-email-display" style="color:var(--text);font-weight:600;"></span></p>
-    <div class="field"><input id="otp-input" class="otp-box" type="text" inputmode="numeric" maxlength="6" placeholder="000000"></div>
-    <button class="btn btn-cyan btn-lg" data-action="verify-otp">Verify</button>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:14px;">
-      <button class="btn btn-ghost" style="padding:9px 16px;" data-action="back-to-otp-request">Change</button>
-      <span id="otp-timer" style="color:var(--muted);">03:00</span>
-      <button class="btn btn-ghost hidden" style="padding:9px 16px;" id="resend-btn" data-action="resend-otp">Resend</button>
+    <h3 class="text-lg font-bold text-slate-800">Enter your code</h3>
+    <p class="text-sm text-slate-500 mb-4">Sent to <span id="otp-email-display" class="font-semibold text-slate-700"></span></p>
+    <input id="otp-input" class="kiosk-input otp-box mb-4" type="text" inputmode="numeric" maxlength="6" placeholder="000000" />
+    <button class="btn-kiosk" data-action="verify-otp"><i class="fa-solid fa-check"></i> Verify</button>
+    <div class="flex justify-between items-center mt-4 text-sm">
+      <button class="btn-kiosk-ghost" data-action="back-to-otp-request">Change</button>
+      <span id="otp-timer" class="text-slate-500 font-semibold">03:00</span>
+      <button class="btn-kiosk-ghost hidden" id="resend-btn" data-action="resend-otp">Resend</button>
     </div>
   </div>
 
   <!-- data form -->
   <div id="data-form" class="panel hidden">
-    <span class="welcome-chip"><svg style="width:15px;height:15px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg><span id="visitor-name-display">Visitor</span></span>
-    <h3 id="data-form-title">Confirm your details</h3>
-    <p class="sub">Details from your invitation.</p>
-    <div class="field"><label>Visitor name</label><input id="f-name" readonly></div>
-    <div class="field"><label>Mobile</label><input id="f-mobile" readonly></div>
-    <div class="field"><label>Email</label><input id="f-email" readonly></div>
-    <div class="field"><label>Address</label><input id="f-address" readonly></div>
-    <div class="field"><label>Purpose</label><input id="f-purpose" readonly></div>
-    <div class="field"><label>Host</label><input id="f-host" readonly></div>
-    <button class="btn btn-cyan btn-lg" data-action="open-photo" id="capture-btn" style="margin-top:8px;">Capture photo & check in</button>
+    <span class="chip chip-green mb-3"><i class="fa-solid fa-check"></i> <span id="visitor-name-display">Visitor</span></span>
+    <h3 id="data-form-title" class="text-lg font-bold text-slate-800">Confirm your details</h3>
+    <p class="text-sm text-slate-500 mb-4">Details from your invitation.</p>
+    <div class="mb-3"><label class="text-label">Visitor name</label><input id="f-name" class="kiosk-input" readonly /></div>
+    <div class="mb-3"><label class="text-label">Mobile</label><input id="f-mobile" class="kiosk-input" readonly /></div>
+    <div class="mb-3"><label class="text-label">Email</label><input id="f-email" class="kiosk-input" readonly /></div>
+    <div class="mb-3"><label class="text-label">Address</label><input id="f-address" class="kiosk-input" readonly /></div>
+    <div class="mb-3"><label class="text-label">Purpose</label><input id="f-purpose" class="kiosk-input" readonly /></div>
+    <div class="mb-4"><label class="text-label">Host</label><input id="f-host" class="kiosk-input" readonly /></div>
+    <button class="btn-kiosk" data-action="open-photo" id="capture-btn"><i class="fa-solid fa-camera"></i> Capture photo &amp; check in</button>
   </div>
 
   <!-- request form -->
   <div id="request-form" class="panel hidden">
-    <h3>Request access</h3>
-    <p class="sub">No invitation found — fill this and the host will approve.</p>
-    <div class="field"><label>Visitor name *</label><input id="r-name" placeholder="Full name"></div>
-    <div class="field"><label>Mobile *</label><input id="r-mobile" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit mobile"></div>
-    <div class="field"><label>Email *</label><input id="r-email" type="email" placeholder="you@example.com"></div>
-    <div class="field"><label>Address</label><input id="r-address" placeholder="City / company"></div>
-    <div class="field"><label>Purpose *</label>
-      <select id="r-purpose">
+    <h3 class="text-lg font-bold text-slate-800">Request access</h3>
+    <p class="text-sm text-slate-500 mb-4">No invitation found — fill this and the host will approve.</p>
+    <div class="mb-3"><label class="text-label">Visitor name *</label><input id="r-name" class="kiosk-input" placeholder="Full name" /></div>
+    <div class="mb-3"><label class="text-label">Mobile *</label><input id="r-mobile" type="tel" inputmode="numeric" maxlength="10" class="kiosk-input" placeholder="10-digit mobile" /></div>
+    <div class="mb-3"><label class="text-label">Email *</label><input id="r-email" type="email" class="kiosk-input" placeholder="you@example.com" /></div>
+    <div class="mb-3"><label class="text-label">Address</label><input id="r-address" class="kiosk-input" placeholder="City / company" /></div>
+    <div class="mb-3"><label class="text-label">Purpose *</label>
+      <select id="r-purpose" class="kiosk-input">
         <option value="">Select purpose</option><option>Meeting</option><option>Interview</option>
         <option>Delivery</option><option>Service</option><option>Other</option>
       </select>
     </div>
-    <div class="field"><label>Host name *</label><input id="r-host" list="host-list" placeholder="Whom are you visiting?"><datalist id="host-list"></datalist></div>
-    <button class="btn btn-cyan btn-lg" data-action="submit-request">Submit request</button>
+    <div class="mb-4"><label class="text-label">Host name *</label><input id="r-host" list="host-list" class="kiosk-input" placeholder="Whom are you visiting?" /><datalist id="host-list"></datalist></div>
+    <button class="btn-kiosk" data-action="submit-request"><i class="fa-solid fa-paper-plane"></i> Submit request</button>
   </div>
 </div>
 
 <!-- ================= PHOTO MODAL ================= -->
-<div id="photo-modal" class="overlay hidden">
-  <div class="card" style="max-width:480px;">
-    <h3 class="display" style="font-size:19px;margin-bottom:14px;">Look at the camera</h3>
+<div id="photo-modal" class="modal">
+  <div class="modal-content !max-w-md">
+    <h3 class="text-base font-bold text-slate-800 mb-3"><i class="fa-solid fa-camera mr-2" style="color:#0d5c75;"></i>Look at the camera</h3>
     <video id="capture-video" autoplay muted playsinline></video>
     <canvas id="capture-canvas" class="hidden"></canvas>
-    <div style="display:flex;gap:12px;margin-top:16px;">
-      <button class="btn btn-ghost btn-lg" data-action="cancel-photo">Cancel</button>
-      <button class="btn btn-cyan btn-lg" data-action="take-photo">Capture</button>
+    <div class="flex gap-3 mt-4">
+      <button class="btn-kiosk-ghost flex-1" data-action="cancel-photo">Cancel</button>
+      <button class="btn-kiosk flex-1" data-action="take-photo"><i class="fa-solid fa-camera"></i> Capture</button>
     </div>
   </div>
 </div>
 
-<!-- ================= MESSAGE / LOADING ================= -->
-<div id="msg-modal" class="overlay hidden">
-  <div class="card" style="text-align:center;">
-    <h3 id="msg-title" class="display" style="font-size:20px;margin-bottom:8px;"></h3>
-    <p id="msg-body" style="color:var(--muted);font-size:15px;margin-bottom:20px;"></p>
-    <button class="btn btn-cyan btn-lg" data-action="close-msg">OK</button>
+<!-- ================= MESSAGE MODAL ================= -->
+<div id="msg-modal" class="modal">
+  <div class="modal-content !max-w-sm text-center">
+    <div id="msg-icon" class="text-3xl mb-3"></div>
+    <h3 id="msg-title" class="text-lg font-bold text-slate-800 mb-2"></h3>
+    <p id="msg-body" class="text-sm text-slate-500 mb-5"></p>
+    <button class="btn-kiosk" data-action="close-msg">OK</button>
   </div>
 </div>
-<div id="loading" class="overlay hidden">
-  <div style="text-align:center;"><div class="spinner"></div><p id="loading-text" style="color:var(--muted);font-size:15px;">Loading…</p></div>
-</div>
-<div id="status-pill" class="status-pill"></div>
-
 <script>
 (function () {
   'use strict';
 
+  const NEXUS_KIOSK_BUILD = '2026-07-18-A';
+  console.log('Nexus Kiosk build ' + NEXUS_KIOSK_BUILD);
+
   var CFG = window.VZT_CONFIG;
   var db = null; // Supabase client — remote config aane ke baad banta hai
   var MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+  var $ = function (id) { return document.getElementById(id); };
 
-  // ---------- state ----------
   var S = {
-    checkType: 'Check-in',        // 'Check-in' | 'Check-out'
-    mode: 'face',                 // 'face' | 'qr' | 'otp'
-    otpChannel: 'whatsapp',       // 'whatsapp' | 'email'
+    checkType: 'Check-in',
+    mode: 'face',
+    otpChannel: 'whatsapp',
     otpTarget: null,
-    stream: null,
-    facingMode: 'user',
+    stream: null, facingMode: 'user',
     detectTimer: null,
     qr: null, qrRunning: false,
     faceReady: false, matcher: null,
-    matchedEmail: null,
-    visitor: null,                // { name, mobile, email, address }
-    invitation: null,             // row from invitations
+    matchedEmail: null, visitor: null, invitation: null, openLog: null,
     otpTimer: null, otpLeft: 180,
     busy: false
   };
 
-  var $ = function (id) { return document.getElementById(id); };
-
   // ---------- boot ----------
   document.addEventListener('DOMContentLoaded', function () {
     bindEvents();
-    loading('Connecting…');
+    showLoader('Connecting...');
     jsonp({ action: 'getPublicConfig' }, async function (res) {
-      hideLoading();
+      hideLoader();
       if (!res.success) {
-        showMsg('Setup error', res.error || 'Config load failed. Check MAIL_API_URL/KEY in this file.');
+        showMsg('Setup error', res.error || 'Config load failed. Check MAIL_API_URL/KEY in this file.', null, 'error');
         return;
       }
       db = supabase.createClient(res.url, res.key);
@@ -313,10 +417,23 @@ window.VZT_CONFIG = {
   });
 
   async function startApp() {
+    playSplash();
     show('screen-home');
     loadFaceModels();
     loadDescriptors();
     loadHosts();
+  }
+
+  // ---------- Nexus intro ----------
+  function playSplash() {
+    var el = $('nexus-splash');
+    if (!el) return;
+    el.classList.remove('hidden', 'done');
+    void el.offsetWidth;
+    setTimeout(function () {
+      el.classList.add('done');
+      setTimeout(function () { el.classList.add('hidden'); }, 800);
+    }, 2600);
   }
 
   // ---------- event delegation (no inline onclick) ----------
@@ -327,17 +444,17 @@ window.VZT_CONFIG = {
       if (el.dataset.mode) { switchMode(el.dataset.mode); return; }
       if (el.dataset.channel) { switchChannel(el.dataset.channel); return; }
       var a = el.dataset.action;
-      if (a === 'device-login')   deviceLogin();
-      else if (a === 'check-in')  openAction('Check-in');
+      if (a === 'device-login') deviceLogin();
+      else if (a === 'check-in') openAction('Check-in');
       else if (a === 'check-out') openAction('Check-out');
-      else if (a === 'go-back')   goBack();
+      else if (a === 'go-back') goBack();
       else if (a === 'switch-camera') { S.facingMode = S.facingMode === 'user' ? 'environment' : 'user'; if (S.mode === 'face') startCamera(); }
-      else if (a === 'send-otp')   sendOtp();
+      else if (a === 'send-otp') sendOtp();
       else if (a === 'verify-otp') verifyOtp();
       else if (a === 'resend-otp') sendOtp();
       else if (a === 'back-to-otp-request') { hidePanels(); $('otp-request-form').classList.remove('hidden'); }
-      else if (a === 'open-photo')  openPhoto();
-      else if (a === 'take-photo')  takePhoto();
+      else if (a === 'open-photo') openPhoto();
+      else if (a === 'take-photo') takePhoto();
       else if (a === 'cancel-photo') closePhoto();
       else if (a === 'submit-request') submitRequest();
       else if (a === 'close-msg') closeMsg();
@@ -349,13 +466,13 @@ window.VZT_CONFIG = {
 
   // ---------- device login ----------
   async function deviceLogin() {
-    if (!db) { showMsg('Connecting…', 'Ek second — config load ho rahi hai.'); return; }
+    if (!db) { showMsg('Connecting...', 'Ek second — config load ho rahi hai.'); return; }
     var email = $('login-email').value.trim(), pw = $('login-password').value;
     if (!email || !pw) return;
-    loading('Signing in…');
+    showLoader('Signing in...');
     var res = await db.auth.signInWithPassword({ email: email, password: pw });
-    hideLoading();
-    if (res.error) { $('login-error').textContent = res.error.message; $('login-error').classList.remove('hidden'); return; }
+    hideLoader();
+    if (res.error) { showToast(res.error.message, 'error', 5000); return; }
     startApp();
   }
 
@@ -379,7 +496,7 @@ window.VZT_CONFIG = {
       return new faceapi.LabeledFaceDescriptors(r.email, [new Float32Array(r.descriptor)]);
     });
     S.matcher = new faceapi.FaceMatcher(labeled, CFG.FACE_MATCH_THRESHOLD);
-    pill(labeled.length + ' faces ready');
+    showToast(labeled.length + ' faces ready', 'info', 2500);
   }
 
   async function loadHosts() {
@@ -390,16 +507,15 @@ window.VZT_CONFIG = {
     }).join('');
   }
 
-  // refresh descriptors every 5 min
   setInterval(loadDescriptors, 5 * 60 * 1000);
 
   // ---------- navigation ----------
   function show(id) {
-    ['screen-login','screen-home','screen-action'].forEach(function (s) { $(s).classList.add('hidden'); });
+    ['screen-login', 'screen-home', 'screen-action'].forEach(function (s) { $(s).classList.add('hidden'); });
     $(id).classList.remove('hidden');
   }
   function hidePanels() {
-    ['otp-request-form','otp-form','data-form','request-form'].forEach(function (p) { $(p).classList.add('hidden'); });
+    ['otp-request-form', 'otp-form', 'data-form', 'request-form'].forEach(function (p) { $(p).classList.add('hidden'); });
     $('stage').classList.add('hidden');
   }
 
@@ -414,20 +530,17 @@ window.VZT_CONFIG = {
 
   function openAction(type) {
     S.checkType = type;
-    S.matchedEmail = null; S.visitor = null; S.invitation = null;
+    S.matchedEmail = null; S.visitor = null; S.invitation = null; S.openLog = null;
     $('screen-title').textContent = type;
     show('screen-action');
     switchMode('face');
   }
 
-  function goBack() {
-    stopAll();
-    show('screen-home');
-  }
+  function goBack() { stopAll(); show('screen-home'); }
 
   function switchMode(mode) {
     S.mode = mode;
-    document.querySelectorAll('.mode-tab').forEach(function (t) {
+    document.querySelectorAll('.mode-tab[data-mode]').forEach(function (t) {
       t.classList.toggle('active', t.dataset.mode === mode);
     });
     stopAll(true);
@@ -450,7 +563,7 @@ window.VZT_CONFIG = {
   }
 
   function setInstruction(t, s) { $('instruction-text').textContent = t; $('instruction-sub').textContent = s || ''; }
-  function frameState(st) { var f = $('scan-frame'); f.classList.remove('ok','err'); if (st) f.classList.add(st); }
+  function frameState(st) { var f = $('scan-frame'); f.classList.remove('ok', 'err'); if (st) f.classList.add(st); }
 
   function stopAll(keepScreen) {
     if (S.detectTimer) { clearInterval(S.detectTimer); S.detectTimer = null; }
@@ -470,7 +583,7 @@ window.VZT_CONFIG = {
       $('video').srcObject = S.stream;
       startDetection();
     } catch (e) {
-      showMsg('Camera error', 'Camera access failed. Check permissions and try again.');
+      showMsg('Camera error', 'Camera access failed. Check permissions and try again.', null, 'error');
     }
   }
 
@@ -487,8 +600,7 @@ window.VZT_CONFIG = {
         if (!det) return;
         if (!S.matcher) { setInstruction('Face not registered', 'Use QR badge or OTP'); return; }
         var best = S.matcher.findBestMatch(det.descriptor);
-        if (best.label === 'unknown') { setInstruction('Not recognised yet…', 'Try QR badge or OTP'); return; }
-        // matched
+        if (best.label === 'unknown') { setInstruction('Not recognised yet...', 'Try QR badge or OTP'); return; }
         clearInterval(S.detectTimer); S.detectTimer = null;
         frameState('ok');
         onIdentified('email', best.label);
@@ -500,22 +612,21 @@ window.VZT_CONFIG = {
   function startQr() {
     S.qr = S.qr || new Html5Qrcode('qr-reader');
     S.qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } },
-      function (text) { if (S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function(){}); onQr(text); } },
+      function (text) { if (S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function () {}); onQr(text); } },
       function () {}
     ).then(function () { S.qrRunning = true; })
-     .catch(function () { showMsg('Camera error', 'Could not start QR scanner.'); });
+      .catch(function () { showMsg('Camera error', 'Could not start QR scanner.', null, 'error'); });
   }
 
   async function onQr(text) {
     frameState('ok');
-    // New format: "VZT:<uuid>" — legacy JSON bhi tolerate
     var m = /^VZT:([0-9a-f-]{36})$/i.exec(text.trim());
     if (m) {
-      loading('Checking invitation…');
+      showLoader('Checking invitation...');
       var res = await db.from('invitations').select('*').eq('id', m[1]).limit(1);
-      hideLoading();
+      hideLoader();
       var inv = res.data && res.data[0];
-      if (!inv) { frameState('err'); showMsg('Invalid badge', 'This invitation was not found.', function(){ switchMode('qr'); }); return; }
+      if (!inv) { frameState('err'); showMsg('Invalid badge', 'This invitation was not found.', function () { switchMode('qr'); }, 'error'); return; }
       handleInvitation(inv, inv.email);
       return;
     }
@@ -525,7 +636,7 @@ window.VZT_CONFIG = {
       if (email) { onIdentified('email', String(email).toLowerCase()); return; }
     } catch (e) {}
     frameState('err');
-    showMsg('Invalid QR', 'This QR is not a ViziTrack badge.', function(){ switchMode('qr'); });
+    showMsg('Invalid QR', 'This QR is not a Nexus badge.', function () { switchMode('qr'); }, 'error');
   }
 
   // ---------- otp flow ----------
@@ -543,10 +654,10 @@ window.VZT_CONFIG = {
       params.email = email; S.otpTarget = email;
       display = email;
     }
-    loading('Sending code…');
+    showLoader('Sending code...');
     jsonp(params, function (res) {
-      hideLoading();
-      if (!res.success) { showMsg('Error', res.error); return; }
+      hideLoader();
+      if (!res.success) { showMsg('Error', res.error, null, 'error'); return; }
       hidePanels();
       $('otp-form').classList.remove('hidden');
       $('otp-email-display').textContent = display;
@@ -564,17 +675,21 @@ window.VZT_CONFIG = {
       var m = String(Math.floor(S.otpLeft / 60)).padStart(2, '0');
       var s = String(S.otpLeft % 60).padStart(2, '0');
       $('otp-timer').textContent = m + ':' + s;
-      if (S.otpLeft <= 0) { clearInterval(S.otpTimer); S.otpTimer = null; $('resend-btn').classList.remove('hidden'); $('otp-timer').textContent = 'Expired'; }
+      if (S.otpLeft <= 0) {
+        clearInterval(S.otpTimer); S.otpTimer = null;
+        $('resend-btn').classList.remove('hidden');
+        $('otp-timer').textContent = 'Expired';
+      }
     }, 1000);
   }
 
   function verifyOtp() {
     var otp = $('otp-input').value.trim();
     if (otp.length !== 6) { showMsg('Invalid code', 'Enter the 6-digit code.'); return; }
-    loading('Verifying…');
+    showLoader('Verifying...');
     jsonp({ action: 'verifyOtp', channel: S.otpChannel, target: S.otpTarget, otp: otp }, function (res) {
-      hideLoading();
-      if (!res.success) { showMsg('Verification failed', res.error); return; }
+      hideLoader();
+      if (!res.success) { showMsg('Verification failed', res.error, null, 'error'); return; }
       if (S.otpTimer) { clearInterval(S.otpTimer); S.otpTimer = null; }
       if (S.otpChannel === 'whatsapp') onIdentified('mobile', S.otpTarget);
       else onIdentified('email', S.otpTarget);
@@ -582,15 +697,14 @@ window.VZT_CONFIG = {
   }
 
   // ---------- identified → invitation lookup ----------
-  // key: 'email' | 'mobile', val: identifier value
   async function onIdentified(key, val) {
     if (key === 'email') S.matchedEmail = val;
-    loading(S.checkType === 'Check-in' ? 'Checking invitation…' : 'Finding your check-in…');
+    showLoader(S.checkType === 'Check-in' ? 'Checking invitation...' : 'Finding your check-in...');
 
     if (S.checkType === 'Check-out') {
       var open = await findOpenLog(key, val);
-      hideLoading();
-      if (!open) { showMsg('No check-in found', 'No active check-in found today for ' + val + '.', function(){ goBack(); }); return; }
+      hideLoader();
+      if (!open) { showMsg('No check-in found', 'No active check-in found today for ' + val + '.', function () { goBack(); }); return; }
       S.visitor = { name: open.visitor_name, mobile: open.mobile, email: open.email, address: open.address };
       S.invitation = { purpose: open.purpose, host_name: open.host_name };
       S.openLog = open;
@@ -598,16 +712,15 @@ window.VZT_CONFIG = {
       return;
     }
 
-    // Check-in: already in?
     var open2 = await findOpenLog(key, val);
-    if (open2) { hideLoading(); showMsg('Already checked in', 'You are already checked in today. Use Check-out when leaving.', function(){ goBack(); }); return; }
+    if (open2) { hideLoader(); showMsg('Already checked in', 'You are already checked in today. Use Check-out when leaving.', function () { goBack(); }); return; }
 
     var nowIso = new Date().toISOString();
     var q = db.from('invitations').select('*').eq('status', 'active')
       .lte('from_time', nowIso).gte('to_time', nowIso);
     q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
     var res = await q.order('from_time', { ascending: false }).limit(1);
-    hideLoading();
+    hideLoader();
     var inv = res.data && res.data[0];
     if (!inv) { promptNoInvitation(key, val); return; }
     handleInvitation(inv, (key === 'email') ? val : null);
@@ -619,15 +732,14 @@ window.VZT_CONFIG = {
     var idVal = email || inv.mobile || inv.email;
     if (S.checkType === 'Check-in') {
       if (new Date(inv.from_time) > now || new Date(inv.to_time) < now) {
-        showMsg('Invitation not active', 'This invitation is valid ' + fmtDT(inv.from_time) + ' – ' + fmtDT(inv.to_time) + '.', function(){ goBack(); });
+        showMsg('Invitation not active', 'This invitation is valid ' + fmtDT(inv.from_time) + ' - ' + fmtDT(inv.to_time) + '.', function () { goBack(); });
         return;
       }
       var open = await findOpenLog(idKey, idVal);
-      if (open) { showMsg('Already checked in', 'You are already checked in today.', function(){ goBack(); }); return; }
+      if (open) { showMsg('Already checked in', 'You are already checked in today.', function () { goBack(); }); return; }
     }
     S.matchedEmail = (email || inv.email || '').toLowerCase();
     S.invitation = inv;
-    // face_data se saved profile bhi mila lo (address/mobile fill)
     var f = null;
     if (S.matchedEmail) {
       var fd = await db.from('face_data').select('visitor_name,mobile,address').ilike('email', S.matchedEmail).limit(1);
@@ -643,7 +755,7 @@ window.VZT_CONFIG = {
   }
 
   async function findOpenLog(key, val) {
-    var start = new Date(); start.setHours(0,0,0,0);
+    var start = new Date(); start.setHours(0, 0, 0, 0);
     var q = db.from('visitor_logs').select('*')
       .gte('check_in_time', start.toISOString())
       .is('check_out_time', null);
@@ -678,28 +790,30 @@ window.VZT_CONFIG = {
     $('f-address').value = S.visitor.address || '';
     $('f-purpose').value = (S.invitation && S.invitation.purpose) || '';
     $('f-host').value = (S.invitation && S.invitation.host_name) || '';
-    $('capture-btn').textContent = S.checkType === 'Check-out' ? 'Capture photo & check out' : 'Capture photo & check in';
+    $('capture-btn').innerHTML = S.checkType === 'Check-out'
+      ? '<i class="fa-solid fa-camera"></i> Capture photo &amp; check out'
+      : '<i class="fa-solid fa-camera"></i> Capture photo &amp; check in';
   }
 
   // ---------- photo + submit ----------
   var captureStream = null;
 
   function openPhoto() {
-    $('photo-modal').classList.remove('hidden');
+    $('photo-modal').classList.add('show');
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
       .then(function (st) { captureStream = st; $('capture-video').srcObject = st; })
-      .catch(function () { $('photo-modal').classList.add('hidden'); showMsg('Camera error', 'Camera access failed.'); });
+      .catch(function () { $('photo-modal').classList.remove('show'); showMsg('Camera error', 'Camera access failed.', null, 'error'); });
   }
 
   function closePhoto() {
     if (captureStream) { captureStream.getTracks().forEach(function (t) { t.stop(); }); captureStream = null; }
-    $('photo-modal').classList.add('hidden');
+    $('photo-modal').classList.remove('show');
   }
 
   async function takePhoto() {
     if (S.busy) return;
     S.busy = true;
-    loading('Processing…');
+    showLoader('Processing...');
     try {
       var v = $('capture-video'), c = $('capture-canvas');
       c.width = 320; c.height = 240;
@@ -712,14 +826,12 @@ window.VZT_CONFIG = {
       var descriptor = null;
       if (S.checkType === 'Check-in' && S.faceReady) {
         try {
-          // canvas 'c' pe hi detect karo — face-api ImageBitmap accept nahi karta
           var det = await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
             .withFaceLandmarks().withFaceDescriptor();
           if (det) descriptor = Array.from(det.descriptor);
         } catch (e) { console.warn('Face descriptor skip:', e); }
       }
 
-      // Photo ko base64 data URL mein convert karo (bucket nahi — seedha column mein)
       var photoB64 = await new Promise(function (res, rej) {
         var fr = new FileReader();
         fr.onload = function () { res(fr.result); };
@@ -730,8 +842,8 @@ window.VZT_CONFIG = {
       if (S.checkType === 'Check-out') await doCheckOut(photoB64);
       else await doCheckIn(photoB64, descriptor);
     } catch (e) {
-      hideLoading();
-      showMsg('Error', e.message || String(e));
+      hideLoader();
+      showMsg('Error', e.message || String(e), null, 'error');
     } finally {
       S.busy = false;
     }
@@ -747,7 +859,6 @@ window.VZT_CONFIG = {
     });
     if (ins.error) throw new Error(ins.error.message);
 
-    // auto-save/update face descriptor (skip agar already hai — upsert only when new/empty)
     if (descriptor && descriptor.length === 128 && S.visitor.email) {
       var ex = await db.from('face_data').select('id').ilike('email', S.visitor.email).limit(1);
       if (!ex.data || !ex.data.length) {
@@ -758,8 +869,8 @@ window.VZT_CONFIG = {
         loadDescriptors();
       }
     }
-    hideLoading();
-    showMsg('Checked in ✓', 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.', goBack);
+    hideLoader();
+    showMsg('Checked in', 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.', goBack, 'success');
   }
 
   async function doCheckOut(photoB64) {
@@ -768,8 +879,8 @@ window.VZT_CONFIG = {
       .update({ check_out_time: new Date().toISOString(), photo_out: photoB64 })
       .eq('id', S.openLog.id).is('check_out_time', null);
     if (up.error) throw new Error(up.error.message);
-    hideLoading();
-    showMsg('Checked out ✓', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', goBack);
+    hideLoader();
+    showMsg('Checked out', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', goBack, 'success');
   }
 
   // ---------- request ----------
@@ -787,37 +898,56 @@ window.VZT_CONFIG = {
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) { showMsg('Invalid email', 'Enter a valid email address.'); return; }
     if (!/^\d{10}$/.test(data.mobile)) { showMsg('Invalid mobile', 'Enter a 10-digit mobile number.'); return; }
-    loading('Submitting…');
+    showLoader('Submitting...');
     var res = await db.from('requests').insert(data);
-    hideLoading();
-    if (res.error) { showMsg('Error', res.error.message); return; }
-    showMsg('Request sent ✓', 'Your host will review it. You\'ll receive a badge email once approved.', goBack);
+    hideLoader();
+    if (res.error) { showMsg('Error', res.error.message, null, 'error'); return; }
+    showMsg('Request sent', "Your host will review it. You'll receive a badge once approved.", goBack, 'success');
   }
 
-  // ---------- jsonp (Apps Script mail API) ----------
+  // ---------- jsonp ----------
   var jsonpN = 0;
   function jsonp(params, cb) {
-    var name = 'vztcb' + (++jsonpN);
+    var name = 'nxcb' + (++jsonpN);
     params.key = CFG.MAIL_API_KEY;
     params.callback = name;
-    var q = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
+    var qstr = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
     var s = document.createElement('script');
     var done = false;
     window[name] = function (res) { done = true; delete window[name]; s.remove(); cb(res); };
     s.onerror = function () { if (!done) { delete window[name]; s.remove(); cb({ success: false, error: 'Network error' }); } };
-    s.src = CFG.MAIL_API_URL + '?' + q;
+    s.src = CFG.MAIL_API_URL + '?' + qstr;
     document.body.appendChild(s);
     setTimeout(function () { if (!done && window[name]) { delete window[name]; s.remove(); cb({ success: false, error: 'Request timed out' }); } }, 30000);
   }
 
   // ---------- ui helpers ----------
-  function loading(t) { $('loading-text').textContent = t || 'Loading…'; $('loading').classList.remove('hidden'); }
-  function hideLoading() { $('loading').classList.add('hidden'); }
+  function showLoader(t) { $('loader-text').innerText = t || 'Processing...'; $('global-loader').style.display = 'flex'; }
+  function hideLoader() { $('global-loader').style.display = 'none'; }
+
   var msgCb = null;
-  function showMsg(title, body, cb) { $('msg-title').textContent = title; $('msg-body').textContent = body; msgCb = cb || null; $('msg-modal').classList.remove('hidden'); }
-  function closeMsg() { $('msg-modal').classList.add('hidden'); var c = msgCb; msgCb = null; if (c) c(); }
-  function pill(t) { var p = $('status-pill'); p.textContent = t; p.style.display = 'block'; setTimeout(function () { p.style.display = 'none'; }, 3000); }
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function showMsg(title, body, cb, type) {
+    var icons = { success: '<i class="fa-solid fa-circle-check text-emerald-500"></i>', error: '<i class="fa-solid fa-circle-exclamation text-red-500"></i>', warning: '<i class="fa-solid fa-triangle-exclamation text-amber-500"></i>' };
+    $('msg-icon').innerHTML = icons[type] || '<i class="fa-solid fa-circle-info text-sky-500"></i>';
+    $('msg-title').textContent = title;
+    $('msg-body').textContent = body;
+    msgCb = cb || null;
+    $('msg-modal').classList.add('show');
+  }
+  function closeMsg() { $('msg-modal').classList.remove('show'); var c = msgCb; msgCb = null; if (c) c(); }
+
+  function showToast(msg, type, duration) {
+    type = type || 'info'; duration = duration || 3000;
+    var icons = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+    var colors = { success: '#10b981', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
+    var t = document.createElement('div');
+    t.className = 'toast ' + type;
+    t.innerHTML = '<i class="fa-solid ' + icons[type] + '" style="color:' + colors[type] + '"></i><span class="flex-1 text-sm">' + esc(msg) + '</span>';
+    $('toast-container').appendChild(t);
+    setTimeout(function () { t.style.animation = 'slideIn 0.3s reverse'; setTimeout(function () { t.remove(); }, 300); }, duration);
+  }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function fmtDT(iso) {
     var d = new Date(iso);
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
