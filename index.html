@@ -153,6 +153,22 @@
       #nexus-splash .nx-aura, #nexus-splash .nx-sweep, #nexus-splash .nx-word, #nexus-splash .nx-l, #nexus-splash .nx-sub, #nexus-splash .nx-rule { animation-duration:.01s !important; animation-delay:0s !important; }
       #nexus-splash .nx-l { opacity:1; transform:none; filter:none; }
     }
+
+    /* ===== EXCEL-STYLE COLUMN HEADER FILTERS ===== */
+    .th-wrap { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+    .th-filter { background: none; border: 0; color: #94a3b8; cursor: pointer; font-size: 0.62rem; padding: 2px 3px; border-radius: 3px; flex: none; }
+    .th-filter:hover { background: #e2e8f0; color: #0d5c75; }
+    .th-filter.on { color: #0d5c75; background: #cffafe; }
+    .filter-pop { position: fixed; z-index: 99999; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 12px 32px rgba(15,23,42,0.18); padding: 8px; width: 240px; max-height: 340px; display: flex; flex-direction: column; }
+    .filter-pop input.fp-search { width: 100%; font-size: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 8px; margin-bottom: 6px; outline: none; }
+    .filter-pop input.fp-search:focus { border-color: #17c1e8; }
+    .fp-list { overflow: auto; flex: 1; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; padding: 4px 0; }
+    .fp-list label { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 5px; cursor: pointer; font-size: 0.75rem; color: #334155; }
+    .fp-list label:hover { background: #f1f5f9; }
+    .fp-actions { display: flex; gap: 6px; margin-top: 6px; }
+    .fp-actions button { flex: 1; font-size: 0.68rem; font-weight: 600; padding: 5px; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #334155; }
+    .fp-actions button.primary { background: #0d5c75; color: #fff; border-color: #0d5c75; }
+    @media (max-width: 767px) { .th-filter { display: none; } }
   </style>
 </head>
 <body class="antialiased text-slate-800">
@@ -231,6 +247,10 @@
       </div>
       <div class="flex items-center gap-1" id="navGroup"></div>
       <div class="flex items-center gap-3">
+        <div class="relative hidden md:block">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input id="globalSearch" type="text" placeholder="Search..." class="custom-input !w-48 !pl-8 !py-1.5" />
+        </div>
         <div class="text-right leading-tight hidden lg:block">
           <div class="text-[13px] font-semibold text-slate-700" id="user-name"></div>
           <div class="text-[11px] text-slate-400" id="user-role"></div>
@@ -257,7 +277,7 @@
       <div id="inv-single" class="card-premium p-5 max-w-3xl">
         <h3 class="text-base font-bold text-slate-800 mb-4"><i class="fa-solid fa-envelope-open-text text-cyan-600 mr-2"></i>New invitation</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div><label class="text-label">Visitor name *</label><input id="i-name" class="custom-input" placeholder="Full name" /></div>
+          <div><label class="text-label">Visitor name *</label><input id="i-name" class="custom-input" list="guest-list" placeholder="Full name — purane guest ka naam type karo, details apne aap bhar jayengi" autocomplete="off" /><datalist id="guest-list"></datalist></div>
           <div><label class="text-label">Mobile</label><input id="i-mobile" type="tel" inputmode="numeric" maxlength="10" class="custom-input" placeholder="10-digit" /></div>
           <div><label class="text-label">Email</label><input id="i-email" type="email" class="custom-input" placeholder="visitor@email.com" /></div>
           <div><label class="text-label">Host *</label><input id="i-host" list="host-list" class="custom-input" placeholder="Host name" /><datalist id="host-list"></datalist></div>
@@ -294,8 +314,12 @@
 
       <!-- list -->
       <div id="inv-list" class="card-premium hidden">
+        <div class="table-toolbar">
+          <span class="text-xs text-slate-500"><i class="fa-solid fa-circle-info mr-1"></i>Kisi purane guest ko dobara bulana ho to "Re-invite" dabao.</span>
+          <div class="ml-auto"><button class="btn-outline" data-action="export-table" data-table="inv-table" data-name="invitations"><i class="fa-solid fa-file-csv"></i> CSV</button></div>
+        </div>
         <div class="table-scroll custom-scroll">
-          <table class="table-premium">
+          <table class="table-premium" id="inv-table">
             <thead><tr><th>Visitor</th><th>Host</th><th>Purpose</th><th>Valid from</th><th>Valid to</th><th>Sent</th><th></th></tr></thead>
             <tbody id="inv-list-body"><tr class="no-data-row"><td colspan="7">Loading…</td></tr></tbody>
           </table>
@@ -311,11 +335,12 @@
           <div id="a-host-wrap"><label class="text-label">Host</label><select id="a-host" class="custom-input !w-44"><option value="">All hosts</option></select></div>
           <div><label class="text-label">Status</label><select id="a-status" class="custom-input !w-36"><option value="">All</option><option value="in">Inside</option><option value="out">Checked out</option></select></div>
           <button class="btn-brand" data-action="load-activities"><i class="fa-solid fa-filter"></i> Apply</button>
+          <button class="btn-outline" data-action="export-table" data-table="act-table" data-name="activities"><i class="fa-solid fa-file-csv"></i> CSV</button>
         </div>
       </div>
       <div class="card-premium">
         <div class="table-scroll custom-scroll">
-          <table class="table-premium">
+          <table class="table-premium" id="act-table">
             <thead><tr><th>Visitor</th><th>Host</th><th>Purpose</th><th>Check-in</th><th>Check-out</th><th>Status</th><th></th></tr></thead>
             <tbody id="act-body"><tr class="no-data-row"><td colspan="7">Loading…</td></tr></tbody>
           </table>
@@ -334,7 +359,7 @@
       </div>
       <div class="card-premium">
         <div class="table-scroll custom-scroll">
-          <table class="table-premium">
+          <table class="table-premium" id="req-table">
             <thead><tr><th>Requested</th><th>Visitor</th><th>Mobile</th><th>Email</th><th>Purpose</th><th>Host</th><th></th></tr></thead>
             <tbody id="req-body"><tr class="no-data-row"><td colspan="7">Loading…</td></tr></tbody>
           </table>
@@ -381,7 +406,7 @@
       </div>
       <div class="card-premium">
         <div class="table-scroll custom-scroll">
-          <table class="table-premium">
+          <table class="table-premium" id="au-table">
             <thead><tr><th>Visitor</th><th>Host</th><th>Purpose</th><th>Check-in</th><th>Check-out</th><th>Duration</th></tr></thead>
             <tbody id="au-body"><tr class="no-data-row"><td colspan="6">Select a date range and load</td></tr></tbody>
           </table>
@@ -389,6 +414,48 @@
       </div>
     </section>
 
+
+    <!-- ========== MANAGE HOSTS (SuperAdmin) ========== -->
+    <section id="sec-hosts" class="hidden">
+      <div class="card-premium p-5 mb-4 max-w-3xl">
+        <h3 class="text-base font-bold text-slate-800 mb-4"><i class="fa-solid fa-user-plus text-cyan-600 mr-2"></i>Add host / user</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label class="text-label">Full name *</label><input id="h-name" class="custom-input" placeholder="Host ka naam" /></div>
+          <div><label class="text-label">Email *</label><input id="h-email" type="email" class="custom-input" placeholder="user@company.com" /></div>
+          <div><label class="text-label">Password *</label><input id="h-pass" type="text" class="custom-input" placeholder="min 8 characters" /></div>
+          <div><label class="text-label">Role *</label>
+            <select id="h-role" class="custom-input">
+              <option value="Employee">Employee — sirf apne guests</option>
+              <option value="Admin">Admin — sab kuch + reports</option>
+              <option value="Security">Security — activities + force out (approve nahi)</option>
+              <option value="SuperAdmin">Super Admin — sab kuch + user management</option>
+              <option value="Kiosk">Kiosk — gate device login</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button class="btn-brand" id="h-submit" data-action="create-host"><span class="btn-spinner"></span><i class="fa-solid fa-plus"></i> Add host</button>
+          <button class="btn-outline" data-action="gen-password"><i class="fa-solid fa-dice"></i> Generate password</button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-3"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Password sirf ek baar dikhega — user ko share kar do, wo baad mein khud badal sakta hai.</p>
+      </div>
+
+      <div class="card-premium">
+        <div class="table-toolbar">
+          <span class="text-xs font-semibold text-slate-600"><i class="fa-solid fa-users mr-1"></i>All users</span>
+          <div class="ml-auto flex gap-2">
+            <button class="btn-outline" data-action="load-hosts-table"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            <button class="btn-outline" data-action="export-table" data-table="hosts-table" data-name="hosts"><i class="fa-solid fa-file-csv"></i> CSV</button>
+          </div>
+        </div>
+        <div class="table-scroll custom-scroll">
+          <table class="table-premium" id="hosts-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Added</th><th></th></tr></thead>
+            <tbody id="hosts-body"><tr class="no-data-row"><td colspan="5">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -438,6 +505,37 @@
     </div>
   </div>
 </div>
+
+<div id="reinvite-modal" class="modal">
+  <div class="modal-content">
+    <h3 class="text-base font-bold text-slate-800 mb-1"><i class="fa-solid fa-rotate-right text-cyan-600 mr-2"></i>Re-invite guest</h3>
+    <p id="ri-summary" class="text-xs text-slate-500 mb-4"></p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <div><label class="text-label">Purpose *</label>
+        <select id="ri-purpose" class="custom-input"><option value="">Select</option><option>Meeting</option><option>Interview</option><option>Delivery</option><option>Service</option><option>Other</option></select>
+      </div>
+      <div><label class="text-label">Host *</label><input id="ri-host" list="host-list" class="custom-input" /></div>
+      <div><label class="text-label">Valid from *</label><input id="ri-from" type="datetime-local" class="custom-input" /></div>
+      <div><label class="text-label">Valid to *</label><input id="ri-to" type="datetime-local" class="custom-input" /></div>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn-outline flex-1 justify-center" data-action="close-reinvite">Cancel</button>
+      <button class="btn-brand flex-1 justify-center" data-action="confirm-reinvite"><span class="btn-spinner"></span><i class="fa-solid fa-paper-plane"></i> Send new badge</button>
+    </div>
+  </div>
+</div>
+
+<div id="hostpw-modal" class="modal">
+  <div class="modal-content !max-w-md">
+    <h3 class="text-base font-bold text-slate-800 mb-1"><i class="fa-solid fa-key text-cyan-600 mr-2"></i>Reset user password</h3>
+    <p id="hp-summary" class="text-xs text-slate-500 mb-4"></p>
+    <div class="mb-4"><label class="text-label">New password *</label><input id="hp-pass" type="text" class="custom-input" placeholder="min 8 characters" /></div>
+    <div class="flex gap-2">
+      <button class="btn-outline flex-1 justify-center" data-action="close-hostpw">Cancel</button>
+      <button class="btn-brand flex-1 justify-center" data-action="confirm-hostpw"><span class="btn-spinner"></span>Reset password</button>
+    </div>
+  </div>
+</div>
 <script>
 (function () {
   'use strict';
@@ -452,24 +550,40 @@
 
   var S = {
     user: null, section: 'invites', reqTab: 'pending',
-    approveTarget: null, confirmCb: null, charts: {}, lastAudit: []
+    approveTarget: null, confirmCb: null, charts: {}, lastAudit: [],
+    reinviteRow: null, hostPwTarget: null, pastGuests: [], filters: {}
   };
 
-  var IS_ADMIN = function () { return S.user && S.user.role === 'Admin'; };
+  var ROLE = function () { return (S.user && S.user.role) || ''; };
+  var IS_SUPER = function () { return ROLE() === 'SuperAdmin'; };
+  var IS_ADMIN = function () { return ROLE() === 'Admin' || ROLE() === 'SuperAdmin'; };
+  var IS_SECURITY = function () { return ROLE() === 'Security'; };
+  var CAN_APPROVE = function () { return !IS_SECURITY(); };
 
   var NAV = [
     { key: 'visitors', label: 'Visitors', icon: 'fa-user-group', items: [
-      { sec: 'invites', label: 'Invitations', icon: 'fa-envelope-open-text' },
-      { sec: 'activities', label: 'Activities', icon: 'fa-clock-rotate-left' }
+      { sec: 'invites', label: 'Invitations', icon: 'fa-envelope-open-text', roles: ['SuperAdmin', 'Admin', 'Employee'] },
+      { sec: 'activities', label: 'Activities', icon: 'fa-clock-rotate-left', roles: ['SuperAdmin', 'Admin', 'Employee', 'Security'] }
     ] },
     { key: 'approvals', label: 'Approvals', icon: 'fa-circle-check', items: [
-      { sec: 'requests', label: 'Access Requests', icon: 'fa-hourglass-half' }
+      { sec: 'requests', label: 'Access Requests', icon: 'fa-hourglass-half', roles: ['SuperAdmin', 'Admin', 'Employee', 'Security'] }
     ] },
-    { key: 'reports', label: 'Reports', icon: 'fa-chart-pie', admin: true, items: [
-      { sec: 'analytics', label: 'Analytics', icon: 'fa-chart-simple' },
-      { sec: 'audit', label: 'Audit Log', icon: 'fa-file-shield' }
+    { key: 'reports', label: 'Reports', icon: 'fa-chart-pie', items: [
+      { sec: 'analytics', label: 'Analytics', icon: 'fa-chart-simple', roles: ['SuperAdmin', 'Admin'] },
+      { sec: 'audit', label: 'Audit Log', icon: 'fa-file-shield', roles: ['SuperAdmin', 'Admin'] }
+    ] },
+    { key: 'admin', label: 'Admin', icon: 'fa-users-gear', items: [
+      { sec: 'hosts', label: 'Manage Hosts', icon: 'fa-user-plus', roles: ['SuperAdmin'] }
     ] }
   ];
+
+  function allowedNav() {
+    var r = ROLE();
+    return NAV.map(function (g) {
+      var items = g.items.filter(function (it) { return it.roles.indexOf(r) >= 0; });
+      return items.length ? { key: g.key, label: g.label, icon: g.icon, items: items } : null;
+    }).filter(Boolean);
+  }
 
   // ================= BOOT =================
   document.addEventListener('DOMContentLoaded', function () {
@@ -502,13 +616,15 @@
     $('sb-user-role').textContent = host.role;
     buildNav();
     loadHosts();
-    if (!IS_ADMIN()) {
+    loadPastGuests();
+    if (!IS_ADMIN() && !IS_SECURITY()) {
       $('i-host').value = host.host_name; $('i-host').readOnly = true;
       $('m-host').value = host.host_name; $('m-host').readOnly = true;
       $('a-host-wrap').classList.add('hidden');
     }
     initDefaults();
-    switchSection('invites');
+    var first = allowedNav()[0];
+    switchSection(first ? first.items[0].sec : 'activities');
   }
 
   // ---------- Nexus intro ----------
@@ -524,7 +640,7 @@
   }
 
   function buildNav() {
-    var groups = NAV.filter(function (g) { return !g.admin || IS_ADMIN(); });
+    var groups = allowedNav();
 
     $('navGroup').innerHTML = groups.map(function (g) {
       var items = g.items.map(function (it) {
@@ -596,7 +712,14 @@
         'close-approve': function () { $('approve-modal').classList.remove('show'); },
         'confirm-approve': confirmApprove,
         'cf-cancel': function () { $('confirm-modal').classList.remove('show'); S.confirmCb = null; },
-        'cf-yes': function () { $('confirm-modal').classList.remove('show'); var c = S.confirmCb; S.confirmCb = null; if (c) c(); }
+        'cf-yes': function () { $('confirm-modal').classList.remove('show'); var c = S.confirmCb; S.confirmCb = null; if (c) c(); },
+        'close-reinvite': function () { $('reinvite-modal').classList.remove('show'); },
+        'confirm-reinvite': confirmReinvite,
+        'create-host': createHost,
+        'gen-password': function () { $('h-pass').value = genPassword(); },
+        'load-hosts-table': loadHostsTable,
+        'close-hostpw': function () { $('hostpw-modal').classList.remove('show'); },
+        'confirm-hostpw': confirmHostPw
       };
       if (map[a]) { map[a](); return; }
       if (a === 'remove-multi-row') { el.closest('.multi-row').remove(); }
@@ -605,6 +728,11 @@
       else if (a === 'resend-badge') { resendBadge(d.id, el); }
       else if (a === 'open-approve') { openApprove(d.id); }
       else if (a === 'reject-req') { askConfirm('Reject request?', 'Visitor ko access nahi milega.', function () { rejectReq(d.id); }); }
+      else if (a === 'reinvite') { openReinvite(d.id); }
+      else if (a === 'host-pw') { openHostPw(d.id, d.email); }
+      else if (a === 'host-del') { askConfirm('Remove user?', d.email + ' ka access hamesha ke liye hat jayega.', function () { deleteHost(d.id); }); }
+      else if (a === 'export-table') { exportTable(d.table, d.name); }
+      else if (a === 'col-filter') { openFilter(el); }
     });
 
     document.addEventListener('keydown', function (e) {
@@ -614,6 +742,21 @@
     });
 
     window.addEventListener('resize', function () { if (window.innerWidth >= 768) closeSidebar(); });
+
+    document.addEventListener('change', function (e) {
+      var sel = e.target.closest('[data-action="host-role"]');
+      if (sel) changeHostRole(sel.dataset.id);
+    });
+
+    var gs = $('globalSearch');
+    if (gs) gs.addEventListener('input', function () { applyGlobalSearch(this.value); });
+
+    $('i-name').addEventListener('change', function () { autofillGuest(this.value); });
+    $('i-name').addEventListener('blur', function () { autofillGuest(this.value); });
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.filter-pop') && !e.target.closest('[data-action="col-filter"]')) closeFilterPop();
+    }, true);
   }
 
   function openSidebar() {
@@ -675,16 +818,17 @@
     document.querySelectorAll('.dropdown-menu').forEach(function (m) { m.classList.remove('show'); });
     document.querySelectorAll('.sidebar-sub-item').forEach(function (b) { b.classList.toggle('active', b.dataset.section === sec); });
     document.querySelectorAll('[data-dd]').forEach(function (b) {
-      var g = NAV.filter(function (x) { return 'dd-' + x.key === b.dataset.dd; })[0];
+      var g = allowedNav().filter(function (x) { return 'dd-' + x.key === b.dataset.dd; })[0];
       var owns = g && g.items.some(function (i) { return i.sec === sec; });
       b.classList.toggle('active', !!owns);
     });
-    ['invites', 'activities', 'requests', 'analytics', 'audit'].forEach(function (s) {
-      $('sec-' + s).classList.toggle('hidden', s !== sec);
+    ['invites', 'activities', 'requests', 'analytics', 'audit', 'hosts'].forEach(function (x) {
+      $('sec-' + x).classList.toggle('hidden', x !== sec);
     });
     if (sec === 'activities') loadActivities();
     else if (sec === 'requests') loadRequests();
     else if (sec === 'analytics') loadAnalytics();
+    else if (sec === 'hosts') loadHostsTable();
     else if (sec === 'invites' && !$('inv-list').classList.contains('hidden')) loadInvList();
   }
 
@@ -840,9 +984,11 @@
         td('Visitor', '<b>' + esc(r.visitor_name) + '</b><br><span class="text-slate-400 text-[11px]">' + esc(r.email || r.mobile || '') + '</span>') +
         td('Host', esc(r.host_name)) + td('Purpose', esc(r.purpose || '—')) +
         td('Valid from', fmt(r.from_time)) + td('Valid to', fmt(r.to_time)) + td('Sent', fmt(r.created_at)) +
-        td('', '<button class="btn-outline" data-action="resend-badge" data-id="' + r.id + '"><span class="btn-spinner"></span><i class="fa-solid fa-rotate-right"></i> Resend</button>') +
+        td('', '<button class="btn-outline" data-action="resend-badge" data-id="' + r.id + '"><span class="btn-spinner"></span><i class="fa-solid fa-paper-plane"></i> Resend</button> ' +
+          '<button class="btn-outline" data-action="reinvite" data-id="' + r.id + '"><i class="fa-solid fa-rotate-right"></i> Re-invite</button>') +
         '</tr>';
     }).join('');
+    setupFilters('inv-table');
   }
 
   function resendBadge(id, btn) {
@@ -883,6 +1029,7 @@
         td('Check-in', tfmt(r.check_in_time)) + td('Check-out', r.check_out_time ? tfmt(r.check_out_time) : '—') +
         td('Status', chip) + td('', actions) + '</tr>';
     }).join('');
+    setupFilters('act-table');
   }
 
   async function showDetail(id) {
@@ -930,8 +1077,10 @@
     body.innerHTML = res.data.map(function (r) {
       var actions;
       if (r.status === 'pending') {
-        actions = '<button class="btn-ok" data-action="open-approve" data-id="' + r.id + '"><i class="fa-solid fa-check"></i> Approve</button> ' +
-          '<button class="btn-outline" data-action="reject-req" data-id="' + r.id + '"><i class="fa-solid fa-xmark"></i></button>';
+        actions = CAN_APPROVE()
+          ? '<button class="btn-ok" data-action="open-approve" data-id="' + r.id + '"><i class="fa-solid fa-check"></i> Approve</button> ' +
+            '<button class="btn-outline" data-action="reject-req" data-id="' + r.id + '"><i class="fa-solid fa-xmark"></i></button>'
+          : '<span class="chip chip-yellow">Pending</span>';
       } else if (r.status === 'approved') {
         actions = '<span class="chip chip-green">Approved ' + (r.approved_at ? tfmt(r.approved_at) : '') + '</span>';
       } else {
@@ -943,6 +1092,7 @@
         td('Purpose', esc(r.purpose || '—')) + td('Host', esc(r.host_name || '—')) +
         td('', actions) + '</tr>';
     }).join('');
+    setupFilters('req-table');
   }
 
   function openApprove(id) {
@@ -955,6 +1105,7 @@
   }
 
   async function confirmApprove() {
+    if (!CAN_APPROVE()) { showToast('Security role request approve nahi kar sakta.', 'error'); return; }
     var id = S.approveTarget;
     var from = $('ap-from').value, to = $('ap-to').value;
     if (!from || !to || new Date(to) <= new Date(from)) { showToast('Valid from/to bharo.', 'warning'); return; }
@@ -987,6 +1138,7 @@
   }
 
   async function rejectReq(id) {
+    if (!CAN_APPROVE()) { showToast('Security role request reject nahi kar sakta.', 'error'); return; }
     showLoader('Updating...');
     var res = await db.from('requests').update({ status: 'rejected', approved_by: S.user.host_name }).eq('id', id);
     hideLoader();
@@ -1077,6 +1229,7 @@
         td('Check-out', r.check_out_time ? fmt(r.check_out_time) : '—') + td('Duration', dur(r.check_in_time, r.check_out_time)) +
         '</tr>';
     }).join('');
+    setupFilters('au-table');
   }
 
   function exportAudit() {
@@ -1093,6 +1246,318 @@
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
     a.download = 'nexus_visitor_audit_' + $('au-from').value + '_to_' + $('au-to').value + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+
+  // ================= PAST GUESTS (re-invite autofill) =================
+  async function loadPastGuests() {
+    var q2 = db.from('invitations').select('visitor_name,email,mobile,address,purpose,host_name,created_at')
+      .order('created_at', { ascending: false }).limit(400);
+    if (!IS_ADMIN()) q2 = q2.eq('host_name', S.user.host_name);
+    var res = await q2;
+    if (res.error || !res.data) return;
+    var seen = {};
+    S.pastGuests = res.data.filter(function (r) {
+      var k = (r.visitor_name || '').toLowerCase().trim();
+      if (!k || seen[k]) return false;
+      seen[k] = true; return true;
+    });
+    $('guest-list').innerHTML = S.pastGuests.map(function (g) {
+      return '<option value="' + esc(g.visitor_name) + '">' + esc(g.mobile || g.email || '') + '</option>';
+    }).join('');
+  }
+
+  function autofillGuest(name) {
+    var k = (name || '').toLowerCase().trim();
+    if (!k) return;
+    var g = S.pastGuests.filter(function (x) { return (x.visitor_name || '').toLowerCase().trim() === k; })[0];
+    if (!g) return;
+    if (!$('i-mobile').value) $('i-mobile').value = g.mobile || '';
+    if (!$('i-email').value) $('i-email').value = g.email || '';
+    if (!$('i-address').value) $('i-address').value = g.address || '';
+    if (!$('i-purpose').value) $('i-purpose').value = g.purpose || '';
+    showToast('Purane record se details bhar di.', 'info', 2200);
+  }
+
+  // ================= RE-INVITE =================
+  async function openReinvite(invId) {
+    showLoader('Loading...');
+    var res = await db.from('invitations').select('*').eq('id', invId).single();
+    hideLoader();
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    S.reinviteRow = res.data;
+    var now = new Date(); now.setMinutes(0, 0, 0); now.setHours(now.getHours() + 1);
+    var to = new Date(now); to.setHours(to.getHours() + 2);
+    $('ri-from').value = dtLocal(now); $('ri-to').value = dtLocal(to);
+    $('ri-purpose').value = res.data.purpose || '';
+    $('ri-host').value = res.data.host_name || '';
+    if (!IS_ADMIN()) $('ri-host').readOnly = true;
+    $('ri-summary').textContent = res.data.visitor_name + ' · ' + (res.data.mobile || res.data.email || '') +
+      ' — nayi date/time do, naya badge chala jayega.';
+    $('reinvite-modal').classList.add('show');
+  }
+
+  async function confirmReinvite() {
+    var r = S.reinviteRow;
+    if (!r) return;
+    var from = $('ri-from').value, to = $('ri-to').value;
+    var purpose = $('ri-purpose').value, host = $('ri-host').value.trim();
+    if (!from || !to || !purpose || !host) { showToast('Purpose, host, from, to — sab bharo.', 'warning'); return; }
+    if (new Date(to) <= new Date(from)) { showToast('"To" time "From" ke baad hona chahiye.', 'warning'); return; }
+    $('reinvite-modal').classList.remove('show');
+    showLoader('Creating invitation...');
+    var ins = await db.from('invitations').insert({
+      visitor_name: r.visitor_name, mobile: r.mobile, email: r.email, address: r.address,
+      purpose: purpose, host_name: host,
+      from_time: new Date(from).toISOString(), to_time: new Date(to).toISOString(),
+      created_by: S.user.host_name
+    }).select('id').single();
+    if (ins.error) { hideLoader(); showToast(ins.error.message, 'error'); return; }
+    audit('invitation_reinvited', { visitor: r.visitor_name, from_invitation: r.id });
+    sendBadge(ins.data.id, function (ok, msg) {
+      hideLoader();
+      showToast(ok ? 'Re-invite sent — naya badge chala gaya.' : ('Invitation bani, badge fail: ' + msg), ok ? 'success' : 'warning');
+      loadInvList(); loadPastGuests();
+    });
+  }
+
+  // ================= MANAGE HOSTS (SuperAdmin) =================
+  async function authToken() {
+    var sess = (await db.auth.getSession()).data.session;
+    return sess ? sess.access_token : '';
+  }
+
+  function genPassword() {
+    var chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var out = '';
+    for (var i = 0; i < 12; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    return out;
+  }
+
+  async function loadHostsTable() {
+    if (!IS_SUPER()) return;
+    var res = await db.from('hosts').select('*').order('role').order('host_name');
+    var body = $('hosts-body');
+    if (res.error) { body.innerHTML = noData(5, res.error.message); return; }
+    if (!res.data.length) { body.innerHTML = noData(5, 'Koi user nahi.'); return; }
+    var roles = ['SuperAdmin', 'Admin', 'Employee', 'Security', 'Kiosk'];
+    var chipFor = { SuperAdmin: 'chip-indigo', Admin: 'chip-blue', Employee: 'chip-green', Security: 'chip-yellow', Kiosk: 'chip-red' };
+    body.innerHTML = res.data.map(function (h) {
+      var isSelf = h.auth_user_id === (S.user && S.user.auth_user_id);
+      var sel = '<select class="custom-input !w-36" data-action="host-role" data-id="' + h.auth_user_id + '">' +
+        roles.map(function (r) {
+          return '<option value="' + r + '"' + (h.role === r ? ' selected' : '') + '>' + r + '</option>';
+        }).join('') + '</select>';
+      var actions = isSelf
+        ? '<span class="chip chip-green">You</span>'
+        : '<button class="btn-outline" data-action="host-pw" data-id="' + h.auth_user_id + '" data-email="' + esc(h.email) + '"><i class="fa-solid fa-key"></i></button> ' +
+          '<button class="btn-danger" data-action="host-del" data-id="' + h.auth_user_id + '" data-email="' + esc(h.email) + '"><i class="fa-solid fa-trash"></i></button>';
+      return '<tr>' +
+        td('Name', '<b>' + esc(h.host_name) + '</b>') +
+        td('Email', esc(h.email)) +
+        td('Role', isSelf ? '<span class="chip ' + (chipFor[h.role] || 'chip-blue') + '">' + esc(h.role) + '</span>' : sel) +
+        td('Added', fmt(h.created_at)) +
+        td('', actions) + '</tr>';
+    }).join('');
+    setupFilters('hosts-table');
+  }
+
+  async function createHost() {
+    if (!IS_SUPER()) { showToast('Sirf Super Admin host add kar sakta hai.', 'error'); return; }
+    var name = $('h-name').value.trim(), email = $('h-email').value.trim().toLowerCase();
+    var pass = $('h-pass').value.trim(), role = $('h-role').value;
+    if (!name || !email || !pass) { showToast('Name, email, password — sab chahiye.', 'warning'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Email valid nahi hai.', 'warning'); return; }
+    if (pass.length < 8) { showToast('Password kam se kam 8 characters.', 'warning'); return; }
+
+    var btn = $('h-submit');
+    setBtnProcessing(btn, true);
+    showLoader('Creating user...');
+    var token = await authToken();
+    jsonp({ action: 'createHost', token: token, name: name, email: email, role: role, password: pass }, function (res) {
+      hideLoader(); setBtnProcessing(btn, false);
+      if (!res.success) { showToast(res.error, 'error', 6000); return; }
+      showToast(name + ' add ho gaya. Password share kar do: ' + pass, 'success', 9000);
+      $('h-name').value = ''; $('h-email').value = ''; $('h-pass').value = '';
+      loadHostsTable(); loadHosts();
+    });
+  }
+
+  async function changeHostRole(authUserId) {
+    var selEl = document.querySelector('[data-action="host-role"][data-id="' + authUserId + '"]');
+    if (!selEl) return;
+    var role = selEl.value;
+    showLoader('Updating role...');
+    var token = await authToken();
+    jsonp({ action: 'updateHostRole', token: token, authUserId: authUserId, role: role }, function (res) {
+      hideLoader();
+      if (!res.success) { showToast(res.error, 'error', 6000); loadHostsTable(); return; }
+      showToast('Role updated.', 'success');
+      loadHosts();
+    });
+  }
+
+  function openHostPw(authUserId, email) {
+    S.hostPwTarget = authUserId;
+    $('hp-summary').textContent = email;
+    $('hp-pass').value = genPassword();
+    $('hostpw-modal').classList.add('show');
+  }
+
+  async function confirmHostPw() {
+    var pass = $('hp-pass').value.trim();
+    if (pass.length < 8) { showToast('Password kam se kam 8 characters.', 'warning'); return; }
+    $('hostpw-modal').classList.remove('show');
+    showLoader('Resetting...');
+    var token = await authToken();
+    jsonp({ action: 'resetHostPassword', token: token, authUserId: S.hostPwTarget, password: pass }, function (res) {
+      hideLoader();
+      showToast(res.success ? ('Password reset. Naya password: ' + pass) : res.error, res.success ? 'success' : 'error', 9000);
+    });
+  }
+
+  async function deleteHost(authUserId) {
+    showLoader('Removing...');
+    var token = await authToken();
+    jsonp({ action: 'deleteHost', token: token, authUserId: authUserId }, function (res) {
+      hideLoader();
+      if (!res.success) { showToast(res.error, 'error', 6000); return; }
+      showToast('User removed.', 'success');
+      loadHostsTable(); loadHosts();
+    });
+  }
+
+  // ================= EXCEL-STYLE COLUMN FILTERS =================
+  var openPop = null;
+
+  function setupFilters(tableId) {
+    var table = $(tableId);
+    if (!table) return;
+    S.filters[tableId] = S.filters[tableId] || {};
+    var ths = table.querySelectorAll('thead th');
+    ths.forEach(function (th, idx) {
+      var label = (th.dataset.label || th.textContent || '').trim();
+      if (!label) { th.innerHTML = th.innerHTML; return; }
+      th.dataset.label = label;
+      var active = S.filters[tableId][idx] && S.filters[tableId][idx].length;
+      th.innerHTML = '<span class="th-wrap"><span>' + esc(label) + '</span>' +
+        '<button class="th-filter' + (active ? ' on' : '') + '" data-action="col-filter" data-table="' + tableId + '" data-col="' + idx + '" title="Filter">' +
+        '<i class="fa-solid fa-filter"></i></button></span>';
+    });
+    applyFilters(tableId);
+  }
+
+  function colValues(tableId, col) {
+    var rows = $(tableId).querySelectorAll('tbody tr:not(.no-data-row)');
+    var set = {}, out = [];
+    rows.forEach(function (tr) {
+      var cell = tr.children[col];
+      if (!cell) return;
+      var v = (cell.innerText || '').trim() || '(blank)';
+      if (!set[v]) { set[v] = 1; out.push(v); }
+    });
+    return out.sort();
+  }
+
+  function openFilter(btn) {
+    closeFilterPop();
+    var tableId = btn.dataset.table, col = parseInt(btn.dataset.col, 10);
+    var values = colValues(tableId, col);
+    var chosen = S.filters[tableId][col] || null;
+
+    var pop = document.createElement('div');
+    pop.className = 'filter-pop';
+    pop.innerHTML =
+      '<input class="fp-search" placeholder="Search values..." />' +
+      '<div class="fp-list">' + values.map(function (v, i) {
+        var on = !chosen || chosen.indexOf(v) >= 0;
+        return '<label><input type="checkbox" value="' + esc(v) + '"' + (on ? ' checked' : '') + '><span>' + esc(v) + '</span></label>';
+      }).join('') + '</div>' +
+      '<div class="fp-actions"><button data-fp="all">Select all</button><button data-fp="none">Clear</button>' +
+      '<button data-fp="apply" class="primary">Apply</button></div>';
+    document.body.appendChild(pop);
+
+    var r = btn.getBoundingClientRect();
+    var left = Math.min(r.left, window.innerWidth - 252);
+    pop.style.left = Math.max(8, left) + 'px';
+    pop.style.top = Math.min(r.bottom + 4, window.innerHeight - 350) + 'px';
+
+    pop.querySelector('.fp-search').addEventListener('input', function () {
+      var t = this.value.toLowerCase();
+      pop.querySelectorAll('.fp-list label').forEach(function (l) {
+        l.style.display = l.textContent.toLowerCase().indexOf(t) >= 0 ? '' : 'none';
+      });
+    });
+
+    pop.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-fp]');
+      if (!b) return;
+      var boxes = pop.querySelectorAll('.fp-list input[type=checkbox]');
+      if (b.dataset.fp === 'all') { boxes.forEach(function (c) { c.checked = true; }); return; }
+      if (b.dataset.fp === 'none') { boxes.forEach(function (c) { c.checked = false; }); return; }
+      var picked = [];
+      boxes.forEach(function (c) { if (c.checked) picked.push(c.value); });
+      S.filters[tableId][col] = (picked.length === boxes.length) ? null : picked;
+      closeFilterPop();
+      setupFilters(tableId);
+    });
+
+    openPop = pop;
+  }
+
+  function closeFilterPop() {
+    if (openPop) { openPop.remove(); openPop = null; }
+  }
+
+  function applyFilters(tableId) {
+    var f = S.filters[tableId] || {};
+    var rows = $(tableId).querySelectorAll('tbody tr:not(.no-data-row)');
+    rows.forEach(function (tr) {
+      var visible = true;
+      Object.keys(f).forEach(function (col) {
+        var allow = f[col];
+        if (!allow || !allow.length) return;
+        var cell = tr.children[col];
+        var v = cell ? ((cell.innerText || '').trim() || '(blank)') : '(blank)';
+        if (allow.indexOf(v) < 0) visible = false;
+      });
+      tr.dataset.filtered = visible ? '' : '1';
+      tr.style.display = visible ? '' : 'none';
+    });
+    applyGlobalSearch(($('globalSearch') || {}).value || '');
+  }
+
+  function applyGlobalSearch(term) {
+    var t = (term || '').toLowerCase().trim();
+    document.querySelectorAll('.table-premium tbody tr').forEach(function (tr) {
+      if (tr.classList.contains('no-data-row')) return;
+      if (tr.dataset.filtered === '1') { tr.style.display = 'none'; return; }
+      tr.style.display = (!t || (tr.innerText || '').toLowerCase().indexOf(t) >= 0) ? '' : 'none';
+    });
+  }
+
+  // ================= CSV EXPORT (koi bhi table) =================
+  function exportTable(tableId, name) {
+    var table = $(tableId);
+    if (!table) return;
+    var heads = [];
+    table.querySelectorAll('thead th').forEach(function (th) { heads.push((th.dataset.label || th.innerText || '').trim()); });
+    var rows = [];
+    table.querySelectorAll('tbody tr').forEach(function (tr) {
+      if (tr.classList.contains('no-data-row') || tr.style.display === 'none') return;
+      var r = [];
+      tr.querySelectorAll('td').forEach(function (td2) { r.push((td2.innerText || '').replace(/\s+/g, ' ').trim()); });
+      rows.push(r);
+    });
+    if (!rows.length) { showToast('Export ke liye koi row nahi.', 'warning'); return; }
+    var csv = [heads].concat(rows).map(function (row) {
+      return row.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'nexus_' + (name || 'export') + '_' + dstr(new Date()) + '.csv';
     a.click();
     URL.revokeObjectURL(a.href);
   }
