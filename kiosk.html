@@ -221,9 +221,6 @@
 
     .panel { flex: 1; overflow-y: auto; padding: 22px 18px 40px; max-width: 520px; width: 100%; margin: 0 auto; }
     .otp-box { letter-spacing: 12px; text-align: center; font-size: 1.9rem; font-weight: 700; }
-
-    .entry-tab { background:#fff; border:1px solid #e2e8f0; color:#64748b; font-weight:600; font-size:0.8rem; padding:0.45rem 0.9rem; border-radius:0.5rem; cursor:pointer; transition:0.15s; }
-    .entry-tab.active { background:#0d5c75; border-color:#0d5c75; color:#fff; }
     #capture-video { width: 100%; border-radius: 12px; background: #0f172a; transform: scaleX(-1); aspect-ratio: 4/3; object-fit: cover; }
   </style>
 </head>
@@ -283,11 +280,6 @@
     <button class="text-sm font-semibold flex items-center gap-2" style="color:#0d5c75;" data-action="go-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
     <h2 id="screen-title" class="text-base font-bold text-slate-800">Check-in</h2>
     <button class="text-slate-500" data-action="switch-camera" title="Switch camera"><i class="fa-solid fa-camera-rotate text-lg"></i></button>
-  </div>
-
-  <div class="flex gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200">
-    <button class="entry-tab active" data-entry="Visitor"><i class="fa-solid fa-user-tag mr-1"></i> Visitor</button>
-    <button class="entry-tab" data-entry="Employee"><i class="fa-solid fa-id-card-clip mr-1"></i> Employee</button>
   </div>
 
   <div class="mode-tabs">
@@ -351,43 +343,11 @@
     <div class="mb-3"><label class="text-label">Mobile</label><input id="f-mobile" class="kiosk-input" readonly /></div>
     <div class="mb-3"><label class="text-label">Email</label><input id="f-email" class="kiosk-input" readonly /></div>
     <div class="mb-3"><label class="text-label">Address</label><input id="f-address" class="kiosk-input" readonly /></div>
-    <div class="mb-3"><label class="text-label" id="lbl-purpose">Purpose</label><input id="f-purpose" class="kiosk-input" readonly /></div>
-    <div class="mb-4"><label class="text-label" id="lbl-host">Host</label><input id="f-host" class="kiosk-input" readonly /></div>
+    <div class="mb-3"><label class="text-label">Purpose</label><input id="f-purpose" class="kiosk-input" readonly /></div>
+    <div class="mb-4"><label class="text-label">Host</label><input id="f-host" class="kiosk-input" readonly /></div>
     <button class="btn-kiosk" data-action="open-photo" id="capture-btn"><i class="fa-solid fa-camera"></i> Capture photo &amp; check in</button>
   </div>
 
-
-  <!-- employee registration -->
-  <div id="emp-form" class="panel hidden">
-    <span class="chip chip-blue mb-3"><i class="fa-solid fa-id-card-clip"></i> New employee</span>
-    <h3 class="text-lg font-bold text-slate-800">Employee details</h3>
-    <p class="text-sm text-slate-500 mb-4">Pehli baar hai — ek baar bhar do, agli baar sirf face dikhana.</p>
-    <div class="mb-3"><label class="text-label">Full name *</label><input id="e-name" class="kiosk-input" placeholder="Poora naam" /></div>
-    <div class="mb-3"><label class="text-label">Mobile *</label><input id="e-mobile" type="tel" inputmode="numeric" maxlength="10" class="kiosk-input" placeholder="10-digit mobile" /></div>
-    <div class="mb-3"><label class="text-label">Employee code <span class="text-slate-400 normal-case font-normal">(agar mila ho)</span></label><input id="e-code" class="kiosk-input" placeholder="e.g. ZF-1042" /></div>
-    <div class="mb-3"><label class="text-label">Department *</label>
-      <select id="e-dept" class="kiosk-input">
-        <option value="">Select department</option>
-        <option>Production</option>
-        <option>Cutting</option>
-        <option>Stitching</option>
-        <option>Finishing</option>
-        <option>Quality</option>
-        <option>Store</option>
-        <option>Dispatch</option>
-        <option>Maintenance</option>
-        <option>Accounts</option>
-        <option>HR / Admin</option>
-        <option>Sales</option>
-        <option>IT</option>
-        <option>Housekeeping</option>
-        <option>Security</option>
-        <option>Other</option>
-      </select>
-    </div>
-    <div class="mb-4"><label class="text-label">Email <span class="text-slate-400 normal-case font-normal">(optional)</span></label><input id="e-email" type="email" class="kiosk-input" placeholder="optional" /></div>
-    <button class="btn-kiosk" data-action="save-employee"><i class="fa-solid fa-camera"></i> Save &amp; capture photo</button>
-  </div>
 
   <!-- request form -->
   <div id="request-form" class="panel hidden">
@@ -401,6 +361,7 @@
       <select id="r-purpose" class="kiosk-input">
 <option value="">Select purpose</option>
         <option>Meeting</option>
+        <option>Duty</option>
         <option>Client Visit</option>
         <option>Vendor / Supplier</option>
         <option>Interview</option>
@@ -458,8 +419,6 @@
 
   var S = {
     checkType: 'Check-in',
-    entryType: 'Visitor',   // 'Visitor' | 'Employee'
-    employee: null,         // temp_employees row
     mode: 'face',
     otpChannel: 'whatsapp',
     otpTarget: null,
@@ -512,9 +471,8 @@
   // ---------- event delegation (no inline onclick) ----------
   function bindEvents() {
     document.addEventListener('click', function (e) {
-      var el = e.target.closest('[data-action],[data-mode],[data-channel],[data-entry]');
+      var el = e.target.closest('[data-action],[data-mode],[data-channel]');
       if (!el) return;
-      if (el.dataset.entry) { switchEntry(el.dataset.entry); return; }
       if (el.dataset.mode) { switchMode(el.dataset.mode); return; }
       if (el.dataset.channel) { switchChannel(el.dataset.channel); return; }
       var a = el.dataset.action;
@@ -536,13 +494,11 @@
       else if (a === 'take-photo') takePhoto();
       else if (a === 'cancel-photo') closePhoto();
       else if (a === 'submit-request') submitRequest();
-      else if (a === 'save-employee') saveEmployee();
       else if (a === 'close-msg') closeMsg();
     });
     $('otp-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
     $('r-mobile').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
     $('mobile-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
-    $('e-mobile').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
   }
 
   // ---------- device login ----------
@@ -589,14 +545,11 @@
 
   async function loadDescriptors() {
     if (!db) return;
-    var res = await db.from('face_data').select('email,mobile,descriptor');
+    var res = await db.from('face_data').select('email,descriptor');
     if (res.error || !res.data || !res.data.length) { S.matcher = null; return; }
-    var labeled = res.data.filter(function (r) { return r.email || r.mobile; }).map(function (r) {
-      // email nahi to 'm:<mobile>' label — employees ke paas aksar email nahi hota
-      var label = r.email ? r.email : ('m:' + r.mobile);
-      return new faceapi.LabeledFaceDescriptors(label, [new Float32Array(r.descriptor)]);
+    var labeled = res.data.map(function (r) {
+      return new faceapi.LabeledFaceDescriptors(r.email, [new Float32Array(r.descriptor)]);
     });
-    if (!labeled.length) { S.matcher = null; return; }
     S.matcher = new faceapi.FaceMatcher(labeled, CFG.FACE_MATCH_THRESHOLD);
     showToast(labeled.length + ' faces ready', 'info', 2500);
   }
@@ -617,7 +570,7 @@
     $(id).classList.remove('hidden');
   }
   function hidePanels() {
-    ['otp-request-form', 'otp-form', 'data-form', 'request-form', 'emp-form'].forEach(function (p) { $(p).classList.add('hidden'); });
+    ['otp-request-form', 'otp-form', 'data-form', 'request-form'].forEach(function (p) { $(p).classList.add('hidden'); });
     $('stage').classList.add('hidden');
   }
 
@@ -630,23 +583,9 @@
     $('ch-email').classList.toggle('hidden', ch !== 'email');
   }
 
-  function switchEntry(type) {
-    S.entryType = type;
-    document.querySelectorAll('[data-entry]').forEach(function (t) {
-      t.classList.toggle('active', t.dataset.entry === type);
-    });
-    S.matchedEmail = null; S.visitor = null; S.invitation = null; S.openLog = null; S.employee = null;
-    $('screen-title').textContent = S.checkType + (type === 'Employee' ? ' · Employee' : '');
-    switchMode(S.mode === 'otp' ? 'otp' : 'face');
-  }
-
   function openAction(type) {
     S.checkType = type;
-    S.matchedEmail = null; S.visitor = null; S.invitation = null; S.openLog = null; S.employee = null;
-    S.entryType = 'Visitor';
-    document.querySelectorAll('[data-entry]').forEach(function (t) {
-      t.classList.toggle('active', t.dataset.entry === 'Visitor');
-    });
+    S.matchedEmail = null; S.visitor = null; S.invitation = null; S.openLog = null;
     $('screen-title').textContent = type;
     show('screen-action');
     switchMode('face');
@@ -759,8 +698,7 @@
               stopDetection();
               frameState('ok');
               S.detecting = false;
-              if (best.label.indexOf('m:') === 0) onIdentified('mobile', best.label.slice(2));
-              else onIdentified('email', best.label);
+              onIdentified('email', best.label);
               return;
             }
           }
@@ -887,9 +825,6 @@
   // ---------- identified → invitation lookup ----------
   async function onIdentified(key, val) {
     if (key === 'email') S.matchedEmail = val;
-
-    if (S.entryType === 'Employee') { return onIdentifiedEmployee(key, val); }
-
     showLoader(S.checkType === 'Check-in' ? 'Checking invitation...' : 'Finding your check-in...');
 
     if (S.checkType === 'Check-out') {
@@ -948,7 +883,6 @@
   async function findOpenLog(key, val) {
     var start = new Date(); start.setHours(0, 0, 0, 0);
     var q = db.from('visitor_logs').select('*')
-      .eq('entry_type', S.entryType)
       .gte('check_in_time', start.toISOString())
       .is('check_out_time', null);
     q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
@@ -972,111 +906,20 @@
   }
 
 
-  // ---------- EMPLOYEE FLOW (jinka official punching abhi nahi bana) ----------
-  async function onIdentifiedEmployee(key, val) {
-    showLoader(S.checkType === 'Check-in' ? 'Checking record...' : 'Finding your punch-in...');
-
-    // Check-out: aaj ka open punch dhoondo
-    if (S.checkType === 'Check-out') {
-      var open = await findOpenLog(key, val);
-      hideLoader();
-      if (!open) { showMsg('No punch-in found', 'Aaj ka koi open punch-in nahi mila.', function () { goBack(); }); return; }
-      S.visitor = { name: open.visitor_name, mobile: open.mobile, email: open.email, address: open.address };
-      S.employee = { employee_code: open.employee_code, department: open.department };
-      S.invitation = { purpose: 'Duty', host_name: open.department };
-      S.openLog = open;
-      showDataForm();
-      return;
-    }
-
-    // Already punched in?
-    var open2 = await findOpenLog(key, val);
-    if (open2) {
-      hideLoader();
-      showMsg('Already punched in', 'Aap aaj already punch-in ho chuke ho. Jaate waqt Check-out karna.', function () { goBack(); });
-      return;
-    }
-
-    // Master mein dhoondo
-    var q = db.from('temp_employees').select('*').eq('active', true);
-    q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
-    var res = await q.limit(1);
-    hideLoader();
-
-    var emp = res.data && res.data[0];
-    if (!emp) { showEmployeeForm(key, val); return; }
-
-    S.employee = emp;
-    S.visitor = { name: emp.emp_name, mobile: emp.mobile, email: emp.email || '', address: '' };
-    S.invitation = { purpose: 'Duty', host_name: emp.department };
-    showDataForm();
-  }
-
-  function showEmployeeForm(key, val) {
-    stopAll(true); hidePanels();
-    $('emp-form').classList.remove('hidden');
-    $('e-name').value = ''; $('e-code').value = ''; $('e-dept').value = ''; $('e-email').value = '';
-    $('e-mobile').value = '';
-    if (key === 'mobile') $('e-mobile').value = val || '';
-    else if (key === 'email') $('e-email').value = val || '';
-  }
-
-  async function saveEmployee() {
-    var name = $('e-name').value.trim();
-    var mobile = ($('e-mobile').value || '').replace(/\D/g, '');
-    var code = $('e-code').value.trim();
-    var dept = $('e-dept').value;
-    var email = $('e-email').value.trim().toLowerCase();
-
-    if (!name || !mobile || !dept) { showMsg('Missing details', 'Name, mobile aur department zaroori hain.'); return; }
-    if (!/^\d{10}$/.test(mobile)) { showMsg('Invalid mobile', 'Enter a 10-digit mobile number.'); return; }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showMsg('Invalid email', 'Email galat hai — sahi karo ya khali chhod do.'); return; }
-
-    showLoader('Saving...');
-    // Pehle se hai to wahi use karo, warna naya banao
-    var ex = await db.from('temp_employees').select('*').eq('mobile', mobile).limit(1);
-    var emp;
-    if (ex.data && ex.data.length) {
-      emp = ex.data[0];
-      await db.from('temp_employees').update({
-        emp_name: name, employee_code: code || null, department: dept, email: email || null, active: true
-      }).eq('id', emp.id);
-      emp.emp_name = name; emp.employee_code = code || null; emp.department = dept; emp.email = email || null;
-    } else {
-      var ins = await db.from('temp_employees').insert({
-        emp_name: name, mobile: mobile, employee_code: code || null,
-        department: dept, email: email || null
-      }).select('*').single();
-      if (ins.error) { hideLoader(); showMsg('Error', ins.error.message, null, 'error'); return; }
-      emp = ins.data;
-    }
-    hideLoader();
-
-    S.employee = emp;
-    S.visitor = { name: emp.emp_name, mobile: emp.mobile, email: emp.email || '', address: '' };
-    S.invitation = { purpose: 'Duty', host_name: emp.department };
-    openPhoto();
-  }
-
   function showDataForm() {
     stopAll(true); hidePanels();
     $('data-form').classList.remove('hidden');
     $('visitor-name-display').textContent = S.visitor.name || 'Visitor';
-    var isEmp = S.entryType === 'Employee';
-    $('data-form-title').textContent = S.checkType === 'Check-out'
-      ? (isEmp ? 'Confirm punch-out' : 'Confirm check-out')
-      : 'Confirm your details';
+    $('data-form-title').textContent = S.checkType === 'Check-out' ? 'Confirm check-out' : 'Confirm your details';
     $('f-name').value = S.visitor.name || '';
     $('f-mobile').value = S.visitor.mobile || '';
     $('f-email').value = S.visitor.email || '';
     $('f-address').value = S.visitor.address || '';
-    $('f-purpose').value = isEmp ? (S.employee && S.employee.employee_code) || '—' : ((S.invitation && S.invitation.purpose) || '');
+    $('f-purpose').value = (S.invitation && S.invitation.purpose) || '';
     $('f-host').value = (S.invitation && S.invitation.host_name) || '';
-    $('lbl-purpose').textContent = isEmp ? 'Employee code' : 'Purpose';
-    $('lbl-host').textContent = isEmp ? 'Department' : 'Host';
     $('capture-btn').innerHTML = S.checkType === 'Check-out'
-      ? '<i class="fa-solid fa-camera"></i> Capture photo &amp; ' + (isEmp ? 'punch out' : 'check out')
-      : '<i class="fa-solid fa-camera"></i> Capture photo &amp; ' + (isEmp ? 'punch in' : 'check in');
+      ? '<i class="fa-solid fa-camera"></i> Capture photo &amp; check out'
+      : '<i class="fa-solid fa-camera"></i> Capture photo &amp; check in';
   }
 
   // ---------- photo + submit ----------
@@ -1134,48 +977,27 @@
   }
 
   async function doCheckIn(photoB64, descriptor) {
-    var isEmp = S.entryType === 'Employee';
     var ins = await db.from('visitor_logs').insert({
-      entry_type: S.entryType,
-      invitation_id: (!isEmp && S.invitation && S.invitation.id) || null,
-      visitor_name: S.visitor.name, mobile: S.visitor.mobile, email: S.visitor.email || null,
-      address: S.visitor.address,
-      purpose: isEmp ? 'Duty' : (S.invitation && S.invitation.purpose),
-      host_name: isEmp ? (S.employee && S.employee.department) : (S.invitation && S.invitation.host_name),
-      employee_code: isEmp ? (S.employee && S.employee.employee_code) : null,
-      department: isEmp ? (S.employee && S.employee.department) : null,
+      invitation_id: (S.invitation && S.invitation.id) || null,
+      visitor_name: S.visitor.name, mobile: S.visitor.mobile, email: S.visitor.email,
+      address: S.visitor.address, purpose: S.invitation && S.invitation.purpose,
+      host_name: S.invitation && S.invitation.host_name,
       photo_in: photoB64
     });
     if (ins.error) throw new Error(ins.error.message);
 
-    await saveFaceIfNew(descriptor);
-
+    if (descriptor && descriptor.length === 128 && S.visitor.email) {
+      var ex = await db.from('face_data').select('id').ilike('email', S.visitor.email).limit(1);
+      if (!ex.data || !ex.data.length) {
+        await db.from('face_data').insert({
+          email: S.visitor.email, visitor_name: S.visitor.name,
+          mobile: S.visitor.mobile, address: S.visitor.address, descriptor: descriptor
+        });
+        loadDescriptors();
+      }
+    }
     hideLoader();
-    showMsg(isEmp ? 'Punched in' : 'Checked in',
-      isEmp
-        ? 'Welcome, ' + (S.visitor.name || 'employee') + '! Aapki entry record ho gayi.'
-        : 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.',
-      goBack, 'success');
-  }
-
-  // Face descriptor pehli baar hi save hota hai — email ya mobile, jo bhi ho
-  async function saveFaceIfNew(descriptor) {
-    if (!descriptor || descriptor.length !== 128) return;
-    var email = S.visitor.email || null;
-    var mobile = S.visitor.mobile || null;
-    if (!email && !mobile) return;
-    try {
-      var q = db.from('face_data').select('id');
-      q = email ? q.ilike('email', email) : q.eq('mobile', mobile);
-      var ex = await q.limit(1);
-      if (ex.data && ex.data.length) return;
-      await db.from('face_data').insert({
-        email: email, visitor_name: S.visitor.name, mobile: mobile,
-        address: S.visitor.address, descriptor: descriptor,
-        person_type: S.entryType
-      });
-      loadDescriptors();
-    } catch (e) { console.warn('face save skip', e); }
+    showMsg('Checked in', 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.', goBack, 'success');
   }
 
   async function doCheckOut(photoB64) {
@@ -1185,11 +1007,7 @@
       .eq('id', S.openLog.id).is('check_out_time', null);
     if (up.error) throw new Error(up.error.message);
     hideLoader();
-    showMsg(S.entryType === 'Employee' ? 'Punched out' : 'Checked out',
-      S.entryType === 'Employee'
-        ? 'Bye ' + (S.visitor.name || '') + '! Aapka out time record ho gaya.'
-        : 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!',
-      goBack, 'success');
+    showMsg('Checked out', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', goBack, 'success');
   }
 
   // ---------- request ----------
