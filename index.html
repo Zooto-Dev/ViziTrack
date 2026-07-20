@@ -443,9 +443,12 @@
       <div class="card-premium">
         <div class="table-toolbar">
           <span class="text-xs font-semibold text-slate-600"><i class="fa-solid fa-users mr-1"></i>All users</span>
-          <div class="ml-auto flex gap-2">
+          <div class="ml-auto flex gap-2 flex-wrap">
             <button class="btn-outline" data-action="load-hosts-table"><i class="fa-solid fa-rotate"></i> Refresh</button>
-            <button class="btn-outline" data-action="export-table" data-table="hosts-table" data-name="hosts"><i class="fa-solid fa-file-csv"></i> CSV</button>
+            <button class="btn-outline" data-action="sample-csv"><i class="fa-solid fa-file-arrow-down"></i> Sample CSV</button>
+            <button class="btn-outline" data-action="pick-import"><i class="fa-solid fa-file-import"></i> Import CSV</button>
+            <button class="btn-outline" data-action="export-hosts"><i class="fa-solid fa-file-export"></i> Export CSV</button>
+            <input type="file" id="import-file" accept=".csv,text/csv" class="hidden" />
           </div>
         </div>
         <div class="table-scroll custom-scroll">
@@ -536,6 +539,33 @@
     </div>
   </div>
 </div>
+
+<div id="import-modal" class="modal">
+  <div class="modal-content !max-w-3xl">
+    <h3 class="text-base font-bold text-slate-800 mb-1"><i class="fa-solid fa-file-import text-cyan-600 mr-2"></i>Import users</h3>
+    <p id="im-summary" class="text-xs text-slate-500 mb-3"></p>
+
+    <div class="table-scroll custom-scroll border border-slate-200 rounded-lg mb-4" style="max-height:44vh;">
+      <table class="table-premium" id="import-table">
+        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Password</th><th>Status</th></tr></thead>
+        <tbody id="import-body"></tbody>
+      </table>
+    </div>
+
+    <div id="im-progress" class="hidden mb-3">
+      <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div id="im-bar" class="h-2 rounded-full" style="width:0%;background:#0d5c75;transition:width .2s;"></div>
+      </div>
+      <p id="im-progress-text" class="text-xs text-slate-500 mt-2 text-center"></p>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="btn-outline flex-1 justify-center" data-action="close-import">Cancel</button>
+      <button class="btn-outline hidden" id="im-creds" data-action="download-creds"><i class="fa-solid fa-key"></i> Download credentials</button>
+      <button class="btn-brand flex-1 justify-center" id="im-run" data-action="run-import"><span class="btn-spinner"></span><i class="fa-solid fa-upload"></i> Import valid rows</button>
+    </div>
+  </div>
+</div>
 <script>
 (function () {
   'use strict';
@@ -551,7 +581,8 @@
   var S = {
     user: null, section: 'invites', reqTab: 'pending',
     approveTarget: null, confirmCb: null, charts: {}, lastAudit: [],
-    reinviteRow: null, hostPwTarget: null, pastGuests: [], filters: {}
+    reinviteRow: null, hostPwTarget: null, pastGuests: [], filters: {},
+    hostsCache: [], importRows: [], importDone: false
   };
 
   var ROLE = function () { return (S.user && S.user.role) || ''; };
@@ -719,7 +750,13 @@
         'gen-password': function () { $('h-pass').value = genPassword(); },
         'load-hosts-table': loadHostsTable,
         'close-hostpw': function () { $('hostpw-modal').classList.remove('show'); },
-        'confirm-hostpw': confirmHostPw
+        'confirm-hostpw': confirmHostPw,
+        'sample-csv': sampleCsv,
+        'export-hosts': exportHosts,
+        'pick-import': function () { $('import-file').value = ''; $('import-file').click(); },
+        'close-import': function () { $('import-modal').classList.remove('show'); if (S.importDone) loadHostsTable(); },
+        'run-import': runImport,
+        'download-creds': downloadCredentials
       };
       if (map[a]) { map[a](); return; }
       if (a === 'remove-multi-row') { el.closest('.multi-row').remove(); }
@@ -745,7 +782,8 @@
 
     document.addEventListener('change', function (e) {
       var sel = e.target.closest('[data-action="host-role"]');
-      if (sel) changeHostRole(sel.dataset.id);
+      if (sel) { changeHostRole(sel.dataset.id); return; }
+      if (e.target.id === 'import-file') handleImportFile(e.target.files && e.target.files[0]);
     });
 
     var gs = $('globalSearch');
@@ -1339,6 +1377,7 @@
   async function loadHostsTable() {
     if (!IS_SUPER()) return;
     var res = await db.from('hosts').select('*').order('role').order('host_name');
+    S.hostsCache = res.data || [];
     var body = $('hosts-body');
     if (res.error) { body.innerHTML = noData(5, res.error.message); return; }
     if (!res.data.length) { body.innerHTML = noData(5, 'Koi user nahi.'); return; }
@@ -1427,6 +1466,187 @@
       showToast('User removed.', 'success');
       loadHostsTable(); loadHosts();
     });
+  }
+
+
+  // ================= HOSTS: CSV IMPORT / EXPORT =================
+  var ROLES = ['SuperAdmin', 'Admin', 'Employee', 'Security', 'Kiosk'];
+
+  function sampleCsv() {
+    var rows = [
+      ['Name', 'Email', 'Role', 'Password'],
+      ['Kartik Sharma', 'kartik@company.com', 'Employee', ''],
+      ['Ravi Gupta', 'ravi@company.com', 'Admin', 'Ravi@2026xyz'],
+      ['Gate Security', 'security@company.com', 'Security', '']
+    ];
+    downloadCsv(rows, 'nexus_users_template');
+    showToast('Template download ho gaya. Password blank chhodoge to auto-generate hoga.', 'info', 5000);
+  }
+
+  async function exportHosts() {
+    showLoader('Preparing export...');
+    var res = await db.from('hosts').select('host_name,email,role,created_at').order('role').order('host_name');
+    hideLoader();
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    if (!res.data.length) { showToast('Export ke liye koi user nahi.', 'warning'); return; }
+    var rows = [['Name', 'Email', 'Role', 'Added']].concat(res.data.map(function (h) {
+      return [h.host_name, h.email, h.role, fmt(h.created_at)];
+    }));
+    downloadCsv(rows, 'nexus_users');
+  }
+
+  // RFC-4180 style parser — quoted fields, embedded commas/newlines handle karta hai
+  function parseCsv(text) {
+    var rows = [], row = [], cur = '', inQ = false;
+    text = String(text).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      if (inQ) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { cur += '"'; i++; }
+          else inQ = false;
+        } else cur += c;
+      } else {
+        if (c === '"') inQ = true;
+        else if (c === ',') { row.push(cur); cur = ''; }
+        else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+        else cur += c;
+      }
+    }
+    if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (c2) { return String(c2).trim() !== ''; }); });
+  }
+
+  function handleImportFile(file) {
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var rows = parseCsv(reader.result);
+      if (rows.length < 2) { showToast('CSV khali hai ya sirf header hai.', 'warning'); return; }
+      buildImportPreview(rows);
+    };
+    reader.onerror = function () { showToast('File read nahi hui.', 'error'); };
+    reader.readAsText(file);
+  }
+
+  function buildImportPreview(rows) {
+    var head = rows[0].map(function (h) { return String(h).trim().toLowerCase(); });
+    var idxName = head.indexOf('name');
+    var idxEmail = head.indexOf('email');
+    var idxRole = head.indexOf('role');
+    var idxPass = head.indexOf('password');
+    if (idxName < 0 || idxEmail < 0) {
+      showToast('CSV mein "Name" aur "Email" columns hone chahiye.', 'error', 6000);
+      return;
+    }
+
+    var existing = {};
+    (S.hostsCache || []).forEach(function (h) { existing[(h.email || '').toLowerCase()] = 1; });
+
+    var seen = {};
+    S.importRows = rows.slice(1).map(function (r, i) {
+      var name = String(r[idxName] || '').trim();
+      var email = String(r[idxEmail] || '').trim().toLowerCase();
+      var role = idxRole >= 0 ? String(r[idxRole] || '').trim() : '';
+      var pass = idxPass >= 0 ? String(r[idxPass] || '').trim() : '';
+      if (!role) role = 'Employee';
+
+      var err = '';
+      if (!name) err = 'Name missing';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) err = 'Email invalid';
+      else if (ROLES.indexOf(role) < 0) err = 'Role invalid';
+      else if (pass && pass.length < 8) err = 'Password < 8 chars';
+      else if (existing[email]) err = 'Pehle se maujood';
+      else if (seen[email]) err = 'CSV mein duplicate';
+      if (!err) seen[email] = 1;
+      if (!pass) pass = genPassword();
+
+      return { n: i + 1, name: name, email: email, role: role, password: pass, error: err, status: err ? 'skip' : 'ready' };
+    });
+
+    renderImportPreview();
+    S.importDone = false;
+    $('im-run').classList.remove('hidden');
+    $('im-creds').classList.add('hidden');
+    $('im-progress').classList.add('hidden');
+    $('import-modal').classList.add('show');
+  }
+
+  function renderImportPreview() {
+    var ready = S.importRows.filter(function (r) { return r.status === 'ready'; }).length;
+    var bad = S.importRows.length - ready;
+    $('im-summary').textContent = S.importRows.length + ' rows mili — ' + ready + ' import hongi' +
+      (bad ? ', ' + bad + ' skip hongi' : '') + '.';
+    $('im-run').disabled = ready === 0;
+
+    $('import-body').innerHTML = S.importRows.map(function (r) {
+      var chip;
+      if (r.status === 'ok') chip = '<span class="chip chip-green">Added</span>';
+      else if (r.status === 'fail') chip = '<span class="chip chip-red">' + esc(r.error || 'Failed') + '</span>';
+      else if (r.status === 'skip') chip = '<span class="chip chip-yellow">' + esc(r.error) + '</span>';
+      else chip = '<span class="chip chip-blue">Ready</span>';
+      return '<tr>' +
+        td('#', r.n) + td('Name', esc(r.name)) + td('Email', esc(r.email)) +
+        td('Role', esc(r.role)) + td('Password', '<code class="text-[11px]">' + esc(r.password) + '</code>') +
+        td('Status', chip) + '</tr>';
+    }).join('');
+  }
+
+  async function runImport() {
+    var queue = S.importRows.filter(function (r) { return r.status === 'ready'; });
+    if (!queue.length) return;
+
+    var btn = $('im-run');
+    setBtnProcessing(btn, true);
+    $('im-progress').classList.remove('hidden');
+    var token = await authToken();
+    var done = 0, ok = 0, fail = 0;
+
+    (function next(i) {
+      if (i >= queue.length) {
+        setBtnProcessing(btn, false);
+        btn.classList.add('hidden');
+        $('im-creds').classList.remove('hidden');
+        $('im-progress-text').textContent = ok + ' users added' + (fail ? ', ' + fail + ' failed' : '') + '.';
+        showToast(ok + ' users import ho gaye' + (fail ? ', ' + fail + ' fail' : '') + '.', fail ? 'warning' : 'success', 6000);
+        S.importDone = true;
+        loadHostsTable(); loadHosts();
+        return;
+      }
+      var r = queue[i];
+      $('im-progress-text').textContent = 'Adding ' + (i + 1) + '/' + queue.length + ' — ' + r.email;
+      $('im-bar').style.width = Math.round((i / queue.length) * 100) + '%';
+
+      jsonp({ action: 'createHost', token: token, name: r.name, email: r.email, role: r.role, password: r.password }, function (res) {
+        done++;
+        if (res.success) { r.status = 'ok'; ok++; }
+        else { r.status = 'fail'; r.error = res.error || 'Failed'; fail++; }
+        renderImportPreview();
+        $('im-bar').style.width = Math.round((done / queue.length) * 100) + '%';
+        next(i + 1);
+      });
+    })(0);
+  }
+
+  function downloadCredentials() {
+    var added = S.importRows.filter(function (r) { return r.status === 'ok'; });
+    if (!added.length) { showToast('Koi user add nahi hua.', 'warning'); return; }
+    var rows = [['Name', 'Email', 'Role', 'Password']].concat(added.map(function (r) {
+      return [r.name, r.email, r.role, r.password];
+    }));
+    downloadCsv(rows, 'nexus_new_user_credentials');
+    showToast('Credentials file download ho gayi — users ko share karke delete kar dena.', 'warning', 7000);
+  }
+
+  function downloadCsv(rows, name) {
+    var csv = rows.map(function (row) {
+      return row.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = name + '_' + dstr(new Date()) + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   // ================= EXCEL-STYLE COLUMN FILTERS =================
