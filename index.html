@@ -360,6 +360,10 @@
     <!-- ========== ACTIVITIES ========== -->
     <section id="sec-activities" class="hidden">
       <div class="card-premium mb-4">
+        <div class="flex gap-5 px-4 border-b border-slate-100 overflow-x-auto">
+          <button class="py-3 text-sm font-semibold text-cyan-700 border-b-2 border-cyan-600 whitespace-nowrap" data-acttab="Visitor"><i class="fa-solid fa-user-tag mr-1"></i> Visitors</button>
+          <button class="py-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent whitespace-nowrap" data-acttab="Employee"><i class="fa-solid fa-id-card-clip mr-1"></i> Employees</button>
+        </div>
         <div class="table-toolbar">
           <div><label class="text-label">Date</label><input id="a-date" type="date" class="custom-input !w-40" /></div>
           <div id="a-host-wrap"><label class="text-label">Host</label><select id="a-host" class="custom-input !w-44"><option value="">All hosts</option></select></div>
@@ -368,11 +372,20 @@
           <button class="btn-outline" data-action="export-table" data-table="act-table" data-name="activities"><i class="fa-solid fa-file-csv"></i> CSV</button>
         </div>
       </div>
-      <div class="card-premium">
+      <div class="card-premium" id="act-wrap-visitor">
         <div class="table-scroll custom-scroll">
           <table class="table-premium" id="act-table">
             <thead><tr><th>Visitor</th><th>Host</th><th>Purpose</th><th>Check-in</th><th>Check-out</th><th>Status</th><th></th></tr></thead>
             <tbody id="act-body"><tr class="no-data-row"><td colspan="7">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-premium hidden" id="act-wrap-employee">
+        <div class="table-scroll custom-scroll">
+          <table class="table-premium" id="emp-table">
+            <thead><tr><th>Employee</th><th>Code</th><th>Department</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th><th></th></tr></thead>
+            <tbody id="emp-body"><tr class="no-data-row"><td colspan="8">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -485,6 +498,44 @@
           <table class="table-premium" id="hosts-table">
             <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Added</th><th></th></tr></thead>
             <tbody id="hosts-body"><tr class="no-data-row"><td colspan="5">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== TEMP EMPLOYEES ========== -->
+    <section id="sec-tempemp" class="hidden">
+      <div class="card-premium p-5 mb-4 max-w-3xl">
+        <h3 class="text-base font-bold text-slate-800 mb-1"><i class="fa-solid fa-id-card-clip text-cyan-600 mr-2"></i>Temp employees</h3>
+        <p class="text-xs text-slate-500 mb-4">Wo employees jinka official punching abhi setup nahi hua. Kiosk pe pehli entry pe khud register ho jaate hain — yahan se edit/deactivate kar sakte ho.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div><label class="text-label">Name *</label><input id="te-name" class="custom-input" placeholder="Full name" /></div>
+          <div><label class="text-label">Mobile *</label><input id="te-mobile" type="tel" inputmode="numeric" maxlength="10" class="custom-input" placeholder="10-digit" /></div>
+          <div><label class="text-label">Employee code</label><input id="te-code" class="custom-input" placeholder="e.g. ZF-1042" /></div>
+          <div><label class="text-label">Department *</label>
+            <select id="te-dept" class="custom-input">
+              <option value="">Select</option><option>Production</option><option>Cutting</option><option>Stitching</option>
+              <option>Finishing</option><option>Quality</option><option>Store</option><option>Dispatch</option>
+              <option>Maintenance</option><option>Accounts</option><option>HR / Admin</option><option>Sales</option>
+              <option>IT</option><option>Housekeeping</option><option>Security</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-brand mt-4" id="te-submit" data-action="add-temp-emp"><span class="btn-spinner"></span><i class="fa-solid fa-plus"></i> Add employee</button>
+      </div>
+
+      <div class="card-premium">
+        <div class="table-toolbar">
+          <span class="text-xs font-semibold text-slate-600"><i class="fa-solid fa-users mr-1"></i>Registered temp employees</span>
+          <div class="ml-auto flex gap-2">
+            <button class="btn-outline" data-action="load-temp-emp"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            <button class="btn-outline" data-action="export-table" data-table="temp-table" data-name="temp_employees"><i class="fa-solid fa-file-csv"></i> CSV</button>
+          </div>
+        </div>
+        <div class="table-scroll custom-scroll">
+          <table class="table-premium" id="temp-table">
+            <thead><tr><th>Name</th><th>Code</th><th>Mobile</th><th>Department</th><th>Status</th><th>Added</th><th></th></tr></thead>
+            <tbody id="temp-body"><tr class="no-data-row"><td colspan="7">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -627,7 +678,7 @@
     user: null, section: 'invites', reqTab: 'pending',
     approveTarget: null, confirmCb: null, charts: {}, lastAudit: [],
     reinviteRow: null, hostPwTarget: null, pastGuests: [], filters: {},
-    hostsCache: [], importRows: [], importDone: false
+    hostsCache: [], importRows: [], importDone: false, actTab: 'Visitor'
   };
 
   var ROLE = function () { return (S.user && S.user.role) || ''; };
@@ -639,7 +690,8 @@
   var NAV = [
     { key: 'visitors', label: 'Visitors', icon: 'fa-user-group', items: [
       { sec: 'invites', label: 'Invitations', icon: 'fa-envelope-open-text', roles: ['SuperAdmin', 'Admin', 'Employee'] },
-      { sec: 'activities', label: 'Activities', icon: 'fa-clock-rotate-left', roles: ['SuperAdmin', 'Admin', 'Employee', 'Security'] }
+      { sec: 'activities', label: 'Activities', icon: 'fa-clock-rotate-left', roles: ['SuperAdmin', 'Admin', 'Employee', 'Security'] },
+      { sec: 'tempemp', label: 'Temp Employees', icon: 'fa-id-card-clip', roles: ['SuperAdmin', 'Admin', 'Security'] }
     ] },
     { key: 'approvals', label: 'Approvals', icon: 'fa-circle-check', items: [
       { sec: 'requests', label: 'Access Requests', icon: 'fa-hourglass-half', roles: ['SuperAdmin', 'Admin', 'Employee', 'Security'] }
@@ -768,6 +820,7 @@
       if (el.dataset.section) { switchSection(el.dataset.section); closeSidebar(); return; }
       if (el.dataset.invtab) { switchInvTab(el.dataset.invtab); return; }
       if (el.dataset.reqtab) { switchReqTab(el.dataset.reqtab); return; }
+      if (el.dataset.acttab) { switchActTab(el.dataset.acttab); return; }
 
       var a = el.dataset.action, d = el.dataset;
       var map = {
@@ -783,6 +836,8 @@
         'add-multi-row': addMultiRow,
         'submit-multi': submitMulti,
         'load-activities': loadActivities,
+        'load-temp-emp': loadTempEmployees,
+        'add-temp-emp': addTempEmployee,
         'load-audit': loadAudit, 'export-audit': exportAudit,
         'close-detail': function () { $('detail-modal').classList.remove('show'); },
         'close-approve': function () { $('approve-modal').classList.remove('show'); },
@@ -814,6 +869,7 @@
       else if (a === 'host-pw') { openHostPw(d.id, d.email); }
       else if (a === 'host-del') { askConfirm('Remove user?', d.email + ' ka access hamesha ke liye hat jayega.', function () { deleteHost(d.id); }); }
       else if (a === 'export-table') { exportTable(d.table, d.name); }
+      else if (a === 'temp-toggle') { toggleTempEmployee(d.id, d.active); }
       else if (a === 'col-filter') { openFilter(el); }
     });
 
@@ -905,13 +961,14 @@
       var owns = g && g.items.some(function (i) { return i.sec === sec; });
       b.classList.toggle('active', !!owns);
     });
-    ['invites', 'activities', 'requests', 'analytics', 'audit', 'hosts'].forEach(function (x) {
+    ['invites', 'activities', 'requests', 'analytics', 'audit', 'hosts', 'tempemp'].forEach(function (x) {
       $('sec-' + x).classList.toggle('hidden', x !== sec);
     });
     if (sec === 'activities') loadActivities();
     else if (sec === 'requests') loadRequests();
     else if (sec === 'analytics') loadAnalytics();
     else if (sec === 'hosts') loadHostsTable();
+    else if (sec === 'tempemp') loadTempEmployees();
     else if (sec === 'invites' && !$('inv-list').classList.contains('hidden')) loadInvList();
   }
 
@@ -1085,12 +1142,14 @@
 
   // ================= ACTIVITIES =================
   async function loadActivities() {
+    if (S.actTab === 'Employee') return loadEmployeeEntries();
     var dateStr = $('a-date').value || dstr(new Date());
     var start = new Date(dateStr + 'T00:00:00'), end = new Date(dateStr + 'T23:59:59.999');
     var q2 = db.from('visitor_logs').select('id,invitation_id,visitor_name,mobile,email,address,purpose,host_name,check_in_time,check_out_time,forced_out')
+      .eq('entry_type', 'Visitor')
       .gte('check_in_time', start.toISOString()).lte('check_in_time', end.toISOString())
       .order('check_in_time', { ascending: false });
-    if (!IS_ADMIN()) q2 = q2.eq('host_name', S.user.host_name);
+    if (!IS_ADMIN() && !IS_SECURITY()) q2 = q2.eq('host_name', S.user.host_name);
     else if ($('a-host').value) q2 = q2.eq('host_name', $('a-host').value);
     var st = $('a-status').value;
     if (st === 'in') q2 = q2.is('check_out_time', null);
@@ -1147,6 +1206,105 @@
     audit('force_checkout', { log_id: id });
     showToast('Visitor forced out.', 'success');
     loadActivities();
+  }
+
+
+  // ================= EMPLOYEE ENTRIES =================
+  function switchActTab(tab) {
+    S.actTab = tab;
+    setTabs('data-acttab', tab);
+    $('act-wrap-visitor').classList.toggle('hidden', tab !== 'Visitor');
+    $('act-wrap-employee').classList.toggle('hidden', tab !== 'Employee');
+    $('a-host-wrap').classList.toggle('hidden', tab === 'Employee' || (!IS_ADMIN() && !IS_SECURITY()));
+    loadActivities();
+  }
+
+  async function loadEmployeeEntries() {
+    var dateStr = $('a-date').value || dstr(new Date());
+    var start = new Date(dateStr + 'T00:00:00'), end = new Date(dateStr + 'T23:59:59.999');
+    var q2 = db.from('visitor_logs')
+      .select('id,visitor_name,mobile,email,employee_code,department,check_in_time,check_out_time,forced_out')
+      .eq('entry_type', 'Employee')
+      .gte('check_in_time', start.toISOString()).lte('check_in_time', end.toISOString())
+      .order('check_in_time', { ascending: false });
+    var st = $('a-status').value;
+    if (st === 'in') q2 = q2.is('check_out_time', null);
+    else if (st === 'out') q2 = q2.not('check_out_time', 'is', null);
+
+    var res = await q2;
+    var body = $('emp-body');
+    if (res.error) { body.innerHTML = noData(8, res.error.message); return; }
+    if (!res.data.length) { body.innerHTML = noData(8, 'Is din koi employee entry nahi.'); return; }
+    body.innerHTML = res.data.map(function (r) {
+      var inside = !r.check_out_time;
+      var chip = inside ? '<span class="chip chip-green">Inside</span>'
+        : (r.forced_out ? '<span class="chip chip-yellow">Forced out</span>' : '<span class="chip chip-blue">Out</span>');
+      var actions = '<button class="btn-outline" data-action="view-log" data-id="' + r.id + '"><i class="fa-solid fa-eye"></i></button>' +
+        (inside ? ' <button class="btn-danger" data-action="force-out" data-id="' + r.id + '"><i class="fa-solid fa-right-from-bracket"></i></button>' : '');
+      return '<tr>' +
+        td('Employee', '<b>' + esc(r.visitor_name) + '</b><br><span class="text-slate-400 text-[11px]">' + esc(r.mobile || '') + '</span>') +
+        td('Code', esc(r.employee_code || '—')) +
+        td('Department', esc(r.department || '—')) +
+        td('In', tfmt(r.check_in_time)) +
+        td('Out', r.check_out_time ? tfmt(r.check_out_time) : '—') +
+        td('Hours', dur(r.check_in_time, r.check_out_time)) +
+        td('Status', chip) + td('', actions) + '</tr>';
+    }).join('');
+    setupFilters('emp-table');
+  }
+
+  // ================= TEMP EMPLOYEE MASTER =================
+  async function loadTempEmployees() {
+    var res = await db.from('temp_employees').select('*').order('active', { ascending: false }).order('emp_name');
+    var body = $('temp-body');
+    if (res.error) { body.innerHTML = noData(7, res.error.message); return; }
+    if (!res.data.length) { body.innerHTML = noData(7, 'Abhi koi temp employee register nahi hua.'); return; }
+    body.innerHTML = res.data.map(function (e) {
+      var chip = e.active ? '<span class="chip chip-green">Active</span>' : '<span class="chip chip-red">Inactive</span>';
+      var btn = e.active
+        ? '<button class="btn-outline" data-action="temp-toggle" data-id="' + e.id + '" data-active="0"><i class="fa-solid fa-ban"></i> Deactivate</button>'
+        : '<button class="btn-ok" data-action="temp-toggle" data-id="' + e.id + '" data-active="1"><i class="fa-solid fa-check"></i> Activate</button>';
+      return '<tr>' +
+        td('Name', '<b>' + esc(e.emp_name) + '</b>') +
+        td('Code', esc(e.employee_code || '—')) +
+        td('Mobile', esc(e.mobile || '—')) +
+        td('Department', esc(e.department || '—')) +
+        td('Status', chip) +
+        td('Added', fmt(e.created_at)) +
+        td('', btn) + '</tr>';
+    }).join('');
+    setupFilters('temp-table');
+  }
+
+  async function addTempEmployee() {
+    var name = $('te-name').value.trim();
+    var mobile = ($('te-mobile').value || '').replace(/\D/g, '');
+    var code = $('te-code').value.trim();
+    var dept = $('te-dept').value;
+    if (!name || !mobile || !dept) { showToast('Name, mobile aur department zaroori hain.', 'warning'); return; }
+    if (!/^\d{10}$/.test(mobile)) { showToast('Mobile 10 digit ka hona chahiye.', 'warning'); return; }
+
+    var btn = $('te-submit');
+    setBtnProcessing(btn, true);
+    var res = await db.from('temp_employees').insert({
+      emp_name: name, mobile: mobile, employee_code: code || null, department: dept
+    });
+    setBtnProcessing(btn, false);
+    if (res.error) {
+      showToast(res.error.message.indexOf('duplicate') >= 0 ? 'Ye mobile pehle se registered hai.' : res.error.message, 'error', 6000);
+      return;
+    }
+    audit('temp_employee_added', { name: name, department: dept });
+    showToast(name + ' add ho gaya.', 'success');
+    $('te-name').value = ''; $('te-mobile').value = ''; $('te-code').value = ''; $('te-dept').value = '';
+    loadTempEmployees();
+  }
+
+  async function toggleTempEmployee(id, active) {
+    var res = await db.from('temp_employees').update({ active: active === '1' }).eq('id', id);
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    showToast(active === '1' ? 'Activated.' : 'Deactivated.', 'success');
+    loadTempEmployees();
   }
 
   // ================= REQUESTS =================
