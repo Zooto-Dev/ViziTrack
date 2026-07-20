@@ -354,12 +354,26 @@
     <p class="text-sm text-slate-500 mb-4">No invitation found — fill this and the host will approve.</p>
     <div class="mb-3"><label class="text-label">Visitor name *</label><input id="r-name" class="kiosk-input" placeholder="Full name" /></div>
     <div class="mb-3"><label class="text-label">Mobile *</label><input id="r-mobile" type="tel" inputmode="numeric" maxlength="10" class="kiosk-input" placeholder="10-digit mobile" /></div>
-    <div class="mb-3"><label class="text-label">Email *</label><input id="r-email" type="email" class="kiosk-input" placeholder="you@example.com" /></div>
+    <div class="mb-3"><label class="text-label">Email <span class="text-slate-400 normal-case font-normal">(optional)</span></label><input id="r-email" type="email" class="kiosk-input" placeholder="you@example.com — optional" /></div>
     <div class="mb-3"><label class="text-label">Address</label><input id="r-address" class="kiosk-input" placeholder="City / company" /></div>
     <div class="mb-3"><label class="text-label">Purpose *</label>
       <select id="r-purpose" class="kiosk-input">
-        <option value="">Select purpose</option><option>Meeting</option><option>Interview</option>
-        <option>Delivery</option><option>Service</option><option>Other</option>
+<option value="">Select purpose</option>
+        <option>Meeting</option>
+        <option>Client Visit</option>
+        <option>Vendor / Supplier</option>
+        <option>Interview</option>
+        <option>Delivery</option>
+        <option>Pickup</option>
+        <option>Service / Repair</option>
+        <option>Maintenance</option>
+        <option>Audit / Inspection</option>
+        <option>Training</option>
+        <option>Sample Collection</option>
+        <option>Contractor Work</option>
+        <option>Official Work</option>
+        <option>Personal</option>
+        <option>Other</option>
       </select>
     </div>
     <div class="mb-4"><label class="text-label">Host name *</label><input id="r-host" list="host-list" class="kiosk-input" placeholder="Whom are you visiting?" /><datalist id="host-list"></datalist></div>
@@ -407,7 +421,7 @@
     otpChannel: 'whatsapp',
     otpTarget: null,
     stream: null, facingMode: 'user',
-    detectTimer: null,
+    detectTimer: null, detecting: false, detectStop: false, workCanvas: null,
     qr: null, qrRunning: false,
     faceReady: false, matcher: null,
     matchedEmail: null, visitor: null, invitation: null, openLog: null,
@@ -464,7 +478,12 @@
       else if (a === 'check-in') openAction('Check-in');
       else if (a === 'check-out') openAction('Check-out');
       else if (a === 'go-back') goBack();
-      else if (a === 'switch-camera') { S.facingMode = S.facingMode === 'user' ? 'environment' : 'user'; if (S.mode === 'face') startCamera(); }
+      else if (a === 'switch-camera') {
+        S.facingMode = S.facingMode === 'user' ? 'environment' : 'user';
+        showToast(S.facingMode === 'user' ? 'Front camera' : 'Back camera', 'info', 1500);
+        if (S.mode === 'face') startCamera();
+        else if (S.mode === 'qr') restartQr();
+      }
       else if (a === 'send-otp') sendOtp();
       else if (a === 'verify-otp') verifyOtp();
       else if (a === 'resend-otp') sendOtp();
@@ -495,13 +514,31 @@
   // ---------- face models + descriptors ----------
   async function loadFaceModels() {
     try {
+      // GPU backend — CPU se kai guna tez
+      if (faceapi.tf && faceapi.tf.setBackend) {
+        try { await faceapi.tf.setBackend('webgl'); await faceapi.tf.ready(); } catch (e) {}
+      }
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
         faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
         faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
       ]);
       S.faceReady = true;
+      warmUp();
     } catch (e) { console.error('Face models failed', e); }
+  }
+
+  // Pehli asli detection se pehle model ko ek dummy frame pe chala do,
+  // warna first scan pe 2-3 second ka freeze aata hai.
+  async function warmUp() {
+    try {
+      var c = document.createElement('canvas');
+      c.width = 224; c.height = 224;
+      var x = c.getContext('2d');
+      x.fillStyle = '#888'; x.fillRect(0, 0, 224, 224);
+      await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+        .withFaceLandmarks().withFaceDescriptor();
+    } catch (e) {}
   }
 
   async function loadDescriptors() {
@@ -582,7 +619,7 @@
   function frameState(st) { var f = $('scan-frame'); f.classList.remove('ok', 'err'); if (st) f.classList.add(st); }
 
   function stopAll(keepScreen) {
-    if (S.detectTimer) { clearInterval(S.detectTimer); S.detectTimer = null; }
+    stopDetection();
     if (S.stream) { S.stream.getTracks().forEach(function (t) { t.stop(); }); S.stream = null; }
     if (S.qr && S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function () {}); }
     if (S.otpTimer) { clearInterval(S.otpTimer); S.otpTimer = null; }
@@ -603,35 +640,106 @@
     }
   }
 
+  // Detection ke liye chhota work canvas — full-res video pe detect karna 4x mehnga hai
+  function getWorkCanvas() {
+    if (!S.workCanvas) {
+      S.workCanvas = document.createElement('canvas');
+      S.workCanvas.width = 320;
+      S.workCanvas.height = 240;
+    }
+    return S.workCanvas;
+  }
+
+  // Self-scheduling loop: agla frame tabhi chalta hai jab pichhla poora ho jaye.
+  // (setInterval overlap kar ke lag build-up karta tha)
   function startDetection() {
-    if (S.detectTimer) clearInterval(S.detectTimer);
-    S.detectTimer = setInterval(async function () {
-      if (!S.faceReady || S.busy) return;
-      var video = $('video');
-      if (video.readyState < 2) return;
-      try {
+    stopDetection();
+    S.detectStop = false;
+    tick();
+  }
+
+  function stopDetection() {
+    S.detectStop = true;
+    if (S.detectTimer) { clearTimeout(S.detectTimer); S.detectTimer = null; }
+  }
+
+  async function tick() {
+    if (S.detectStop) return;
+    if (S.detecting) { S.detectTimer = setTimeout(tick, 120); return; }
+
+    var video = $('video');
+    if (!S.faceReady || S.busy || !video || video.readyState < 2) {
+      S.detectTimer = setTimeout(tick, 200);
+      return;
+    }
+
+    S.detecting = true;
+    try {
+      var c = getWorkCanvas();
+      c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
+
+      // Stage 1 — sirf detection (sasta). Khaali frames pe descriptor waste nahi hota.
+      var box = await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.45 }));
+      if (box) {
+        // Stage 2 — face mila tabhi landmarks + descriptor (mehnga)
         var det = await faceapi
-          .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
+          .detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.45 }))
           .withFaceLandmarks().withFaceDescriptor();
-        if (!det) return;
-        if (!S.matcher) { setInstruction('Face not registered', 'Use QR badge or OTP'); return; }
-        var best = S.matcher.findBestMatch(det.descriptor);
-        if (best.label === 'unknown') { setInstruction('Not recognised yet...', 'Try QR badge or OTP'); return; }
-        clearInterval(S.detectTimer); S.detectTimer = null;
-        frameState('ok');
-        onIdentified('email', best.label);
-      } catch (e) { /* transient frame errors ignore */ }
-    }, 700);
+        if (det) {
+          if (!S.matcher) {
+            setInstruction('Face not registered', 'Use QR badge or OTP');
+          } else {
+            var best = S.matcher.findBestMatch(det.descriptor);
+            if (best.label === 'unknown') {
+              setInstruction('Not recognised yet...', 'Try QR badge or OTP');
+            } else {
+              stopDetection();
+              frameState('ok');
+              S.detecting = false;
+              onIdentified('email', best.label);
+              return;
+            }
+          }
+        }
+      }
+    } catch (e) { /* transient frame errors ignore */ }
+    S.detecting = false;
+    S.detectTimer = setTimeout(tick, 90);
   }
 
   // ---------- qr flow ----------
   function startQr() {
-    S.qr = S.qr || new Html5Qrcode('qr-reader');
-    S.qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } },
+    if (!S.qr) {
+      var opts = { verbose: false };
+      // Sirf QR format scan karo — baaki barcode types check karna waste hai
+      try {
+        if (window.Html5QrcodeSupportedFormats) {
+          opts.formatsToSupport = [Html5QrcodeSupportedFormats.QR_CODE];
+        }
+      } catch (e) {}
+      S.qr = new Html5Qrcode('qr-reader', opts);
+    }
+    S.qr.start(
+      { facingMode: S.facingMode },
+      {
+        fps: 15,
+        qrbox: { width: 250, height: 250 },
+        // Browser ka native BarcodeDetector — JS decoder se kai guna tez
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+      },
       function (text) { if (S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function () {}); onQr(text); } },
       function () {}
     ).then(function () { S.qrRunning = true; })
       .catch(function () { showMsg('Camera error', 'Could not start QR scanner.', null, 'error'); });
+  }
+
+  function restartQr() {
+    if (S.qr && S.qrRunning) {
+      S.qrRunning = false;
+      S.qr.stop().then(function () { startQr(); }).catch(function () { startQr(); });
+    } else {
+      startQr();
+    }
   }
 
   async function onQr(text) {
@@ -909,11 +1017,12 @@
       purpose: $('r-purpose').value,
       host_name: $('r-host').value.trim()
     };
-    if (!data.visitor_name || !data.mobile || !data.email || !data.purpose || !data.host_name) {
-      showMsg('Missing details', 'Please fill all required fields.'); return;
+    if (!data.visitor_name || !data.mobile || !data.purpose || !data.host_name) {
+      showMsg('Missing details', 'Name, mobile, purpose aur host — ye zaroori hain.'); return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) { showMsg('Invalid email', 'Enter a valid email address.'); return; }
     if (!/^\d{10}$/.test(data.mobile)) { showMsg('Invalid mobile', 'Enter a 10-digit mobile number.'); return; }
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) { showMsg('Invalid email', 'Email galat hai — sahi karo ya khali chhod do.'); return; }
+    if (!data.email) data.email = null;
     showLoader('Submitting...');
     var res = await db.from('requests').insert(data);
     hideLoader();
