@@ -76,6 +76,25 @@
     .diag-log { margin-top: 8px; font-size: 0.72rem; color: #64748b; font-variant-numeric: tabular-nums; white-space: pre-line; line-height: 1.5; }
 
     #toast-container { position: fixed; top: 20px; right: 20px; z-index: 99999; }
+
+    /* ===== OFFLINE / SYNC PILL ===== */
+    .net-pill { position: fixed; top: 12px; right: 14px; z-index: 99997; display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-size: 0.72rem; font-weight: 600; color: #475569; }
+    .net-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
+    .net-pill.offline { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+    .net-pill.offline .net-dot { background: #ef4444; }
+    .sync-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px; background: #fef3c7; color: #b45309; font-size: 0.68rem; }
+
+    /* ===== WHO'S INSIDE LIST ===== */
+    .inside-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 10px; background: #fff; }
+    .inside-photo { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: #f1f5f9; flex: none; border: 1px solid #e2e8f0; }
+    .inside-photo-ph { width: 52px; height: 52px; border-radius: 10px; background: #e0f2fe; color: #0369a1; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; flex: none; }
+    .inside-info { flex: 1; min-width: 0; }
+    .inside-name { font-weight: 700; color: #1e293b; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .inside-meta { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+    .inside-time { font-size: 0.7rem; color: #94a3b8; margin-top: 1px; }
+    .inside-out-btn { flex: none; background: #f59e0b; color: #fff; border: none; font-weight: 600; font-size: 0.8rem; padding: 9px 14px; border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .inside-out-btn:active { transform: scale(0.97); }
+    .inside-empty { text-align: center; color: #94a3b8; padding: 40px 20px; font-size: 0.9rem; }
     .toast { background: white; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 0.75rem; min-width: 280px; max-width: 400px; animation: slideIn 0.3s ease; border-left: 4px solid; }
     .toast.success { border-left-color: #10b981; } .toast.error { border-left-color: #ef4444; } .toast.warning { border-left-color: #f59e0b; } .toast.info { border-left-color: #3b82f6; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
@@ -248,6 +267,13 @@
 
 <div id="toast-container"></div>
 
+<!-- ================= OFFLINE / SYNC STATUS PILL ================= -->
+<div id="net-pill" class="net-pill">
+  <span id="net-dot" class="net-dot"></span>
+  <span id="net-text">Online</span>
+  <span id="sync-badge" class="sync-badge hidden"><i class="fa-solid fa-rotate fa-spin"></i> <span id="sync-count">0</span></span>
+</div>
+
 <!-- ================= DIAGNOSTIC PANEL (gate speed test) ================= -->
 <button id="diag-toggle" title="Speed diagnostics">
   <i class="fa-solid fa-gauge-high"></i>
@@ -301,7 +327,7 @@
 </div>
 
 <!-- ================= HOME ================= -->
-<div id="screen-home" class="screen hidden items-center justify-between" style="padding:6vh 20px 3vh;">
+<div id="screen-home" class="screen hidden items-center justify-between" style="padding:5vh 20px 3vh;">
   <div class="text-center">
     <span class="font-bold tracking-tight" style="font-size:clamp(34px,6vw,58px);"><span class="text-cyan-600">Ne</span><span class="text-amber-500">X</span><span class="text-sky-600">uS</span></span>
     <p class="text-slate-500 mt-1" style="font-size:clamp(14px,2vw,18px);">Welcome — tap to begin</p>
@@ -318,7 +344,31 @@
     </div>
   </div>
 
+  <button id="whos-inside-btn" data-action="show-inside" class="flex items-center gap-2 px-5 py-3 rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 font-semibold text-sm hover:border-cyan-400 transition-colors">
+    <i class="fa-solid fa-users text-cyan-600"></i>
+    <span>Who's inside</span>
+    <span id="inside-count" class="ml-1 min-w-[22px] h-[22px] px-1.5 inline-flex items-center justify-center rounded-full bg-cyan-600 text-white text-xs">0</span>
+  </button>
+
   <div class="text-slate-400 text-xs">Nexus · Visitor Management</div>
+</div>
+
+<!-- ================= WHO'S INSIDE ================= -->
+<div id="screen-inside" class="screen hidden">
+  <div class="kiosk-topbar">
+    <button class="text-sm font-semibold flex items-center gap-2" style="color:#0d5c75;" data-action="go-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
+    <h2 class="text-base font-bold text-slate-800">Currently inside</h2>
+    <button class="text-slate-500" data-action="refresh-inside" title="Refresh"><i class="fa-solid fa-rotate text-lg"></i></button>
+  </div>
+  <div class="px-4 py-2 bg-slate-50 border-b border-slate-200">
+    <div class="relative">
+      <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+      <input id="inside-search" type="text" placeholder="Naam ya mobile se dhoondo..." class="kiosk-input !pl-9" />
+    </div>
+  </div>
+  <div id="inside-list" class="panel !max-w-2xl" style="padding-top:12px;">
+    <div class="text-center text-slate-400 py-10"><div class="spinner mx-auto"></div><p class="mt-3 text-sm">Loading…</p></div>
+  </div>
 </div>
 
 <!-- ================= ACTION ================= -->
@@ -330,9 +380,9 @@
   </div>
 
   <div class="mode-tabs">
-    <button class="mode-tab active" data-mode="face"><i class="fa-solid fa-face-smile mr-1"></i> Face</button>
-    <button class="mode-tab" data-mode="qr"><i class="fa-solid fa-qrcode mr-1"></i> QR Badge</button>
+    <button class="mode-tab active" data-mode="qr"><i class="fa-solid fa-qrcode mr-1"></i> QR Badge</button>
     <button class="mode-tab" data-mode="otp"><i class="fa-solid fa-shield-halved mr-1"></i> OTP</button>
+    <button class="mode-tab" data-mode="face"><i class="fa-solid fa-face-smile mr-1"></i> Face</button>
   </div>
 
   <!-- camera stage -->
@@ -468,7 +518,7 @@
 (function () {
   'use strict';
 
-  const NEXUS_KIOSK_BUILD = '2026-08-05-DIAG';
+  const NEXUS_KIOSK_BUILD = '2026-08-05-OFFLINE';
   console.log('Nexus Kiosk build ' + NEXUS_KIOSK_BUILD);
 
   var CFG = window.VZT_CONFIG;
@@ -488,8 +538,150 @@
     matchedEmail: null, visitor: null, invitation: null, openLog: null,
     otpTimer: null, otpLeft: 180,
     busy: false,
-    diag: {}   // step timings — diagnostic panel
+    diag: {},   // step timings — diagnostic panel
+    online: navigator.onLine, syncing: false, insideCache: []
   };
+
+  // ============ OFFLINE ENGINE ============
+  // Network flaky ho to check-in local queue (IndexedDB) mein jaata hai,
+  // visitor turant nikal jaata hai, aur wapas online hone pe auto-sync.
+  var NET_TIMEOUT = 8000; // 8 sec se zyada koi call nahi latakega
+
+  // Promise ko timeout ke saath race karo — 10-min hang khatam
+  function withTimeout(promise, ms, label) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var t = setTimeout(function () {
+        if (!done) { done = true; reject(new Error('timeout:' + (label || 'network'))); }
+      }, ms || NET_TIMEOUT);
+      Promise.resolve(promise).then(function (v) {
+        if (!done) { done = true; clearTimeout(t); resolve(v); }
+      }, function (e) {
+        if (!done) { done = true; clearTimeout(t); reject(e); }
+      });
+    });
+  }
+
+  // ---------- IndexedDB (queue + caches) ----------
+  var IDB = null;
+  function openIDB() {
+    return new Promise(function (resolve) {
+      try {
+        var req = indexedDB.open('nexus_kiosk', 1);
+        req.onupgradeneeded = function (e) {
+          var d = e.target.result;
+          if (!d.objectStoreNames.contains('queue')) d.createObjectStore('queue', { keyPath: 'localId' });
+          if (!d.objectStoreNames.contains('cache')) d.createObjectStore('cache', { keyPath: 'key' });
+        };
+        req.onsuccess = function (e) { IDB = e.target.result; resolve(IDB); };
+        req.onerror = function () { resolve(null); };
+      } catch (e) { resolve(null); }
+    });
+  }
+  function idbPut(store, val) {
+    return new Promise(function (resolve) {
+      if (!IDB) return resolve(false);
+      try {
+        var tx = IDB.transaction(store, 'readwrite');
+        tx.objectStore(store).put(val);
+        tx.oncomplete = function () { resolve(true); };
+        tx.onerror = function () { resolve(false); };
+      } catch (e) { resolve(false); }
+    });
+  }
+  function idbGetAll(store) {
+    return new Promise(function (resolve) {
+      if (!IDB) return resolve([]);
+      try {
+        var tx = IDB.transaction(store, 'readonly');
+        var rq = tx.objectStore(store).getAll();
+        rq.onsuccess = function () { resolve(rq.result || []); };
+        rq.onerror = function () { resolve([]); };
+      } catch (e) { resolve([]); }
+    });
+  }
+  function idbGet(store, key) {
+    return new Promise(function (resolve) {
+      if (!IDB) return resolve(null);
+      try {
+        var tx = IDB.transaction(store, 'readonly');
+        var rq = tx.objectStore(store).get(key);
+        rq.onsuccess = function () { resolve(rq.result || null); };
+        rq.onerror = function () { resolve(null); };
+      } catch (e) { resolve(null); }
+    });
+  }
+  function idbDelete(store, key) {
+    return new Promise(function (resolve) {
+      if (!IDB) return resolve(false);
+      try {
+        var tx = IDB.transaction(store, 'readwrite');
+        tx.objectStore(store).delete(key);
+        tx.oncomplete = function () { resolve(true); };
+        tx.onerror = function () { resolve(false); };
+      } catch (e) { resolve(false); }
+    });
+  }
+
+  // ---------- online/offline indicator ----------
+  function setOnline(v) {
+    S.online = v;
+    var pill = $('net-pill');
+    if (!pill) return;
+    pill.classList.toggle('offline', !v);
+    $('net-text').textContent = v ? 'Online' : 'Offline';
+    if (v) { updateNetInfo(); flushQueue(); }
+  }
+
+  async function refreshSyncBadge() {
+    var q = await idbGetAll('queue');
+    var badge = $('sync-badge');
+    if (q.length) { badge.classList.remove('hidden'); $('sync-count').textContent = q.length; }
+    else badge.classList.add('hidden');
+  }
+
+  // ---------- queue a check-in/out when offline or on failure ----------
+  async function queueEntry(kind, payload) {
+    var item = { localId: 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), kind: kind, payload: payload, ts: Date.now() };
+    await idbPut('queue', item);
+    refreshSyncBadge();
+    return item;
+  }
+
+  // ---------- flush queued entries to Supabase ----------
+  async function flushQueue() {
+    if (S.syncing || !db || !navigator.onLine) return;
+    S.syncing = true;
+    try {
+      var items = await idbGetAll('queue');
+      items.sort(function (a, b) { return a.ts - b.ts; });
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        try {
+          if (it.kind === 'checkin') {
+            await withTimeout(db.from('visitor_logs').insert(it.payload.row), NET_TIMEOUT, 'sync-in');
+            if (it.payload.face) {
+              try {
+                var ex = await withTimeout(db.from('face_data').select('id').ilike('email', it.payload.face.email).limit(1), NET_TIMEOUT, 'sync-face-chk');
+                if (!ex.data || !ex.data.length) await withTimeout(db.from('face_data').insert(it.payload.face), NET_TIMEOUT, 'sync-face');
+              } catch (e) {}
+            }
+          } else if (it.kind === 'checkout') {
+            await withTimeout(db.from('visitor_logs').update(it.payload.patch).eq('id', it.payload.id).is('check_out_time', null), NET_TIMEOUT, 'sync-out');
+          }
+          await idbDelete('queue', it.localId);
+          refreshSyncBadge();
+        } catch (e) {
+          break; // network phir gir gaya — baad mein try karenge
+        }
+      }
+    } finally {
+      S.syncing = false;
+      var left = await idbGetAll('queue');
+      if (!left.length) { /* all synced */ }
+      loadDescriptors(true);
+    }
+  }
 
   // ---------- DIAGNOSTIC TIMING ENGINE ----------
   // Kisi bhi async network call ko wrap karke uska time record karta hai.
@@ -534,6 +726,10 @@
     bindEvents();
     bindDiag();
     updateNetInfo();
+    openIDB().then(function () { refreshSyncBadge(); });
+    window.addEventListener('online', function () { setOnline(true); });
+    window.addEventListener('offline', function () { setOnline(false); });
+    setOnline(navigator.onLine);
     showLoader('Connecting...');
     var cfgT0 = (performance && performance.now) ? performance.now() : Date.now();
     jsonp({ action: 'getPublicConfig' }, async function (res) {
@@ -549,6 +745,7 @@
       if (!sess) { show('screen-login'); return; }
       startApp();
       pingSupabase();
+      flushQueue();
     });
   });
 
@@ -631,6 +828,33 @@
     loadFaceModels();
     loadDescriptors();
     loadHosts();
+    cacheInvitations();
+    refreshInsideCount();
+    // Har 2 min: invitations + faces refresh, queue flush, inside count
+    setInterval(function () {
+      cacheInvitations();
+      refreshInsideCount();
+      flushQueue();
+    }, 2 * 60 * 1000);
+  }
+
+  // Aaj ki active invitations local cache mein — offline check-in ke liye
+  async function cacheInvitations() {
+    if (!db || !navigator.onLine) return;
+    try {
+      var nowIso = new Date().toISOString();
+      var res = await withTimeout(
+        db.from('invitations').select('*').eq('status', 'active').gte('to_time', nowIso),
+        NET_TIMEOUT, 'cache-inv');
+      if (!res.error && res.data) {
+        await idbPut('cache', { key: 'invitations', data: res.data, at: Date.now() });
+      }
+    } catch (e) { /* offline — purana cache chalega */ }
+  }
+
+  async function getCachedInvitations() {
+    var c = await idbGet('cache', 'invitations');
+    return (c && c.data) || [];
   }
 
   // ---------- Nexus intro ----------
@@ -674,10 +898,109 @@
       else if (a === 'cancel-photo') closePhoto();
       else if (a === 'submit-request') submitRequest();
       else if (a === 'close-msg') closeMsg();
+      else if (a === 'show-inside') openInside();
+      else if (a === 'refresh-inside') loadInsideList(true);
+      else if (a === 'inside-checkout') insideCheckout(el.dataset.id, el);
     });
     $('otp-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
     $('r-mobile').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
     $('mobile-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
+    $('inside-search').addEventListener('input', function () { renderInsideList(this.value); });
+  }
+
+  // ================= WHO'S INSIDE + DIRECT CHECK-OUT =================
+  async function refreshInsideCount() {
+    if (!db || !navigator.onLine) return;
+    try {
+      var start = new Date(); start.setHours(0, 0, 0, 0);
+      var res = await withTimeout(
+        db.from('visitor_logs').select('id', { count: 'exact', head: true })
+          .gte('check_in_time', start.toISOString()).is('check_out_time', null),
+        NET_TIMEOUT, 'inside-count');
+      if (res.count != null) $('inside-count').textContent = res.count;
+    } catch (e) {}
+  }
+
+  function openInside() {
+    show('screen-inside');
+    $('inside-search').value = '';
+    loadInsideList();
+  }
+
+  async function loadInsideList(isRefresh) {
+    var box = $('inside-list');
+    if (isRefresh) showToast('Refreshing...', 'info', 1200);
+    if (!navigator.onLine) {
+      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-wifi-slash text-2xl mb-2"></i><br>Offline — list dikhane ke liye network chahiye.<br><span class="text-xs">Check-out phir bhi ho jayega, queue mein chala jayega.</span></div>';
+      return;
+    }
+    box.innerHTML = '<div class="text-center text-slate-400 py-10"><div class="spinner mx-auto"></div><p class="mt-3 text-sm">Loading…</p></div>';
+    try {
+      var start = new Date(); start.setHours(0, 0, 0, 0);
+      var res = await withTimeout(
+        db.from('visitor_logs')
+          .select('id,visitor_name,mobile,email,purpose,host_name,check_in_time,photo_in')
+          .gte('check_in_time', start.toISOString()).is('check_out_time', null)
+          .order('check_in_time', { ascending: false }),
+        NET_TIMEOUT, 'inside-list');
+      if (res.error) throw new Error(res.error.message);
+      S.insideCache = res.data || [];
+      $('inside-count').textContent = S.insideCache.length;
+      renderInsideList($('inside-search').value);
+    } catch (e) {
+      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i><br>List load nahi hui (network slow).<br><button class="btn-kiosk-ghost mt-3" data-action="refresh-inside">Retry</button></div>';
+    }
+  }
+
+  function renderInsideList(filter) {
+    var box = $('inside-list');
+    var f = (filter || '').toLowerCase().trim();
+    var rows = S.insideCache.filter(function (r) {
+      if (!f) return true;
+      return (r.visitor_name || '').toLowerCase().indexOf(f) >= 0 || (r.mobile || '').indexOf(f) >= 0;
+    });
+    if (!rows.length) {
+      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-user-group text-2xl mb-2"></i><br>' +
+        (f ? 'Koi match nahi mila.' : 'Abhi koi andar nahi hai.') + '</div>';
+      return;
+    }
+    box.innerHTML = rows.map(function (r) {
+      var photo = r.photo_in
+        ? '<img class="inside-photo" src="' + r.photo_in + '">'
+        : '<div class="inside-photo-ph">' + esc((r.visitor_name || '?').charAt(0).toUpperCase()) + '</div>';
+      return '<div class="inside-card">' + photo +
+        '<div class="inside-info">' +
+          '<div class="inside-name">' + esc(r.visitor_name || 'Visitor') + '</div>' +
+          '<div class="inside-meta">' + esc(r.host_name || '—') + (r.purpose ? ' · ' + esc(r.purpose) : '') + '</div>' +
+          '<div class="inside-time"><i class="fa-regular fa-clock"></i> In: ' + tfmt(r.check_in_time) + '</div>' +
+        '</div>' +
+        '<button class="inside-out-btn" data-action="inside-checkout" data-id="' + r.id + '"><i class="fa-solid fa-right-from-bracket"></i> Check-out</button>' +
+        '</div>';
+    }).join('');
+  }
+
+  async function insideCheckout(id, btn) {
+    var row = S.insideCache.filter(function (r) { return r.id === id; })[0];
+    var name = row ? row.visitor_name : 'visitor';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
+    var patch = { check_out_time: new Date().toISOString() };
+    try {
+      var up = await withTimeout(
+        db.from('visitor_logs').update(patch).eq('id', id).is('check_out_time', null),
+        NET_TIMEOUT, 'inside-out');
+      if (up.error) throw new Error(up.error.message);
+      S.insideCache = S.insideCache.filter(function (r) { return r.id !== id; });
+      $('inside-count').textContent = S.insideCache.length;
+      renderInsideList($('inside-search').value);
+      showToast(name + ' checked out.', 'success', 2500);
+    } catch (e) {
+      // network fail — queue kar do
+      await queueEntry('checkout', { id: id, patch: patch });
+      S.insideCache = S.insideCache.filter(function (r) { return r.id !== id; });
+      $('inside-count').textContent = S.insideCache.length;
+      renderInsideList($('inside-search').value);
+      showToast(name + ' checkout queue mein — network aane par sync hoga.', 'warning', 3500);
+    }
   }
 
   // ---------- device login ----------
@@ -722,17 +1045,36 @@
     } catch (e) {}
   }
 
-  async function loadDescriptors() {
+  async function loadDescriptors(silent) {
     if (!db) return;
+    if (!navigator.onLine) { await loadDescriptorsFromCache(); return; }
     var t0 = (performance && performance.now) ? performance.now() : Date.now();
-    var res = await db.from('face_data').select('email,descriptor');
-    diagSet('d-faces', Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0), 3000);
-    if (res.error || !res.data || !res.data.length) { S.matcher = null; return; }
-    var labeled = res.data.map(function (r) {
-      return new faceapi.LabeledFaceDescriptors(r.email, [new Float32Array(r.descriptor)]);
-    });
-    S.matcher = new faceapi.FaceMatcher(labeled, CFG.FACE_MATCH_THRESHOLD);
-    showToast(labeled.length + ' faces ready', 'info', 2500);
+    try {
+      var res = await withTimeout(db.from('face_data').select('email,descriptor'), NET_TIMEOUT, 'faces');
+      diagSet('d-faces', Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0), 3000);
+      if (res.error || !res.data || !res.data.length) { S.matcher = null; return; }
+      // cache for offline
+      await idbPut('cache', { key: 'faces', data: res.data, at: Date.now() });
+      buildMatcher(res.data, silent);
+    } catch (e) {
+      await loadDescriptorsFromCache();
+    }
+  }
+
+  async function loadDescriptorsFromCache() {
+    var c = await idbGet('cache', 'faces');
+    if (c && c.data && c.data.length) { buildMatcher(c.data, true); }
+    else { S.matcher = null; }
+  }
+
+  function buildMatcher(data, silent) {
+    try {
+      var labeled = data.map(function (r) {
+        return new faceapi.LabeledFaceDescriptors(r.email, [new Float32Array(r.descriptor)]);
+      });
+      S.matcher = new faceapi.FaceMatcher(labeled, CFG.FACE_MATCH_THRESHOLD);
+      if (!silent) showToast(labeled.length + ' faces ready', 'info', 2500);
+    } catch (e) { S.matcher = null; }
   }
 
   async function loadHosts() {
@@ -743,11 +1085,9 @@
     }).join('');
   }
 
-  setInterval(loadDescriptors, 5 * 60 * 1000);
-
   // ---------- navigation ----------
   function show(id) {
-    ['screen-login', 'screen-home', 'screen-action'].forEach(function (s) { $(s).classList.add('hidden'); });
+    ['screen-login', 'screen-home', 'screen-action', 'screen-inside'].forEach(function (s) { $(s).classList.add('hidden'); });
     $(id).classList.remove('hidden');
   }
   function hidePanels() {
@@ -769,7 +1109,7 @@
     S.matchedEmail = null; S.visitor = null; S.invitation = null; S.openLog = null;
     $('screen-title').textContent = type;
     show('screen-action');
-    switchMode('face');
+    switchMode('qr');
   }
 
   function goBack() { stopAll(); show('screen-home'); }
@@ -930,11 +1270,23 @@
     var m = /^VZT:([0-9a-f-]{36})$/i.exec(text.trim());
     if (m) {
       showLoader('Checking invitation...');
-      var res = await db.from('invitations').select('*').eq('id', m[1]).limit(1);
+      var inv = null;
+      try {
+        var res = await withTimeout(db.from('invitations').select('*').eq('id', m[1]).limit(1), NET_TIMEOUT, 'qr-inv');
+        inv = res.data && res.data[0];
+      } catch (e) {
+        // offline — cache se badge id dhoondo
+        var list = await getCachedInvitations();
+        inv = list.filter(function (x) { return x.id === m[1]; })[0] || null;
+      }
       hideLoader();
-      var inv = res.data && res.data[0];
-      if (!inv) { frameState('err'); showMsg('Invalid badge', 'This invitation was not found.', function () { switchMode('qr'); }, 'error'); return; }
-      handleInvitation(inv, inv.email);
+      if (!inv) { frameState('err'); showMsg('Badge nahi mila', 'Ye invitation database/cache mein nahi hai. OTP ya Face try karo.', function () { switchMode('qr'); }, 'error'); return; }
+      // dedupe + already-checked-in check onIdentified route se ho jaata hai;
+      // yahan seedha invitation ke identifier se identify karo
+      var key = inv.mobile ? 'mobile' : 'email';
+      var val = inv.mobile || inv.email;
+      // check-out ya duplicate handle karne ke liye onIdentified use karo, phir uska invitation resolve wahi ho jayega
+      onIdentified(key, val);
       return;
     }
     try {
@@ -943,7 +1295,7 @@
       if (email) { onIdentified('email', String(email).toLowerCase()); return; }
     } catch (e) {}
     frameState('err');
-    showMsg('Invalid QR', 'This QR is not a Nexus badge.', function () { switchMode('qr'); }, 'error');
+    showMsg('Invalid QR', 'Ye QR Nexus badge nahi hai.', function () { switchMode('qr'); }, 'error');
   }
 
   // ---------- otp flow ----------
@@ -1034,11 +1386,18 @@
     S.diag = {}; // naye check-in ke timings reset
     showLoader(S.checkType === 'Check-in' ? 'Checking invitation...' : 'Finding your check-in...');
 
+    // ---- CHECK-OUT ----
     if (S.checkType === 'Check-out') {
-      var open = await time('findlog', findOpenLog(key, val));
+      var open = null;
+      try {
+        open = await time('findlog', withTimeout(findOpenLogQuery(key, val), NET_TIMEOUT, 'findlog'));
+      } catch (e) {
+        // offline / slow — inside cache se dhoondo
+        open = findOpenInCache(key, val);
+      }
       hideLoader();
       renderCheckinDiag();
-      if (!open) { showMsg('No check-in found', 'No active check-in found today for ' + val + '.', function () { goBack(); }); return; }
+      if (!open) { showMsg('No check-in found', 'Aaj ka koi active check-in nahi mila ' + val + ' ke liye.', function () { goBack(); }); return; }
       S.visitor = { name: open.visitor_name, mobile: open.mobile, email: open.email, address: open.address };
       S.invitation = { purpose: open.purpose, host_name: open.host_name };
       S.openLog = open;
@@ -1046,19 +1405,58 @@
       return;
     }
 
-    var open2 = await time('findlog', findOpenLog(key, val));
-    if (open2) { hideLoader(); renderCheckinDiag(); showMsg('Already checked in', 'You are already checked in today. Use Check-out when leaving.', function () { goBack(); }); return; }
+    // ---- CHECK-IN ----
+    var open2 = null, offline = false;
+    try {
+      open2 = await time('findlog', withTimeout(findOpenLogQuery(key, val), NET_TIMEOUT, 'findlog'));
+    } catch (e) {
+      offline = true;
+      open2 = findOpenInCache(key, val);
+    }
+    if (open2) { hideLoader(); renderCheckinDiag(); showMsg('Already checked in', 'Aap aaj already checked-in ho. Jaate waqt Check-out karna.', function () { goBack(); }); return; }
 
-    var nowIso = new Date().toISOString();
-    var q = db.from('invitations').select('*').eq('status', 'active')
-      .lte('from_time', nowIso).gte('to_time', nowIso);
-    q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
-    var res = await time('invlookup', q.order('from_time', { ascending: false }).limit(1));
+    var inv = null;
+    if (!offline) {
+      try {
+        var nowIso = new Date().toISOString();
+        var q = db.from('invitations').select('*').eq('status', 'active')
+          .lte('from_time', nowIso).gte('to_time', nowIso);
+        q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
+        var res = await time('invlookup', withTimeout(q.order('from_time', { ascending: false }).limit(1), NET_TIMEOUT, 'invlookup'));
+        inv = res.data && res.data[0];
+      } catch (e) {
+        offline = true;
+      }
+    }
+    // offline ya live-miss — cache se dhoondo
+    if (!inv) {
+      var cInv = await findInvitationInCache(key, val);
+      if (cInv) inv = cInv;
+    }
     hideLoader();
     renderCheckinDiag();
-    var inv = res.data && res.data[0];
     if (!inv) { promptNoInvitation(key, val); return; }
     handleInvitation(inv, (key === 'email') ? val : null);
+  }
+
+  // Cache mein aaj ki active invitation dhoondo (offline check-in)
+  async function findInvitationInCache(key, val) {
+    var list = await getCachedInvitations();
+    var now = new Date();
+    var matches = list.filter(function (inv) {
+      var ok = new Date(inv.from_time) <= now && new Date(inv.to_time) >= now && inv.status === 'active';
+      if (!ok) return false;
+      return (key === 'mobile') ? (inv.mobile === val) : ((inv.email || '').toLowerCase() === String(val).toLowerCase());
+    });
+    matches.sort(function (a, b) { return new Date(b.from_time) - new Date(a.from_time); });
+    return matches[0] || null;
+  }
+
+  // Inside cache (jo list load hui thi) se open log dhoondo — offline checkout
+  function findOpenInCache(key, val) {
+    return (S.insideCache || []).filter(function (r) {
+      return (key === 'mobile') ? (r.mobile === val) : ((r.email || '').toLowerCase() === String(val).toLowerCase());
+    })[0] || null;
   }
 
   async function handleInvitation(inv, email) {
@@ -1067,36 +1465,34 @@
     var idVal = email || inv.mobile || inv.email;
     if (S.checkType === 'Check-in') {
       if (new Date(inv.from_time) > now || new Date(inv.to_time) < now) {
-        showMsg('Invitation not active', 'This invitation is valid ' + fmtDT(inv.from_time) + ' - ' + fmtDT(inv.to_time) + '.', function () { goBack(); });
+        showMsg('Invitation not active', 'Ye invitation valid hai ' + fmtDT(inv.from_time) + ' - ' + fmtDT(inv.to_time) + '.', function () { goBack(); });
         return;
       }
-      var open = await findOpenLog(idKey, idVal);
-      if (open) { showMsg('Already checked in', 'You are already checked in today.', function () { goBack(); }); return; }
     }
     S.matchedEmail = (email || inv.email || '').toLowerCase();
     S.invitation = inv;
-    var f = null;
-    if (S.matchedEmail) {
-      var fd = await db.from('face_data').select('visitor_name,mobile,address').ilike('email', S.matchedEmail).limit(1);
-      f = fd.data && fd.data[0];
-    }
     S.visitor = {
-      name: inv.visitor_name || (f && f.visitor_name) || '',
-      mobile: inv.mobile || (f && f.mobile) || '',
+      name: inv.visitor_name || '',
+      mobile: inv.mobile || '',
       email: S.matchedEmail,
-      address: inv.address || (f && f.address) || ''
+      address: inv.address || ''
     };
     showDataForm();
   }
 
-  async function findOpenLog(key, val) {
+  function findOpenLogQuery(key, val) {
     var start = new Date(); start.setHours(0, 0, 0, 0);
     var q = db.from('visitor_logs').select('*')
       .gte('check_in_time', start.toISOString())
       .is('check_out_time', null);
     q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
-    var res = await q.order('check_in_time', { ascending: false }).limit(1);
-    return res.data && res.data[0];
+    return q.order('check_in_time', { ascending: false }).limit(1).then(function (res) {
+      return res.data && res.data[0];
+    });
+  }
+
+  async function findOpenLog(key, val) {
+    return findOpenLogQuery(key, val);
   }
 
   function promptNoInvitation(key, val) {
@@ -1188,39 +1584,65 @@
   }
 
   async function doCheckIn(photoB64, descriptor) {
-    var ins = await time('insert', db.from('visitor_logs').insert({
+    var row = {
       invitation_id: (S.invitation && S.invitation.id) || null,
       visitor_name: S.visitor.name, mobile: S.visitor.mobile, email: S.visitor.email,
       address: S.visitor.address, purpose: S.invitation && S.invitation.purpose,
       host_name: S.invitation && S.invitation.host_name,
       photo_in: photoB64
-    }));
-    if (ins.error) throw new Error(ins.error.message);
-    renderCheckinDiag();
+    };
+    var faceRow = (descriptor && descriptor.length === 128 && S.visitor.email) ? {
+      email: S.visitor.email, visitor_name: S.visitor.name,
+      mobile: S.visitor.mobile, address: S.visitor.address, descriptor: descriptor
+    } : null;
 
-    if (descriptor && descriptor.length === 128 && S.visitor.email) {
-      var ex = await db.from('face_data').select('id').ilike('email', S.visitor.email).limit(1);
-      if (!ex.data || !ex.data.length) {
-        await db.from('face_data').insert({
-          email: S.visitor.email, visitor_name: S.visitor.name,
-          mobile: S.visitor.mobile, address: S.visitor.address, descriptor: descriptor
-        });
-        loadDescriptors();
+    try {
+      var ins = await time('insert', withTimeout(db.from('visitor_logs').insert(row), NET_TIMEOUT, 'insert'));
+      if (ins.error) throw new Error(ins.error.message);
+      renderCheckinDiag();
+
+      if (faceRow) {
+        try {
+          var ex = await withTimeout(db.from('face_data').select('id').ilike('email', S.visitor.email).limit(1), NET_TIMEOUT, 'face-chk');
+          if (!ex.data || !ex.data.length) {
+            await withTimeout(db.from('face_data').insert(faceRow), NET_TIMEOUT, 'face-ins');
+            loadDescriptors(true);
+          }
+        } catch (e) { /* face save best-effort */ }
       }
+      hideLoader();
+      refreshInsideCount();
+      showMsg('Checked in', 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.', goBack, 'success');
+    } catch (e) {
+      // Network fail/timeout — queue kar do, visitor turant nikal jaaye
+      renderCheckinDiag();
+      await queueEntry('checkin', { row: row, face: faceRow });
+      hideLoader();
+      showMsg('Checked in (offline)',
+        (S.visitor.name || 'Visitor') + ' ki entry save ho gayi. Network aane par apne aap sync ho jayegi.',
+        goBack, 'success');
     }
-    hideLoader();
-    showMsg('Checked in', 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.', goBack, 'success');
   }
 
   async function doCheckOut(photoB64) {
     if (!S.openLog) throw new Error('No open check-in found');
-    var up = await time('insert', db.from('visitor_logs')
-      .update({ check_out_time: new Date().toISOString(), photo_out: photoB64 })
-      .eq('id', S.openLog.id).is('check_out_time', null));
-    if (up.error) throw new Error(up.error.message);
-    renderCheckinDiag();
-    hideLoader();
-    showMsg('Checked out', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', goBack, 'success');
+    var patch = { check_out_time: new Date().toISOString(), photo_out: photoB64 };
+    try {
+      var up = await time('insert', withTimeout(db.from('visitor_logs')
+        .update(patch).eq('id', S.openLog.id).is('check_out_time', null), NET_TIMEOUT, 'insert'));
+      if (up.error) throw new Error(up.error.message);
+      renderCheckinDiag();
+      hideLoader();
+      refreshInsideCount();
+      showMsg('Checked out', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', goBack, 'success');
+    } catch (e) {
+      renderCheckinDiag();
+      await queueEntry('checkout', { id: S.openLog.id, patch: { check_out_time: patch.check_out_time, photo_out: photoB64 } });
+      hideLoader();
+      showMsg('Checked out (offline)',
+        'Out-time save ho gaya. Network aane par sync ho jayega.',
+        goBack, 'success');
+    }
   }
 
   // ---------- request ----------
