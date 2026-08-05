@@ -233,6 +233,9 @@
     .home-label { font-size: clamp(18px,3vw,26px); font-weight: 700; }
 
     .kiosk-topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; background: #fff; z-index: 30; }
+    .cam-switch { display: inline-flex; align-items: center; gap: 6px; background: #0d5c75; color: #fff; border: none; font-size: 0.8rem; font-weight: 600; padding: 8px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+    .cam-switch:active { transform: scale(0.96); }
+    .cam-switch i { font-size: 0.95rem; }
     .mode-tabs { display: flex; gap: 22px; padding: 0 16px; border-bottom: 1px solid #e2e8f0; background: #fff; z-index: 30; }
     .mode-tab { background: none; border: 0; padding: 12px 2px; font-size: 0.85rem; font-weight: 600; color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent; }
     .mode-tab.active { color: #0d5c75; border-bottom-color: #0d5c75; }
@@ -377,7 +380,10 @@
   <div class="kiosk-topbar">
     <button class="text-sm font-semibold flex items-center gap-2" style="color:#0d5c75;" data-action="go-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
     <h2 id="screen-title" class="text-base font-bold text-slate-800">Check-in</h2>
-    <button class="text-slate-500" data-action="switch-camera" title="Switch camera"><i class="fa-solid fa-camera-rotate text-lg"></i></button>
+    <button id="cam-switch-btn" class="cam-switch" data-action="switch-camera">
+      <i class="fa-solid fa-camera-rotate"></i>
+      <span id="cam-switch-label">Back cam</span>
+    </button>
   </div>
 
   <div class="mode-tabs">
@@ -519,7 +525,7 @@
 (function () {
   'use strict';
 
-  const NEXUS_KIOSK_BUILD = '2026-08-05-QRCAM';
+  const NEXUS_KIOSK_BUILD = '2026-08-05-QRCAM2';
   console.log('Nexus Kiosk build ' + NEXUS_KIOSK_BUILD);
 
   var CFG = window.VZT_CONFIG;
@@ -884,6 +890,7 @@
       else if (a === 'go-back') goBack();
       else if (a === 'switch-camera') {
         S.facingMode = S.facingMode === 'user' ? 'environment' : 'user';
+        updateCamLabel();
         showToast(S.facingMode === 'user' ? 'Front camera' : 'Back camera', 'info', 1500);
         if (S.mode === 'face') startCamera();
         else if (S.mode === 'qr') { S.qrTouched = true; restartQr(); }
@@ -1129,20 +1136,30 @@
     frameState('');
     if (mode === 'face') {
       S.facingMode = 'user'; // face ke liye front
+      $('cam-switch-btn').style.display = '';
+      updateCamLabel();
       $('stage').classList.remove('hidden');
       $('video').classList.remove('hidden'); $('qr-reader').classList.add('hidden');
       setInstruction('Look at the camera', "We'll recognise you automatically");
       startCamera();
     } else if (mode === 'qr') {
       if (!S.qrTouched) S.facingMode = 'environment'; // QR default back — jab tak user switch na kare
+      $('cam-switch-btn').style.display = '';
+      updateCamLabel();
       $('stage').classList.remove('hidden');
       $('video').classList.add('hidden'); $('qr-reader').classList.remove('hidden');
       setInstruction('Show your badge QR', 'Hold it inside the frame');
       startQr();
     } else {
+      $('cam-switch-btn').style.display = 'none'; // OTP mode — camera nahi
       $('otp-request-form').classList.remove('hidden');
       switchChannel(S.otpChannel);
     }
+  }
+
+  function updateCamLabel() {
+    var lbl = $('cam-switch-label');
+    if (lbl) lbl.textContent = (S.facingMode === 'user') ? 'Front cam' : 'Back cam';
   }
 
   function setInstruction(t, s) { $('instruction-text').textContent = t; $('instruction-sub').textContent = s || ''; }
