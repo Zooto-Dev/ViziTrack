@@ -519,7 +519,7 @@
 (function () {
   'use strict';
 
-  const NEXUS_KIOSK_BUILD = '2026-08-05-QRFIX';
+  const NEXUS_KIOSK_BUILD = '2026-08-05-QRCAM';
   console.log('Nexus Kiosk build ' + NEXUS_KIOSK_BUILD);
 
   var CFG = window.VZT_CONFIG;
@@ -534,7 +534,7 @@
     otpTarget: null,
     stream: null, facingMode: 'user',
     detectTimer: null, detecting: false, detectStop: false, workCanvas: null,
-    qr: null, qrRunning: false,
+    qr: null, qrRunning: false, qrTouched: false,
     faceReady: false, matcher: null,
     matchedEmail: null, visitor: null, invitation: null, openLog: null,
     otpTimer: null, otpLeft: 180,
@@ -886,7 +886,7 @@
         S.facingMode = S.facingMode === 'user' ? 'environment' : 'user';
         showToast(S.facingMode === 'user' ? 'Front camera' : 'Back camera', 'info', 1500);
         if (S.mode === 'face') startCamera();
-        else if (S.mode === 'qr') restartQr();
+        else if (S.mode === 'qr') { S.qrTouched = true; restartQr(); }
       }
       else if (a === 'send-otp') sendOtp();
       else if (a === 'verify-otp') verifyOtp();
@@ -1111,6 +1111,7 @@
   function openAction(type) {
     S.checkType = type;
     S.matchedEmail = null; S.visitor = null; S.invitation = null; S.openLog = null;
+    S.qrTouched = false; S.facingMode = 'environment'; // naya visitor — QR back se shuru
     $('screen-title').textContent = type;
     show('screen-action');
     switchMode('qr');
@@ -1127,11 +1128,13 @@
     hidePanels();
     frameState('');
     if (mode === 'face') {
+      S.facingMode = 'user'; // face ke liye front
       $('stage').classList.remove('hidden');
       $('video').classList.remove('hidden'); $('qr-reader').classList.add('hidden');
       setInstruction('Look at the camera', "We'll recognise you automatically");
       startCamera();
     } else if (mode === 'qr') {
+      if (!S.qrTouched) S.facingMode = 'environment'; // QR default back — jab tak user switch na kare
       $('stage').classList.remove('hidden');
       $('video').classList.add('hidden'); $('qr-reader').classList.remove('hidden');
       setInstruction('Show your badge QR', 'Hold it inside the frame');
@@ -1259,33 +1262,38 @@
     };
     var onScan = function (text) { if (S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function () {}); onQr(text); } };
 
-    // Pehle cameras enumerate karo — QR ke liye back camera best hai
+    // QR ke liye default back camera (behtar focus), par switch button front pe le jaa sake.
+    var wantBack = (S.facingMode !== 'user');
+
     Html5Qrcode.getCameras().then(function (cams) {
       var camId = null;
       if (cams && cams.length) {
-        // back/rear/environment wala camera dhoondo
+        var backId = null, frontId = null;
         for (var i = 0; i < cams.length; i++) {
           var lbl = (cams[i].label || '').toLowerCase();
-          if (lbl.indexOf('back') >= 0 || lbl.indexOf('rear') >= 0 || lbl.indexOf('environment') >= 0) { camId = cams[i].id; break; }
+          if (lbl.indexOf('back') >= 0 || lbl.indexOf('rear') >= 0 || lbl.indexOf('environment') >= 0) { if (!backId) backId = cams[i].id; }
+          if (lbl.indexOf('front') >= 0 || lbl.indexOf('user') >= 0 || lbl.indexOf('face') >= 0) { if (!frontId) frontId = cams[i].id; }
         }
-        if (!camId) camId = cams[cams.length - 1].id; // aakhri aksar back hota hai
+        if (wantBack) camId = backId || cams[cams.length - 1].id;   // back — ya aakhri (aksar back)
+        else camId = frontId || cams[0].id;                         // front — ya pehla
       }
-      var camSource = camId ? camId : { facingMode: 'environment' };
+      var camSource = camId ? camId : { facingMode: (wantBack ? 'environment' : 'user') };
       S.qr.start(camSource, scanConfig, onScan, function () {})
         .then(function () { S.qrRunning = true; setInstruction('Show your badge QR', 'Hold it inside the frame'); })
-        .catch(function (e) { qrStartFallback(scanConfig, onScan, e); });
+        .catch(function (e) { qrStartFallback(scanConfig, onScan, wantBack, e); });
     }).catch(function () {
-      // enumeration fail — seedha environment try karo
-      S.qr.start({ facingMode: 'environment' }, scanConfig, onScan, function () {})
+      // enumeration fail — facingMode se try karo
+      S.qr.start({ facingMode: (wantBack ? 'environment' : 'user') }, scanConfig, onScan, function () {})
         .then(function () { S.qrRunning = true; })
-        .catch(function (e) { qrStartFallback(scanConfig, onScan, e); });
+        .catch(function (e) { qrStartFallback(scanConfig, onScan, wantBack, e); });
     });
   }
 
-  // environment fail ho to user (front) camera try karo, phir bhi fail to error
-  function qrStartFallback(scanConfig, onScan, err) {
-    S.qr.start({ facingMode: 'user' }, scanConfig, onScan, function () {})
-      .then(function () { S.qrRunning = true; showToast('Front camera se scan ho raha hai', 'info', 2000); })
+  // Pehla side fail ho to doosra side try karo
+  function qrStartFallback(scanConfig, onScan, triedBack, err) {
+    var other = triedBack ? 'user' : 'environment';
+    S.qr.start({ facingMode: other }, scanConfig, onScan, function () {})
+      .then(function () { S.qrRunning = true; showToast(other === 'user' ? 'Front camera' : 'Back camera', 'info', 1800); })
       .catch(function (e2) {
         var msg = (err && (err.message || err)) || (e2 && (e2.message || e2)) || 'unknown';
         showMsg('Camera start nahi hua', 'QR scanner camera nahi khol paaya (' + msg + '). Camera permission allow karo, ya OTP/Face use karo.', function () { switchMode('otp'); }, 'error');
