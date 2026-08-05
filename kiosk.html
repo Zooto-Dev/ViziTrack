@@ -55,6 +55,26 @@
     .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
+    /* ===== DIAGNOSTIC PANEL ===== */
+    #diag-toggle { position: fixed; bottom: 14px; left: 14px; z-index: 99998; width: 44px; height: 44px; border-radius: 50%; background: #0d5c75; color: #fff; border: none; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25); opacity: 0.55; transition: opacity 0.2s; }
+    #diag-toggle:hover { opacity: 1; }
+    #diag-panel { position: fixed; bottom: 68px; left: 14px; z-index: 99998; width: 300px; max-width: calc(100vw - 28px); background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); display: none; overflow: hidden; }
+    #diag-panel.open { display: block; }
+    .diag-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #0d5c75; color: #fff; font-weight: 700; font-size: 0.85rem; }
+    .diag-head button { background: none; border: none; color: #fff; font-size: 1rem; cursor: pointer; }
+    .diag-body { padding: 12px 14px; }
+    .diag-body hr { border: none; border-top: 1px solid #f0f3f7; margin: 10px 0; }
+    .diag-title { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #94a3b8; margin-bottom: 6px; }
+    .diag-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 0.8rem; color: #475569; }
+    .diag-row b { font-variant-numeric: tabular-nums; font-weight: 700; color: #1e293b; }
+    .diag-row.total { border-top: 1px dashed #e2e8f0; margin-top: 4px; padding-top: 8px; font-size: 0.85rem; }
+    .diag-row.total b { color: #0d5c75; }
+    .diag-slow b { color: #ef4444 !important; }
+    .diag-ok b { color: #10b981 !important; }
+    .diag-btn { width: 100%; margin-top: 4px; padding: 8px; border-radius: 8px; border: 1px solid #0d5c75; background: #fff; color: #0d5c75; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .diag-btn:active { background: #f0f9ff; }
+    .diag-log { margin-top: 8px; font-size: 0.72rem; color: #64748b; font-variant-numeric: tabular-nums; white-space: pre-line; line-height: 1.5; }
+
     #toast-container { position: fixed; top: 20px; right: 20px; z-index: 99999; }
     .toast { background: white; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 0.75rem; min-width: 280px; max-width: 400px; animation: slideIn 0.3s ease; border-left: 4px solid; }
     .toast.success { border-left-color: #10b981; } .toast.error { border-left-color: #ef4444; } .toast.warning { border-left-color: #f59e0b; } .toast.info { border-left-color: #3b82f6; }
@@ -227,6 +247,33 @@
 <body class="antialiased text-slate-800">
 
 <div id="toast-container"></div>
+
+<!-- ================= DIAGNOSTIC PANEL (gate speed test) ================= -->
+<button id="diag-toggle" title="Speed diagnostics">
+  <i class="fa-solid fa-gauge-high"></i>
+</button>
+<div id="diag-panel">
+  <div class="diag-head">
+    <span><i class="fa-solid fa-gauge-high"></i> Speed Diagnostics</span>
+    <button id="diag-close"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="diag-body">
+    <div class="diag-row"><span>Network</span><b id="d-net">—</b></div>
+    <div class="diag-row"><span>Ping (Supabase)</span><b id="d-ping">—</b></div>
+    <div class="diag-row"><span>Config load</span><b id="d-config">—</b></div>
+    <div class="diag-row"><span>Faces load</span><b id="d-faces">—</b></div>
+    <hr>
+    <div class="diag-title">Last check-in steps</div>
+    <div class="diag-row"><span>Face descriptor</span><b id="d-desc">—</b></div>
+    <div class="diag-row"><span>Find open log</span><b id="d-findlog">—</b></div>
+    <div class="diag-row"><span>Invitation lookup</span><b id="d-invlookup">—</b></div>
+    <div class="diag-row"><span>DB insert + photo</span><b id="d-insert">—</b></div>
+    <div class="diag-row total"><span>TOTAL</span><b id="d-total">—</b></div>
+    <hr>
+    <button id="diag-pingtest" class="diag-btn"><i class="fa-solid fa-stopwatch"></i> Run 5× ping test</button>
+    <div id="d-pingresult" class="diag-log"></div>
+  </div>
+</div>
 <div id="global-loader"><div class="spinner"></div><div class="mt-3 font-semibold text-slate-700 text-sm" id="loader-text">Processing...</div></div>
 
 <!-- ================= NEXUS CINEMATIC INTRO ================= -->
@@ -332,6 +379,18 @@
       <span id="otp-timer" class="text-slate-500 font-semibold">03:00</span>
       <button class="btn-kiosk-ghost hidden" id="resend-btn" data-action="resend-otp">Resend</button>
     </div>
+
+    <div id="otp-fallback-note" class="hidden mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-[13px] text-amber-800">
+      <i class="fa-solid fa-circle-info mr-1"></i><span id="otp-fallback-text"></span>
+    </div>
+
+    <div class="mt-5 pt-4 border-t border-slate-200 text-center">
+      <p class="text-[13px] text-slate-500 mb-2">Code nahi mila?</p>
+      <div class="flex gap-2 justify-center flex-wrap">
+        <button class="btn-kiosk-ghost" id="try-email-btn" data-action="try-email"><i class="fa-solid fa-envelope mr-1"></i> Email pe bhejo</button>
+        <button class="btn-kiosk-ghost" data-action="switch-to-qr"><i class="fa-solid fa-qrcode mr-1"></i> QR badge use karo</button>
+      </div>
+    </div>
   </div>
 
   <!-- data form -->
@@ -409,7 +468,7 @@
 (function () {
   'use strict';
 
-  const NEXUS_KIOSK_BUILD = '2026-07-18-A';
+  const NEXUS_KIOSK_BUILD = '2026-08-05-DIAG';
   console.log('Nexus Kiosk build ' + NEXUS_KIOSK_BUILD);
 
   var CFG = window.VZT_CONFIG;
@@ -428,15 +487,59 @@
     faceReady: false, matcher: null,
     matchedEmail: null, visitor: null, invitation: null, openLog: null,
     otpTimer: null, otpLeft: 180,
-    busy: false
+    busy: false,
+    diag: {}   // step timings — diagnostic panel
   };
+
+  // ---------- DIAGNOSTIC TIMING ENGINE ----------
+  // Kisi bhi async network call ko wrap karke uska time record karta hai.
+  // Visitor flow bilkul same rehta hai — sirf measure hota hai.
+  async function time(step, promise) {
+    var t0 = (performance && performance.now) ? performance.now() : Date.now();
+    try {
+      var out = await promise;
+      S.diag[step] = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0);
+      return out;
+    } catch (e) {
+      S.diag[step] = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0);
+      S.diag[step + '_err'] = 1;
+      throw e;
+    }
+  }
+
+  function diagSet(id, ms, slowAbove) {
+    var el = $(id);
+    if (!el) return;
+    if (ms == null) { el.textContent = '—'; return; }
+    el.textContent = ms + ' ms';
+    var row = el.closest('.diag-row');
+    if (row) {
+      row.classList.remove('diag-slow', 'diag-ok');
+      if (slowAbove && ms > slowAbove) row.classList.add('diag-slow');
+      else row.classList.add('diag-ok');
+    }
+  }
+
+  function renderCheckinDiag() {
+    diagSet('d-desc', S.diag.descriptor, 1500);
+    diagSet('d-findlog', S.diag.findlog, 2000);
+    diagSet('d-invlookup', S.diag.invlookup, 2000);
+    diagSet('d-insert', S.diag.insert, 3000);
+    var total = (S.diag.descriptor || 0) + (S.diag.findlog || 0) + (S.diag.invlookup || 0) + (S.diag.insert || 0);
+    diagSet('d-total', total, 5000);
+  }
 
   // ---------- boot ----------
   document.addEventListener('DOMContentLoaded', function () {
     bindEvents();
+    bindDiag();
+    updateNetInfo();
     showLoader('Connecting...');
+    var cfgT0 = (performance && performance.now) ? performance.now() : Date.now();
     jsonp({ action: 'getPublicConfig' }, async function (res) {
       hideLoader();
+      var cfgMs = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - cfgT0);
+      diagSet('d-config', cfgMs, 3000);
       if (!res.success) {
         showMsg('Setup error', res.error || 'Config load failed. Check MAIL_API_URL/KEY in this file.', null, 'error');
         return;
@@ -445,8 +548,82 @@
       var sess = (await db.auth.getSession()).data.session;
       if (!sess) { show('screen-login'); return; }
       startApp();
+      pingSupabase();
     });
   });
+
+  // ---------- Network info + Supabase ping ----------
+  function updateNetInfo() {
+    var el = $('d-net');
+    if (!el) return;
+    var parts = [];
+    parts.push(navigator.onLine ? 'Online' : 'OFFLINE');
+    var c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (c) {
+      if (c.effectiveType) parts.push(c.effectiveType);
+      if (typeof c.downlink === 'number') parts.push(c.downlink + ' Mbps');
+      if (typeof c.rtt === 'number') parts.push('RTT ' + c.rtt + 'ms');
+    }
+    el.textContent = parts.join(' · ');
+    var row = el.closest('.diag-row');
+    if (row) {
+      row.classList.remove('diag-slow', 'diag-ok');
+      row.classList.add(navigator.onLine ? 'diag-ok' : 'diag-slow');
+    }
+  }
+
+  async function pingSupabase() {
+    if (!db) return null;
+    var t0 = (performance && performance.now) ? performance.now() : Date.now();
+    try {
+      // Sabse halka possible query — head request, zero rows
+      await db.from('hosts').select('auth_user_id', { count: 'exact', head: true });
+      var ms = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0);
+      diagSet('d-ping', ms, 800);
+      return ms;
+    } catch (e) {
+      diagSet('d-ping', null);
+      $('d-ping').textContent = 'FAIL';
+      return null;
+    }
+  }
+
+  function bindDiag() {
+    $('diag-toggle').addEventListener('click', function () {
+      $('diag-panel').classList.toggle('open');
+      updateNetInfo();
+      pingSupabase();
+    });
+    $('diag-close').addEventListener('click', function () { $('diag-panel').classList.remove('open'); });
+    $('diag-pingtest').addEventListener('click', runPingTest);
+    window.addEventListener('online', updateNetInfo);
+    window.addEventListener('offline', updateNetInfo);
+    var c = navigator.connection;
+    if (c && c.addEventListener) c.addEventListener('change', updateNetInfo);
+  }
+
+  // 5 baar ping karke min/avg/max nikalta hai — flaky wifi yahan clearly dikhti hai
+  async function runPingTest() {
+    var log = $('d-pingresult');
+    log.textContent = 'Testing';
+    var results = [];
+    for (var i = 0; i < 5; i++) {
+      log.textContent = 'Testing ' + (i + 1) + '/5...';
+      var ms = await pingSupabase();
+      results.push(ms);
+      await new Promise(function (r) { setTimeout(r, 400); });
+    }
+    var ok = results.filter(function (x) { return x != null; });
+    if (!ok.length) { log.textContent = 'All 5 pings FAILED — network down ya Supabase reachable nahi.'; return; }
+    var min = Math.min.apply(null, ok), max = Math.max.apply(null, ok);
+    var avg = Math.round(ok.reduce(function (a, b) { return a + b; }, 0) / ok.length);
+    var fails = results.length - ok.length;
+    log.textContent =
+      'Pings: ' + results.map(function (x) { return x == null ? 'FAIL' : x + 'ms'; }).join(', ') + '\n' +
+      'min ' + min + ' · avg ' + avg + ' · max ' + max + ' ms' +
+      (fails ? '\n' + fails + '/5 FAILED — wifi drop ho rahi hai!' : '') +
+      (max > 2000 ? '\n⚠ max bahut high — yahi 10-min hang ki wajah hai' : '');
+  }
 
   async function startApp() {
     playSplash();
@@ -490,6 +667,8 @@
       else if (a === 'verify-otp') verifyOtp();
       else if (a === 'resend-otp') sendOtp();
       else if (a === 'back-to-otp-request') { hidePanels(); $('otp-request-form').classList.remove('hidden'); }
+      else if (a === 'try-email') { tryEmailInstead(); }
+      else if (a === 'switch-to-qr') { switchMode('qr'); }
       else if (a === 'open-photo') openPhoto();
       else if (a === 'take-photo') takePhoto();
       else if (a === 'cancel-photo') closePhoto();
@@ -545,7 +724,9 @@
 
   async function loadDescriptors() {
     if (!db) return;
+    var t0 = (performance && performance.now) ? performance.now() : Date.now();
     var res = await db.from('face_data').select('email,descriptor');
+    diagSet('d-faces', Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0), 3000);
     if (res.error || !res.data || !res.data.length) { S.matcher = null; return; }
     var labeled = res.data.map(function (r) {
       return new faceapi.LabeledFaceDescriptors(r.email, [new Float32Array(r.descriptor)]);
@@ -783,13 +964,38 @@
     showLoader('Sending code...');
     jsonp(params, function (res) {
       hideLoader();
-      if (!res.success) { showMsg('Error', res.error, null, 'error'); return; }
+      if (!res.success) { showMsg('Code nahi bhej paaye', res.error, null, 'error'); return; }
+
       hidePanels();
       $('otp-form').classList.remove('hidden');
-      $('otp-email-display').textContent = display;
       $('otp-input').value = '';
+
+      // Server ne WhatsApp fail hone pe email pe bhej diya ho to wahi dikhao
+      var note = $('otp-fallback-note');
+      if (res.fallback === 'email') {
+        $('otp-email-display').textContent = res.sentTo || 'your email';
+        $('otp-fallback-text').textContent = (res.reason || 'WhatsApp pe nahi ja paaya.') + ' Code aapke email pe bhej diya hai.';
+        note.classList.remove('hidden');
+        $('try-email-btn').classList.add('hidden');
+      } else {
+        $('otp-email-display').textContent = display;
+        note.classList.add('hidden');
+        $('try-email-btn').classList.toggle('hidden', S.otpChannel === 'email');
+      }
       startOtpTimer();
     });
+  }
+
+  // WhatsApp pe code na aaye to seedha email channel pe switch
+  function tryEmailInstead() {
+    if (S.otpTimer) { clearInterval(S.otpTimer); S.otpTimer = null; }
+    hidePanels();
+    $('otp-request-form').classList.remove('hidden');
+    switchChannel('email');
+    // agar invitation ka email pata ho to prefill
+    if (S.matchedEmail) $('email-input').value = S.matchedEmail;
+    $('email-input').focus();
+    showToast('Email address daalo, code wahan bhej denge.', 'info', 3000);
   }
 
   function startOtpTimer() {
@@ -825,11 +1031,13 @@
   // ---------- identified → invitation lookup ----------
   async function onIdentified(key, val) {
     if (key === 'email') S.matchedEmail = val;
+    S.diag = {}; // naye check-in ke timings reset
     showLoader(S.checkType === 'Check-in' ? 'Checking invitation...' : 'Finding your check-in...');
 
     if (S.checkType === 'Check-out') {
-      var open = await findOpenLog(key, val);
+      var open = await time('findlog', findOpenLog(key, val));
       hideLoader();
+      renderCheckinDiag();
       if (!open) { showMsg('No check-in found', 'No active check-in found today for ' + val + '.', function () { goBack(); }); return; }
       S.visitor = { name: open.visitor_name, mobile: open.mobile, email: open.email, address: open.address };
       S.invitation = { purpose: open.purpose, host_name: open.host_name };
@@ -838,15 +1046,16 @@
       return;
     }
 
-    var open2 = await findOpenLog(key, val);
-    if (open2) { hideLoader(); showMsg('Already checked in', 'You are already checked in today. Use Check-out when leaving.', function () { goBack(); }); return; }
+    var open2 = await time('findlog', findOpenLog(key, val));
+    if (open2) { hideLoader(); renderCheckinDiag(); showMsg('Already checked in', 'You are already checked in today. Use Check-out when leaving.', function () { goBack(); }); return; }
 
     var nowIso = new Date().toISOString();
     var q = db.from('invitations').select('*').eq('status', 'active')
       .lte('from_time', nowIso).gte('to_time', nowIso);
     q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
-    var res = await q.order('from_time', { ascending: false }).limit(1);
+    var res = await time('invlookup', q.order('from_time', { ascending: false }).limit(1));
     hideLoader();
+    renderCheckinDiag();
     var inv = res.data && res.data[0];
     if (!inv) { promptNoInvitation(key, val); return; }
     handleInvitation(inv, (key === 'email') ? val : null);
@@ -952,11 +1161,13 @@
 
       var descriptor = null;
       if (S.checkType === 'Check-in' && S.faceReady) {
+        var dt0 = (performance && performance.now) ? performance.now() : Date.now();
         try {
           var det = await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
             .withFaceLandmarks().withFaceDescriptor();
           if (det) descriptor = Array.from(det.descriptor);
         } catch (e) { console.warn('Face descriptor skip:', e); }
+        S.diag.descriptor = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - dt0);
       }
 
       var photoB64 = await new Promise(function (res, rej) {
@@ -977,14 +1188,15 @@
   }
 
   async function doCheckIn(photoB64, descriptor) {
-    var ins = await db.from('visitor_logs').insert({
+    var ins = await time('insert', db.from('visitor_logs').insert({
       invitation_id: (S.invitation && S.invitation.id) || null,
       visitor_name: S.visitor.name, mobile: S.visitor.mobile, email: S.visitor.email,
       address: S.visitor.address, purpose: S.invitation && S.invitation.purpose,
       host_name: S.invitation && S.invitation.host_name,
       photo_in: photoB64
-    });
+    }));
     if (ins.error) throw new Error(ins.error.message);
+    renderCheckinDiag();
 
     if (descriptor && descriptor.length === 128 && S.visitor.email) {
       var ex = await db.from('face_data').select('id').ilike('email', S.visitor.email).limit(1);
@@ -1002,10 +1214,11 @@
 
   async function doCheckOut(photoB64) {
     if (!S.openLog) throw new Error('No open check-in found');
-    var up = await db.from('visitor_logs')
+    var up = await time('insert', db.from('visitor_logs')
       .update({ check_out_time: new Date().toISOString(), photo_out: photoB64 })
-      .eq('id', S.openLog.id).is('check_out_time', null);
+      .eq('id', S.openLog.id).is('check_out_time', null));
     if (up.error) throw new Error(up.error.message);
+    renderCheckinDiag();
     hideLoader();
     showMsg('Checked out', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', goBack, 'success');
   }
