@@ -518,7 +518,7 @@
 (function () {
   'use strict';
 
-  const NEXUS_KIOSK_BUILD = '2026-08-05-OFFLINE';
+  const NEXUS_KIOSK_BUILD = '2026-08-05-OFFLINE2';
   console.log('Nexus Kiosk build ' + NEXUS_KIOSK_BUILD);
 
   var CFG = window.VZT_CONFIG;
@@ -937,18 +937,23 @@
     box.innerHTML = '<div class="text-center text-slate-400 py-10"><div class="spinner mx-auto"></div><p class="mt-3 text-sm">Loading…</p></div>';
     try {
       var start = new Date(); start.setHours(0, 0, 0, 0);
+      // photo_in base64 heavy hai — list mein photo nahi laate, sirf initials.
+      // Isse query fast rehti hai aur timeout nahi hota.
       var res = await withTimeout(
         db.from('visitor_logs')
-          .select('id,visitor_name,mobile,email,purpose,host_name,check_in_time,photo_in')
+          .select('id,visitor_name,mobile,email,purpose,host_name,check_in_time')
           .gte('check_in_time', start.toISOString()).is('check_out_time', null)
           .order('check_in_time', { ascending: false }),
-        NET_TIMEOUT, 'inside-list');
+        15000, 'inside-list');
       if (res.error) throw new Error(res.error.message);
       S.insideCache = res.data || [];
       $('inside-count').textContent = S.insideCache.length;
       renderInsideList($('inside-search').value);
     } catch (e) {
-      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i><br>List load nahi hui (network slow).<br><button class="btn-kiosk-ghost mt-3" data-action="refresh-inside">Retry</button></div>';
+      var msg = (e && e.message) ? e.message : 'unknown';
+      var offlineMsg = (msg.indexOf('timeout') >= 0) ? 'Network slow — dobara try karo.' : ('Error: ' + esc(msg));
+      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i><br>' + offlineMsg +
+        '<br><button class="btn-kiosk-ghost mt-3" data-action="refresh-inside">Retry</button></div>';
     }
   }
 
@@ -965,14 +970,12 @@
       return;
     }
     box.innerHTML = rows.map(function (r) {
-      var photo = r.photo_in
-        ? '<img class="inside-photo" src="' + r.photo_in + '">'
-        : '<div class="inside-photo-ph">' + esc((r.visitor_name || '?').charAt(0).toUpperCase()) + '</div>';
+      var photo = '<div class="inside-photo-ph">' + esc((r.visitor_name || '?').charAt(0).toUpperCase()) + '</div>';
       return '<div class="inside-card">' + photo +
         '<div class="inside-info">' +
           '<div class="inside-name">' + esc(r.visitor_name || 'Visitor') + '</div>' +
           '<div class="inside-meta">' + esc(r.host_name || '—') + (r.purpose ? ' · ' + esc(r.purpose) : '') + '</div>' +
-          '<div class="inside-time"><i class="fa-regular fa-clock"></i> In: ' + tfmt(r.check_in_time) + '</div>' +
+          '<div class="inside-time"><i class="fa-regular fa-clock"></i> In: ' + tfmt(r.check_in_time) + (r.mobile ? ' · ' + esc(r.mobile) : '') + '</div>' +
         '</div>' +
         '<button class="inside-out-btn" data-action="inside-checkout" data-id="' + r.id + '"><i class="fa-solid fa-right-from-bracket"></i> Check-out</button>' +
         '</div>';
@@ -1685,8 +1688,8 @@
   }
 
   // ---------- ui helpers ----------
-  function showLoader(t) { $('loader-text').innerText = t || 'Processing...'; $('global-loader').style.display = 'flex'; }
-  function hideLoader() { $('global-loader').style.display = 'none'; }
+  function showLoader(t) { var lt = $('loader-text'); if (lt) lt.innerText = t || 'Processing...'; var gl = $('global-loader'); if (gl) gl.style.display = 'flex'; }
+  function hideLoader() { var gl = $('global-loader'); if (gl) gl.style.display = 'none'; }
 
   var msgCb = null;
   function showMsg(title, body, cb, type) {
