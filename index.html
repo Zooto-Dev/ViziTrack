@@ -86,6 +86,9 @@
     .photo-thumb { width: 120px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; }
 
     .table-toolbar { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f3f7; background: #fdfdfe; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end; }
+    .preset-chip { font-size: 0.7rem; font-weight: 600; padding: 0.3rem 0.7rem; border-radius: 999px; border: 1px solid #e2e8f0; background: #fff; color: #475569; cursor: pointer; transition: 0.15s; }
+    .preset-chip:hover { border-color: #17c1e8; color: #0d5c75; }
+    .preset-chip.active { background: #0d5c75; border-color: #0d5c75; color: #fff; }
     .filter-label { font-size: 0.7rem; font-weight: 600; color: #7b809a; text-transform: uppercase; white-space: nowrap; }
     .no-data-row td { text-align: center; padding: 2.5rem; color: #94a3b8; font-style: italic; }
 
@@ -363,11 +366,21 @@
     <section id="sec-activities" class="hidden">
       <div class="card-premium mb-4">
         <div class="table-toolbar">
-          <div><label class="text-label">Date</label><input id="a-date" type="date" class="custom-input !w-40" /></div>
+          <div><label class="text-label">From</label><input id="a-from" type="date" class="custom-input !w-40" /></div>
+          <div><label class="text-label">To</label><input id="a-to" type="date" class="custom-input !w-40" /></div>
           <div id="a-host-wrap"><label class="text-label">Host</label><select id="a-host" class="custom-input !w-44"><option value="">All hosts</option></select></div>
           <div><label class="text-label">Status</label><select id="a-status" class="custom-input !w-36"><option value="">All</option><option value="in">Inside</option><option value="out">Checked out</option></select></div>
           <button class="btn-brand" data-action="load-activities"><i class="fa-solid fa-filter"></i> Apply</button>
           <button class="btn-outline" data-action="export-table" data-table="act-table" data-name="activities"><i class="fa-solid fa-file-csv"></i> CSV</button>
+        </div>
+        <div class="px-4 pb-3 flex flex-wrap gap-2">
+          <button class="preset-chip" data-preset="today" data-target="a">Today</button>
+          <button class="preset-chip" data-preset="yesterday" data-target="a">Yesterday</button>
+          <button class="preset-chip" data-preset="week" data-target="a">This week</button>
+          <button class="preset-chip" data-preset="month" data-target="a">This month</button>
+          <button class="preset-chip" data-preset="lastmonth" data-target="a">Last month</button>
+          <button class="preset-chip" data-preset="7days" data-target="a">Last 7 days</button>
+          <button class="preset-chip" data-preset="30days" data-target="a">Last 30 days</button>
         </div>
       </div>
       <div class="card-premium">
@@ -435,6 +448,14 @@
           <div><label class="text-label">To</label><input id="au-to" type="date" class="custom-input !w-40" /></div>
           <button class="btn-brand" data-action="load-audit"><i class="fa-solid fa-magnifying-glass"></i> Load</button>
           <button class="btn-outline" data-action="export-audit"><i class="fa-solid fa-file-csv"></i> Download CSV</button>
+        </div>
+        <div class="px-4 pb-3 flex flex-wrap gap-2">
+          <button class="preset-chip" data-preset="today" data-target="au">Today</button>
+          <button class="preset-chip" data-preset="week" data-target="au">This week</button>
+          <button class="preset-chip" data-preset="month" data-target="au">This month</button>
+          <button class="preset-chip" data-preset="lastmonth" data-target="au">Last month</button>
+          <button class="preset-chip" data-preset="7days" data-target="au">Last 7 days</button>
+          <button class="preset-chip" data-preset="30days" data-target="au">Last 30 days</button>
         </div>
       </div>
       <div class="card-premium">
@@ -620,7 +641,7 @@
 (function () {
   'use strict';
 
-  const NEXUS_VMS_BUILD = '2026-07-18-A';
+  const NEXUS_VMS_BUILD = '2026-08-05-RANGE';
   console.log('Nexus VMS build ' + NEXUS_VMS_BUILD);
 
   var CFG = window.VZT_CONFIG;
@@ -743,7 +764,7 @@
 
   function initDefaults() {
     var now = new Date();
-    $('a-date').value = dstr(now);
+    $('a-from').value = dstr(now); $('a-to').value = dstr(now);
     $('au-to').value = dstr(now);
     var wk = new Date(now); wk.setDate(wk.getDate() - 7);
     $('au-from').value = dstr(wk);
@@ -752,6 +773,26 @@
     $('i-from').value = dtLocal(from); $('i-to').value = dtLocal(to);
     $('m-from').value = dtLocal(from); $('m-to').value = dtLocal(to);
     if (!$('multi-rows').children.length) addMultiRow();
+  }
+
+  // Date-range presets (Today, This month, etc.)
+  function applyPreset(preset, target) {
+    var now = new Date();
+    var from = new Date(now), to = new Date(now);
+    if (preset === 'today') { /* from=to=today */ }
+    else if (preset === 'yesterday') { from.setDate(from.getDate() - 1); to.setDate(to.getDate() - 1); }
+    else if (preset === 'week') { from.setDate(from.getDate() - from.getDay()); } // Sunday start
+    else if (preset === 'month') { from = new Date(now.getFullYear(), now.getMonth(), 1); }
+    else if (preset === 'lastmonth') { from = new Date(now.getFullYear(), now.getMonth() - 1, 1); to = new Date(now.getFullYear(), now.getMonth(), 0); }
+    else if (preset === '7days') { from.setDate(from.getDate() - 6); }
+    else if (preset === '30days') { from.setDate(from.getDate() - 29); }
+    $(target + '-from').value = dstr(from);
+    $(target + '-to').value = dstr(to);
+    document.querySelectorAll('[data-target="' + target + '"]').forEach(function (c) {
+      c.classList.toggle('active', c.dataset.preset === preset);
+    });
+    if (target === 'a') loadActivities();
+    else if (target === 'au') loadAudit();
   }
 
   // ================= EVENTS (delegation — no inline onclick) =================
@@ -768,8 +809,9 @@
         document.querySelectorAll('.dropdown-menu').forEach(function (m) { m.classList.remove('show'); });
       }
 
-      var el = e.target.closest('[data-action],[data-section],[data-invtab],[data-reqtab]');
+      var el = e.target.closest('[data-action],[data-section],[data-invtab],[data-reqtab],[data-preset]');
       if (!el) return;
+      if (el.dataset.preset) { applyPreset(el.dataset.preset, el.dataset.target); return; }
       if (el.dataset.section) { switchSection(el.dataset.section); closeSidebar(); return; }
       if (el.dataset.invtab) { switchInvTab(el.dataset.invtab); return; }
       if (el.dataset.reqtab) { switchReqTab(el.dataset.reqtab); return; }
@@ -1090,11 +1132,13 @@
 
   // ================= ACTIVITIES =================
   async function loadActivities() {
-    var dateStr = $('a-date').value || dstr(new Date());
-    var start = new Date(dateStr + 'T00:00:00'), end = new Date(dateStr + 'T23:59:59.999');
+    var fromStr = $('a-from').value || dstr(new Date());
+    var toStr = $('a-to').value || fromStr;
+    if (toStr < fromStr) { var t = fromStr; fromStr = toStr; toStr = t; $('a-from').value = fromStr; $('a-to').value = toStr; }
+    var start = new Date(fromStr + 'T00:00:00'), end = new Date(toStr + 'T23:59:59.999');
     var q2 = db.from('visitor_logs').select('id,invitation_id,visitor_name,mobile,email,address,purpose,host_name,check_in_time,check_out_time,forced_out')
       .gte('check_in_time', start.toISOString()).lte('check_in_time', end.toISOString())
-      .order('check_in_time', { ascending: false });
+      .order('check_in_time', { ascending: false }).limit(5000);
     if (!IS_ADMIN()) q2 = q2.eq('host_name', S.user.host_name);
     else if ($('a-host').value) q2 = q2.eq('host_name', $('a-host').value);
     var st = $('a-status').value;
@@ -1104,7 +1148,7 @@
     var res = await q2;
     var body = $('act-body');
     if (res.error) { body.innerHTML = noData(7, res.error.message); return; }
-    if (!res.data.length) { body.innerHTML = noData(7, 'Is din koi activity nahi.'); return; }
+    if (!res.data.length) { body.innerHTML = noData(7, 'Is range mein koi activity nahi.'); return; }
     body.innerHTML = res.data.map(function (r) {
       var inside = !r.check_out_time;
       var chip = inside ? '<span class="chip chip-green">Inside</span>'
@@ -1114,7 +1158,7 @@
       return '<tr>' +
         td('Visitor', '<b>' + esc(r.visitor_name) + '</b><br><span class="text-slate-400 text-[11px]">' + esc(r.mobile || r.email || '') + '</span>') +
         td('Host', esc(r.host_name || '—')) + td('Purpose', esc(r.purpose || '—')) +
-        td('Check-in', tfmt(r.check_in_time)) + td('Check-out', r.check_out_time ? tfmt(r.check_out_time) : '—') +
+        td('Check-in', fmt(r.check_in_time)) + td('Check-out', r.check_out_time ? fmt(r.check_out_time) : '—') +
         td('Status', chip) + td('', actions) + '</tr>';
     }).join('');
     setupFilters('act-table');
