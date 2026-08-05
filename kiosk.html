@@ -4,9 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Nexus · Gate Kiosk</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d5c75'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
     // ============ CONFIG — sirf yeh 2 values bharo ============
     window.VZT_CONFIG = {
@@ -518,7 +519,7 @@
 (function () {
   'use strict';
 
-  const NEXUS_KIOSK_BUILD = '2026-08-05-OFFLINE2';
+  const NEXUS_KIOSK_BUILD = '2026-08-05-QRFIX';
   console.log('Nexus Kiosk build ' + NEXUS_KIOSK_BUILD);
 
   var CFG = window.VZT_CONFIG;
@@ -1090,8 +1091,8 @@
 
   // ---------- navigation ----------
   function show(id) {
-    ['screen-login', 'screen-home', 'screen-action', 'screen-inside'].forEach(function (s) { $(s).classList.add('hidden'); });
-    $(id).classList.remove('hidden');
+    ['screen-login', 'screen-home', 'screen-action', 'screen-inside'].forEach(function (s) { var el = $(s); if (el) el.classList.add('hidden'); });
+    var t = $(id); if (t) t.classList.remove('hidden');
   }
   function hidePanels() {
     ['otp-request-form', 'otp-form', 'data-form', 'request-form'].forEach(function (p) { $(p).classList.add('hidden'); });
@@ -1235,28 +1236,60 @@
 
   // ---------- qr flow ----------
   function startQr() {
+    if (typeof Html5Qrcode === 'undefined') {
+      showMsg('QR library load nahi hui', 'Internet check karo aur page reload karo. Tab tak OTP ya Face use karo.', function () { switchMode('otp'); }, 'error');
+      return;
+    }
     if (!S.qr) {
       var opts = { verbose: false };
-      // Sirf QR format scan karo — baaki barcode types check karna waste hai
       try {
         if (window.Html5QrcodeSupportedFormats) {
           opts.formatsToSupport = [Html5QrcodeSupportedFormats.QR_CODE];
         }
       } catch (e) {}
-      S.qr = new Html5Qrcode('qr-reader', opts);
+      try { S.qr = new Html5Qrcode('qr-reader', opts); }
+      catch (e) { showMsg('QR error', 'QR scanner init nahi hua: ' + (e.message || e), function () { switchMode('otp'); }, 'error'); return; }
     }
-    S.qr.start(
-      { facingMode: S.facingMode },
-      {
-        fps: 15,
-        qrbox: { width: 250, height: 250 },
-        // Browser ka native BarcodeDetector — JS decoder se kai guna tez
-        experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-      },
-      function (text) { if (S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function () {}); onQr(text); } },
-      function () {}
-    ).then(function () { S.qrRunning = true; })
-      .catch(function () { showMsg('Camera error', 'Could not start QR scanner.', null, 'error'); });
+
+    var scanConfig = {
+      fps: 10,
+      qrbox: function (vw, vh) { var m = Math.floor(Math.min(vw, vh) * 0.7); return { width: m, height: m }; },
+      aspectRatio: 1.7778,
+      experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+    };
+    var onScan = function (text) { if (S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function () {}); onQr(text); } };
+
+    // Pehle cameras enumerate karo — QR ke liye back camera best hai
+    Html5Qrcode.getCameras().then(function (cams) {
+      var camId = null;
+      if (cams && cams.length) {
+        // back/rear/environment wala camera dhoondo
+        for (var i = 0; i < cams.length; i++) {
+          var lbl = (cams[i].label || '').toLowerCase();
+          if (lbl.indexOf('back') >= 0 || lbl.indexOf('rear') >= 0 || lbl.indexOf('environment') >= 0) { camId = cams[i].id; break; }
+        }
+        if (!camId) camId = cams[cams.length - 1].id; // aakhri aksar back hota hai
+      }
+      var camSource = camId ? camId : { facingMode: 'environment' };
+      S.qr.start(camSource, scanConfig, onScan, function () {})
+        .then(function () { S.qrRunning = true; setInstruction('Show your badge QR', 'Hold it inside the frame'); })
+        .catch(function (e) { qrStartFallback(scanConfig, onScan, e); });
+    }).catch(function () {
+      // enumeration fail — seedha environment try karo
+      S.qr.start({ facingMode: 'environment' }, scanConfig, onScan, function () {})
+        .then(function () { S.qrRunning = true; })
+        .catch(function (e) { qrStartFallback(scanConfig, onScan, e); });
+    });
+  }
+
+  // environment fail ho to user (front) camera try karo, phir bhi fail to error
+  function qrStartFallback(scanConfig, onScan, err) {
+    S.qr.start({ facingMode: 'user' }, scanConfig, onScan, function () {})
+      .then(function () { S.qrRunning = true; showToast('Front camera se scan ho raha hai', 'info', 2000); })
+      .catch(function (e2) {
+        var msg = (err && (err.message || err)) || (e2 && (e2.message || e2)) || 'unknown';
+        showMsg('Camera start nahi hua', 'QR scanner camera nahi khol paaya (' + msg + '). Camera permission allow karo, ya OTP/Face use karo.', function () { switchMode('otp'); }, 'error');
+      });
   }
 
   function restartQr() {
@@ -1714,6 +1747,11 @@
   }
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function tfmt(iso) {
+    if (!iso) return '—';
+    try { return new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }); }
+    catch (e) { return '—'; }
+  }
   function fmtDT(iso) {
     var d = new Date(iso);
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
