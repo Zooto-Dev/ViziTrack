@@ -346,17 +346,19 @@
       <div class="home-ring"><i class="fa-solid fa-right-to-bracket" style="color:#0d5c75;"></i></div>
       <span class="home-label" style="color:#0d5c75;">Check-in</span>
     </div>
-    <div class="home-tile" data-action="work-pass">
-      <div class="home-ring"><i class="fa-solid fa-id-card-clip text-emerald-600"></i></div>
-      <span class="home-label text-emerald-700">Work Pass<br><span style="font-size:.62em;font-weight:600;color:#64748b">Trial Worker (3 din)</span></span>
-    </div>
   </div>
 
-  <button id="whos-inside-btn" data-action="show-inside" class="flex items-center gap-2 px-5 py-3 rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 font-semibold text-sm hover:border-cyan-400 transition-colors">
-    <i class="fa-solid fa-users text-cyan-600"></i>
-    <span>Who's inside</span>
-    <span id="inside-count" class="ml-1 min-w-[22px] h-[22px] px-1.5 inline-flex items-center justify-center rounded-full bg-cyan-600 text-white text-xs">0</span>
-  </button>
+  <div class="flex items-center gap-2 flex-wrap justify-center">
+    <button id="whos-inside-btn" data-action="show-inside" class="flex items-center gap-2 px-5 py-3 rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 font-semibold text-sm hover:border-cyan-400 transition-colors">
+      <i class="fa-solid fa-users text-cyan-600"></i>
+      <span>Who's inside</span>
+      <span id="inside-count" class="ml-1 min-w-[22px] h-[22px] px-1.5 inline-flex items-center justify-center rounded-full bg-cyan-600 text-white text-xs">0</span>
+    </button>
+    <button data-action="work-pass" class="flex items-center gap-2 px-5 py-3 rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 font-semibold text-sm hover:border-emerald-400 transition-colors">
+      <i class="fa-solid fa-id-card-clip text-emerald-600"></i>
+      <span>Work Gate Pass</span>
+    </button>
+  </div>
 
   <div class="text-slate-400 text-xs">Nexus · Visitor Management</div>
 </div>
@@ -368,39 +370,25 @@
     <h2 class="text-base font-bold text-slate-800"><i class="fa-solid fa-id-card-clip text-emerald-600 mr-1"></i> Work Pass — Trial Worker</h2>
     <span style="width:70px"></span>
   </div>
-  <div class="flex gap-2 px-4 pt-3">
-    <button class="mode-tab active flex-1" data-wptab="punch"><i class="fa-solid fa-fingerprint mr-1"></i> IN / OUT</button>
-    <button class="mode-tab flex-1" data-wptab="new"><i class="fa-solid fa-plus mr-1"></i> Naya Pass</button>
-    <button class="mode-tab flex-1" data-wptab="convert"><i class="fa-solid fa-user-check mr-1"></i> Employee Banao</button>
-  </div>
 
-  <!-- TAB: PUNCH (workers ke liye — bade cards, ek tap) -->
   <div id="wp-tab-punch" class="p-4">
+    <p class="text-xs text-slate-500 -mt-1 mb-2">Trial worker — apna naam tap karo. (Naya pass supervisor apne <b>ESS</b> se banata hai.)</p>
     <input id="wp-search" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base mb-3" placeholder="🔍 Naam ya pass number search karo…">
     <div id="wp-cards" class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
       <p class="text-slate-400 text-sm">Loading…</p>
     </div>
   </div>
-
-  <!-- TAB: NAYA PASS (supervisor) -->
-  <div id="wp-tab-new" class="p-4 hidden" style="max-width:480px;margin:0 auto">
-    <p class="text-xs text-slate-500 mb-3">Supervisor bharega — pass <b>aaj se 3 din</b> valid rahega.</p>
-    <input id="wpn-name" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base mb-2" placeholder="Worker ka naam *">
-    <input id="wpn-phone" type="tel" maxlength="10" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base mb-2" placeholder="Mobile number">
-    <input id="wpn-dept" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base mb-2" placeholder="Department (jaise STITCHING)">
-    <input id="wpn-line" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base mb-2" placeholder="Line (optional)">
-    <input id="wpn-sup" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base mb-3" placeholder="Supervisor ka naam *">
-    <button id="wpn-create" class="w-full rounded-xl bg-emerald-600 text-white font-bold py-4 text-base"><i class="fa-solid fa-id-card-clip mr-1"></i> WORK PASS BANAO (3 din)</button>
-    <div id="wpn-result" class="mt-3"></div>
-  </div>
-
-  <!-- TAB: CONVERT (supervisor day-3) -->
-  <div id="wp-tab-convert" class="p-4 hidden">
-    <p class="text-xs text-slate-500 mb-3">Trial pura hone par worker ko <b>Employee banane ki request</b> HR ko jayegi — HR approve karega to payroll mein aa jayega aur trial attendance bhi sync hogi.</p>
-    <div id="wp-conv-cards" class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
-      <p class="text-slate-400 text-sm">Loading…</p>
+  <!-- IN-photo camera overlay -->
+  <div id="wp-cam" class="hidden" style="position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px">
+    <p id="wp-cam-name" class="text-white font-bold text-lg mb-2"></p>
+    <video id="wp-cam-video" autoplay playsinline muted style="width:min(92vw,420px);border-radius:18px;transform:scaleX(-1)"></video>
+    <canvas id="wp-cam-canvas" class="hidden"></canvas>
+    <div class="flex gap-3 mt-4">
+      <button id="wp-cam-shoot" class="rounded-2xl bg-emerald-500 text-white font-extrabold px-8 py-4 text-lg">📸 PHOTO LO &amp; CHECK-IN</button>
+      <button id="wp-cam-cancel" class="rounded-2xl bg-white/15 text-white font-bold px-5 py-4">✕</button>
     </div>
   </div>
+
 </div>
 
 <!-- ================= WHO'S INSIDE ================= -->
@@ -1790,6 +1778,7 @@
         clearTimeout(t);
         try { document.getElementById('hrcfgs').remove(); } catch (e) {}
         if (!r || !r.url || !r.key) return rej(new Error(r && r.error || 'HR config error'));
+        window.HR_URL = r.url;
         hrdb = supabase.createClient(r.url, r.key);
         res(hrdb);
       };
@@ -1803,18 +1792,7 @@
   var WP_LIST = [];
   async function wpOpen() {
     show('screen-workpass');
-    wpTab('punch');
     wpRefresh();
-  }
-  function wpTab(t) {
-    ['punch', 'new', 'convert'].forEach(function (x) {
-      var el = document.getElementById('wp-tab-' + x);
-      if (el) el.classList.toggle('hidden', x !== t);
-    });
-    document.querySelectorAll('[data-wptab]').forEach(function (b) {
-      b.classList.toggle('active', b.dataset.wptab === t);
-    });
-    if (t !== 'new') wpRefresh();
   }
   async function wpRefresh() {
     try {
@@ -1823,7 +1801,6 @@
       if (r.error) throw r.error;
       WP_LIST = r.data || [];
       wpRenderPunch();
-      wpRenderConvert();
     } catch (e) {
       var h = document.getElementById('wp-cards');
       if (h) h.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + (e.message || e) + '</p>';
@@ -1846,7 +1823,48 @@
         '<div class="text-xs text-slate-500 mt-1">' + w.pass_no + ' · Day ' + w.day_no + '/3' + (w.department ? ' · ' + w.department : '') + (sub && next !== 'DONE' ? ' · ' + sub : '') + '</div></button>';
     }).join('');
   }
-  async function wpPunch(id) {
+  var _wpCamStream = null, _wpCamId = null;
+  function wpPunch(id) {
+    var w = null;
+    for (var i = 0; i < WP_LIST.length; i++) if (WP_LIST[i].id === id) w = WP_LIST[i];
+    var isIn = !(w && w.today_in);
+    if (isIn) wpCamOpen(id, w ? w.name : '');   // CHECK-IN -> pehle photo
+    else wpPunchDo(id, null);                    // OUT -> seedha
+  }
+  async function wpCamOpen(id, nm) {
+    _wpCamId = id;
+    document.getElementById('wp-cam-name').innerText = nm + ' — photo lo, phir check-in hoga';
+    document.getElementById('wp-cam').classList.remove('hidden');
+    try {
+      _wpCamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 } }, audio: false });
+      document.getElementById('wp-cam-video').srcObject = _wpCamStream;
+    } catch (e) {
+      wpCamClose();
+      showMsg('Camera nahi khula', 'Photo ke bina hi check-in kar rahe hain…', function () { wpPunchDo(id, null); }, 'error');
+      setTimeout(function () { wpPunchDo(id, null); }, 900);
+    }
+  }
+  function wpCamClose() {
+    try { if (_wpCamStream) _wpCamStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    _wpCamStream = null;
+    document.getElementById('wp-cam').classList.add('hidden');
+  }
+  document.addEventListener('click', function (ev) {
+    if (ev.target && ev.target.id === 'wp-cam-cancel') { wpCamClose(); }
+    if (ev.target && ev.target.id === 'wp-cam-shoot') {
+      var v = document.getElementById('wp-cam-video'), c = document.getElementById('wp-cam-canvas');
+      var img = null;
+      try {
+        c.width = v.videoWidth || 640; c.height = v.videoHeight || 480;
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        img = c.toDataURL('image/jpeg', 0.75);
+      } catch (e) {}
+      var pid = _wpCamId;
+      wpCamClose();
+      wpPunchDo(pid, img);
+    }
+  });
+  async function wpPunchDo(id, imgData) {
     try {
       showLoader('Punch...');
       var db2 = await hrConnect();
@@ -1856,73 +1874,23 @@
       if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
       showMsg((r.data.action === 'IN' ? '✅ Check-IN' : '👋 Check-OUT') + ' — ' + r.data.name,
         'Time: ' + String(r.data.time).slice(0, 5) + ' · Work Pass attendance save ho gayi', null, 'success');
-      wpRefresh();
-    } catch (e) { hideLoader(); showMsg('Error', e.message || String(e), null, 'error'); }
-  }
-  function wpRenderConvert() {
-    var host = document.getElementById('wp-conv-cards');
-    if (!host) return;
-    if (!WP_LIST.length) { host.innerHTML = '<p class="text-slate-400 text-sm">Koi work pass nahi.</p>'; return; }
-    host.innerHTML = WP_LIST.map(function (w) {
-      var done = w.status === 'CONVERT_REQUESTED';
-      var ready = w.day_no >= 3 || w.expired;
-      return '<div class="rounded-2xl border border-slate-200 bg-white p-4">' +
-        '<div class="flex justify-between items-center"><b class="text-slate-800">' + w.name + '</b><span class="text-xs text-slate-500">' + w.pass_no + '</span></div>' +
-        '<div class="text-xs text-slate-500 mt-1">Day ' + Math.min(w.day_no, 3) + '/3' + (w.supervisor ? ' · Sup: ' + w.supervisor : '') + '</div>' +
-        (done
-          ? '<div class="mt-2 rounded-lg bg-sky-50 text-sky-700 text-xs font-bold px-3 py-2">⏳ HR approval pending</div>'
-          : '<button class="mt-2 w-full rounded-xl text-white font-bold py-3 text-sm" style="background:' + (ready ? '#0d5c75' : '#94a3b8') + '" onclick="wpConvert(' + w.id + ',\'' + w.name.replace(/'/g, '') + '\')">' +
-            (ready ? '👔 EMPLOYEE BANAO' : 'Trial chal raha hai (' + Math.min(w.day_no, 3) + '/3)') + '</button>') +
-        '</div>';
-    }).join('');
-  }
-  async function wpConvert(id, nm) {
-    if (!confirm(nm + ' ko Employee banane ki request HR ko bhejein?')) return;
-    try {
-      showLoader('Request...');
-      var db2 = await hrConnect();
-      var r = await db2.rpc('wp_convert', { p_id: id });
-      hideLoader();
-      if (r.error) throw r.error;
-      if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
-      showMsg('✅ Request bhej di', nm + ' ki Employee-conversion request HR Admin ke paas approval ke liye chali gayi.', null, 'success');
+      // photo background mein attach (IN par)
+      if (imgData && r.data.att_id) {
+        (async function () {
+          try {
+            var bin = atob(imgData.split(',')[1]), arr = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+            var fn = 'wp_photos/WP' + id + '_' + Date.now() + '.jpg';
+            var up = await db2.storage.from('attendance-photos').upload(fn, new Blob([arr], { type: 'image/jpeg' }), { contentType: 'image/jpeg', cacheControl: '86400' });
+            if (up && up.error) return;
+            await db2.rpc('wp_photo', { p_att_id: r.data.att_id, p_url: window.HR_URL + '/storage/v1/object/public/attendance-photos/' + fn });
+          } catch (e) {}
+        })();
+      }
       wpRefresh();
     } catch (e) { hideLoader(); showMsg('Error', e.message || String(e), null, 'error'); }
   }
   document.addEventListener('input', function (ev) { if (ev.target && ev.target.id === 'wp-search') wpRenderPunch(); });
-  document.addEventListener('click', function (ev) {
-    var tb = ev.target.closest ? ev.target.closest('[data-wptab]') : null;
-    if (tb) wpTab(tb.dataset.wptab);
-    if (ev.target && ev.target.id === 'wpn-create') wpCreate();
-  });
-  async function wpCreate() {
-    var nm = document.getElementById('wpn-name').value.trim();
-    var sup = document.getElementById('wpn-sup').value.trim();
-    if (!nm) return showMsg('Ruko', 'Worker ka naam bharo', null, 'error');
-    if (!sup) return showMsg('Ruko', 'Supervisor ka naam bharo', null, 'error');
-    try {
-      showLoader('Pass ban raha hai...');
-      var db2 = await hrConnect();
-      var r = await db2.rpc('wp_create', {
-        p_name: nm,
-        p_phone: document.getElementById('wpn-phone').value.trim(),
-        p_dept: document.getElementById('wpn-dept').value.trim(),
-        p_line: document.getElementById('wpn-line').value.trim(),
-        p_sup: sup
-      });
-      hideLoader();
-      if (r.error) throw r.error;
-      if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
-      document.getElementById('wpn-result').innerHTML =
-        '<div class="rounded-2xl bg-emerald-50 border border-emerald-300 p-4 text-center">' +
-        '<div class="text-3xl font-extrabold text-emerald-700">' + r.data.pass_no + '</div>' +
-        '<div class="text-sm text-emerald-800 mt-1"><b>' + nm.toUpperCase() + '</b> ka Work Pass ban gaya</div>' +
-        '<div class="text-xs text-slate-500 mt-1">Valid: aaj se ' + r.data.valid_to + ' tak (3 din) · IN/OUT tab se punch karo</div></div>';
-      ['wpn-name', 'wpn-phone', 'wpn-dept', 'wpn-line'].forEach(function (i) { document.getElementById(i).value = ''; });
-      wpRefresh();
-    } catch (e) { hideLoader(); showMsg('Error', e.message || String(e), null, 'error'); }
-  }
-
   function jsonp(params, cb) {
     var name = 'nxcb' + (++jsonpN);
     params.key = CFG.MAIL_API_KEY;
