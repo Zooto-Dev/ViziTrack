@@ -2,18 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Nexus · Gate Kiosk</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d5c75'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nexus · Visitor Management</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script>
     // ============ CONFIG — sirf yeh 2 values bharo ============
     window.VZT_CONFIG = {
       MAIL_API_URL: 'https://script.google.com/macros/s/AKfycbzDCEFwXgNx2m-hn_CGxQzZdsMuhojHQnN38tPOMii5fzFYvAEyEU6QNtxVNjASjzEo/exec',
-      MAIL_API_KEY: 'vzt_a9f3k2m8x7q1w5e6r4t0y2u8i3o5p9',
-      FACE_MATCH_THRESHOLD: 0.45
+      MAIL_API_KEY: 'vzt_a9f3k2m8x7q1w5e6r4t0y2u8i3o5p9'
     };
     // Supabase URL + Publishable Key yahan nahi — runtime pe Google Sheet se aati hai
   </script>
@@ -56,46 +53,7 @@
     .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-    /* ===== DIAGNOSTIC PANEL ===== */
-    #diag-toggle { position: fixed; bottom: 14px; left: 14px; z-index: 99998; width: 44px; height: 44px; border-radius: 50%; background: #0d5c75; color: #fff; border: none; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.25); opacity: 0.55; transition: opacity 0.2s; }
-    #diag-toggle:hover { opacity: 1; }
-    #diag-panel { position: fixed; bottom: 68px; left: 14px; z-index: 99998; width: 300px; max-width: calc(100vw - 28px); background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); display: none; overflow: hidden; }
-    #diag-panel.open { display: block; }
-    .diag-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #0d5c75; color: #fff; font-weight: 700; font-size: 0.85rem; }
-    .diag-head button { background: none; border: none; color: #fff; font-size: 1rem; cursor: pointer; }
-    .diag-body { padding: 12px 14px; }
-    .diag-body hr { border: none; border-top: 1px solid #f0f3f7; margin: 10px 0; }
-    .diag-title { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #94a3b8; margin-bottom: 6px; }
-    .diag-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 0.8rem; color: #475569; }
-    .diag-row b { font-variant-numeric: tabular-nums; font-weight: 700; color: #1e293b; }
-    .diag-row.total { border-top: 1px dashed #e2e8f0; margin-top: 4px; padding-top: 8px; font-size: 0.85rem; }
-    .diag-row.total b { color: #0d5c75; }
-    .diag-slow b { color: #ef4444 !important; }
-    .diag-ok b { color: #10b981 !important; }
-    .diag-btn { width: 100%; margin-top: 4px; padding: 8px; border-radius: 8px; border: 1px solid #0d5c75; background: #fff; color: #0d5c75; font-weight: 600; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .diag-btn:active { background: #f0f9ff; }
-    .diag-log { margin-top: 8px; font-size: 0.72rem; color: #64748b; font-variant-numeric: tabular-nums; white-space: pre-line; line-height: 1.5; }
-
     #toast-container { position: fixed; top: 20px; right: 20px; z-index: 99999; }
-
-    /* ===== OFFLINE / SYNC PILL ===== */
-    .net-pill { position: fixed; top: 12px; right: 14px; z-index: 99997; display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); font-size: 0.72rem; font-weight: 600; color: #475569; }
-    .net-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; }
-    .net-pill.offline { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
-    .net-pill.offline .net-dot { background: #ef4444; }
-    .sync-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; border-radius: 999px; background: #fef3c7; color: #b45309; font-size: 0.68rem; }
-
-    /* ===== WHO'S INSIDE LIST ===== */
-    .inside-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 10px; background: #fff; }
-    .inside-photo { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: #f1f5f9; flex: none; border: 1px solid #e2e8f0; }
-    .inside-photo-ph { width: 52px; height: 52px; border-radius: 10px; background: #e0f2fe; color: #0369a1; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; flex: none; }
-    .inside-info { flex: 1; min-width: 0; }
-    .inside-name { font-weight: 700; color: #1e293b; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .inside-meta { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
-    .inside-time { font-size: 0.7rem; color: #94a3b8; margin-top: 1px; }
-    .inside-out-btn { flex: none; background: #f59e0b; color: #fff; border: none; font-weight: 600; font-size: 0.8rem; padding: 9px 14px; border-radius: 9px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-    .inside-out-btn:active { transform: scale(0.97); }
-    .inside-empty { text-align: center; color: #94a3b8; padding: 40px 20px; font-size: 0.9rem; }
     .toast { background: white; border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 0.75rem; min-width: 280px; max-width: 400px; animation: slideIn 0.3s ease; border-left: 4px solid; }
     .toast.success { border-left-color: #10b981; } .toast.error { border-left-color: #ef4444; } .toast.warning { border-left-color: #f59e0b; } .toast.info { border-left-color: #3b82f6; }
     @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
@@ -128,6 +86,9 @@
     .photo-thumb { width: 120px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; }
 
     .table-toolbar { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f3f7; background: #fdfdfe; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end; }
+    .preset-chip { font-size: 0.7rem; font-weight: 600; padding: 0.3rem 0.7rem; border-radius: 999px; border: 1px solid #e2e8f0; background: #fff; color: #475569; cursor: pointer; transition: 0.15s; }
+    .preset-chip:hover { border-color: #17c1e8; color: #0d5c75; }
+    .preset-chip.active { background: #0d5c75; border-color: #0d5c75; color: #fff; }
     .filter-label { font-size: 0.7rem; font-weight: 600; color: #7b809a; text-transform: uppercase; white-space: nowrap; }
     .no-data-row td { text-align: center; padding: 2.5rem; color: #94a3b8; font-style: italic; }
 
@@ -211,99 +172,11 @@
     .fp-actions button { flex: 1; font-size: 0.68rem; font-weight: 600; padding: 5px; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: #fff; color: #334155; }
     .fp-actions button.primary { background: #0d5c75; color: #fff; border-color: #0d5c75; }
     @media (max-width: 767px) { .th-filter { display: none; } }
-
-    /* ===== KIOSK-SPECIFIC (Nexus tokens pe based) ===== */
-    html, body { height: 100%; overflow: hidden; -webkit-tap-highlight-color: transparent; }
-    .screen { position: absolute; inset: 0; display: flex; flex-direction: column; }
-    .kiosk-input { border-radius: 0.5rem; border: 1.5px solid #e2e8f0; background: #fff; padding: 0.7rem 0.85rem; font-size: 1rem; outline: none; width: 100%; transition: all 0.15s; color: #1e293b; }
-    .kiosk-input:focus { border-color: #17c1e8; box-shadow: 0 0 0 3px rgba(23,193,232,0.15); }
-    .kiosk-input:read-only { background: #f8fafc; color: #64748b; }
-    .btn-kiosk { background: #0d5c75; color: #fff; font-weight: 600; font-size: 1rem; padding: 0.9rem 1.25rem; border-radius: 0.6rem; border: none; width: 100%; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
-    .btn-kiosk:hover { background: #0a485c; }
-    .btn-kiosk:active { transform: scale(0.985); }
-    .btn-kiosk-ghost { background: #fff; color: #334155; border: 1px solid #e2e8f0; font-weight: 600; font-size: 0.9rem; padding: 0.7rem 1rem; border-radius: 0.6rem; cursor: pointer; }
-
-    .home-actions { display: flex; gap: clamp(24px,6vw,72px); }
-    .home-tile { display: flex; flex-direction: column; align-items: center; gap: 16px; cursor: pointer; }
-    .home-ring { width: clamp(140px,26vw,220px); height: clamp(140px,26vw,220px); border-radius: 50%; background: #fff; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; transition: border-color .2s, box-shadow .2s, transform .1s; box-shadow: 0 4px 16px rgba(15,30,50,.06); }
-    .home-tile:active .home-ring { transform: scale(.96); }
-    .home-tile[data-action="check-in"] .home-ring:hover { border-color: #0d5c75; box-shadow: 0 0 0 6px rgba(13,92,117,.08); }
-    .home-tile[data-action="check-out"] .home-ring:hover { border-color: #f59e0b; box-shadow: 0 0 0 6px rgba(245,158,11,.1); }
-    .home-ring i { font-size: clamp(38px,7vw,64px); }
-    .home-label { font-size: clamp(18px,3vw,26px); font-weight: 700; }
-
-    .kiosk-topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; background: #fff; z-index: 30; }
-    .cam-switch { display: inline-flex; align-items: center; gap: 6px; background: #0d5c75; color: #fff; border: none; font-size: 0.8rem; font-weight: 600; padding: 8px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
-    .cam-switch:active { transform: scale(0.96); }
-    .cam-switch i { font-size: 0.95rem; }
-    .mode-tabs { display: flex; gap: 22px; padding: 0 16px; border-bottom: 1px solid #e2e8f0; background: #fff; z-index: 30; }
-    .mode-tab { background: none; border: 0; padding: 12px 2px; font-size: 0.85rem; font-weight: 600; color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent; }
-    .mode-tab.active { color: #0d5c75; border-bottom-color: #0d5c75; }
-
-    .stage { flex: 1; position: relative; overflow: hidden; background: #0f172a; }
-    #video, #qr-reader { position: absolute; inset: 0; width: 100%; height: 100%; }
-    #video { object-fit: cover; transform: scaleX(-1); }
-    #qr-reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
-    #qr-reader__dashboard_section { display: none; }
-
-    .scan-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(72%,340px); aspect-ratio: 3/4; pointer-events: none; z-index: 20; }
-    .scan-frame .c { position: absolute; width: 34px; height: 34px; border: 3px solid #17c1e8; filter: drop-shadow(0 0 8px rgba(23,193,232,.55)); transition: border-color .25s, filter .25s; }
-    .scan-frame.ok .c { border-color: #10b981; filter: drop-shadow(0 0 10px rgba(16,185,129,.6)); }
-    .scan-frame.err .c { border-color: #ef4444; filter: drop-shadow(0 0 10px rgba(239,68,68,.6)); }
-    .c.tl { top:0; left:0; border-right:0; border-bottom:0; border-radius:14px 0 0 0; }
-    .c.tr { top:0; right:0; border-left:0; border-bottom:0; border-radius:0 14px 0 0; }
-    .c.bl { bottom:0; left:0; border-right:0; border-top:0; border-radius:0 0 0 14px; }
-    .c.br { bottom:0; right:0; border-left:0; border-top:0; border-radius:0 0 14px 0; }
-    .scan-line { position: absolute; left: 8%; right: 8%; height: 2px; background: linear-gradient(90deg,transparent,#17c1e8,transparent); animation: sweep 2.6s ease-in-out infinite; opacity: .85; }
-    @keyframes sweep { 0%,100% { top:6%; } 50% { top:94%; } }
-    @media (prefers-reduced-motion: reduce) { .scan-line { animation: none; top: 50%; } }
-
-    .instruction { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px; text-align: center; z-index: 25; background: linear-gradient(transparent, rgba(15,23,42,.9) 60%); color: #fff; }
-    .instruction p { font-size: 1rem; font-weight: 600; }
-    .instruction small { color: #cbd5e1; font-size: 0.8rem; }
-
-    .panel { flex: 1; overflow-y: auto; padding: 22px 18px 40px; max-width: 520px; width: 100%; margin: 0 auto; }
-    .otp-box { letter-spacing: 12px; text-align: center; font-size: 1.9rem; font-weight: 700; }
-    #capture-video { width: 100%; border-radius: 12px; background: #0f172a; transform: scaleX(-1); aspect-ratio: 4/3; object-fit: cover; }
   </style>
 </head>
 <body class="antialiased text-slate-800">
 
 <div id="toast-container"></div>
-
-<!-- ================= OFFLINE / SYNC STATUS PILL ================= -->
-<div id="net-pill" class="net-pill">
-  <span id="net-dot" class="net-dot"></span>
-  <span id="net-text">Online</span>
-  <span id="sync-badge" class="sync-badge hidden"><i class="fa-solid fa-rotate fa-spin"></i> <span id="sync-count">0</span></span>
-</div>
-
-<!-- ================= DIAGNOSTIC PANEL (gate speed test) ================= -->
-<button id="diag-toggle" title="Speed diagnostics">
-  <i class="fa-solid fa-gauge-high"></i>
-</button>
-<div id="diag-panel">
-  <div class="diag-head">
-    <span><i class="fa-solid fa-gauge-high"></i> Speed Diagnostics</span>
-    <button id="diag-close"><i class="fa-solid fa-xmark"></i></button>
-  </div>
-  <div class="diag-body">
-    <div class="diag-row"><span>Network</span><b id="d-net">—</b></div>
-    <div class="diag-row"><span>Ping (Supabase)</span><b id="d-ping">—</b></div>
-    <div class="diag-row"><span>Config load</span><b id="d-config">—</b></div>
-    <div class="diag-row"><span>Faces load</span><b id="d-faces">—</b></div>
-    <hr>
-    <div class="diag-title">Last check-in steps</div>
-    <div class="diag-row"><span>Face descriptor</span><b id="d-desc">—</b></div>
-    <div class="diag-row"><span>Find open log</span><b id="d-findlog">—</b></div>
-    <div class="diag-row"><span>Invitation lookup</span><b id="d-invlookup">—</b></div>
-    <div class="diag-row"><span>DB insert + photo</span><b id="d-insert">—</b></div>
-    <div class="diag-row total"><span>TOTAL</span><b id="d-total">—</b></div>
-    <hr>
-    <button id="diag-pingtest" class="diag-btn"><i class="fa-solid fa-stopwatch"></i> Run 5× ping test</button>
-    <div id="d-pingresult" class="diag-log"></div>
-  </div>
-</div>
 <div id="global-loader"><div class="spinner"></div><div class="mt-3 font-semibold text-slate-700 text-sm" id="loader-text">Processing...</div></div>
 
 <!-- ================= NEXUS CINEMATIC INTRO ================= -->
@@ -313,203 +186,106 @@
   <div class="nx-word">
     <span class="nx-l">N</span><span class="nx-l accent">E</span><span class="nx-l">X</span><span class="nx-l accent">U</span><span class="nx-l">S</span>
   </div>
-  <div class="nx-sub">Gate Kiosk</div>
+  <div class="nx-sub">Visitor Management</div>
   <div class="nx-rule"></div>
 </div>
 
-<!-- ================= DEVICE LOGIN ================= -->
-<div id="screen-login" class="screen hidden items-center justify-center p-4">
+<!-- ================= LOGIN ================= -->
+<div id="login-page" class="min-h-screen flex items-center justify-center p-4">
   <div class="card-premium w-full max-w-sm p-6">
     <div class="text-center mb-6">
       <span class="font-bold text-2xl tracking-tight"><span class="text-cyan-600">Ne</span><span class="text-amber-500">X</span><span class="text-sky-600">uS</span></span>
-      <p class="text-xs text-slate-500 mt-1">Gate Kiosk · device sign-in (one time)</p>
+      <p class="text-xs text-slate-500 mt-1">Visitor Management · Host Portal</p>
     </div>
-    <div class="mb-3"><label class="text-label">Kiosk email</label><input id="login-email" type="email" class="kiosk-input" autocomplete="username" /></div>
-    <div class="mb-4"><label class="text-label">Password</label><input id="login-password" type="password" class="kiosk-input" autocomplete="current-password" /></div>
-    <button class="btn-kiosk" data-action="device-login"><i class="fa-solid fa-right-to-bracket"></i> Sign in this device</button>
+
+    <div id="login-form">
+      <div class="mb-3"><label class="text-label">Email</label><input id="login-email" type="email" class="custom-input" autocomplete="username" /></div>
+      <div class="mb-4"><label class="text-label">Password</label><input id="login-password" type="password" class="custom-input" autocomplete="current-password" /></div>
+      <button class="btn-brand w-full justify-center !py-2 !text-sm" data-action="login"><span class="btn-spinner"></span><i class="fa-solid fa-right-to-bracket"></i> Sign in</button>
+      <button class="w-full text-xs text-slate-500 hover:text-cyan-600 mt-3" data-action="show-forgot">Forgot password?</button>
+    </div>
+
+    <div id="forgot-form" class="hidden">
+      <p class="text-xs text-slate-500 mb-4">Email daalo — password reset link bhej denge.</p>
+      <div class="mb-4"><label class="text-label">Email</label><input id="forgot-email" type="email" class="custom-input" /></div>
+      <button class="btn-brand w-full justify-center !py-2 !text-sm" data-action="send-reset"><span class="btn-spinner"></span><i class="fa-solid fa-paper-plane"></i> Send reset link</button>
+      <button class="w-full text-xs text-slate-500 hover:text-cyan-600 mt-3" data-action="back-to-login">Back to sign in</button>
+    </div>
   </div>
 </div>
 
-<!-- ================= HOME ================= -->
-<div id="screen-home" class="screen hidden items-center justify-between" style="padding:5vh 20px 3vh;">
-  <div class="text-center">
-    <span class="font-bold tracking-tight" style="font-size:clamp(34px,6vw,58px);"><span class="text-cyan-600">Ne</span><span class="text-amber-500">X</span><span class="text-sky-600">uS</span></span>
-    <p class="text-slate-500 mt-1" style="font-size:clamp(14px,2vw,18px);">Welcome — tap to begin</p>
-  </div>
+<!-- ================= APP ================= -->
+<div id="main-app" class="hidden">
 
-  <div class="home-actions">
-    <div class="home-tile" data-action="check-out">
-      <div class="home-ring"><i class="fa-solid fa-right-from-bracket text-amber-500"></i></div>
-      <span class="home-label text-amber-600">Check-out</span>
+  <!-- Sidebar overlay + mobile sidebar -->
+  <div id="sidebarOverlay" class="sidebar-overlay" data-action="close-sidebar"></div>
+  <div id="mobileSidebar" class="mobile-sidebar flex flex-col">
+    <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+      <span class="font-bold text-xl tracking-tight"><span class="text-cyan-600">Ne</span><span class="text-amber-500">X</span><span class="text-sky-600">uS</span></span>
+      <button class="w-9 h-9 rounded-lg bg-slate-50 text-slate-600" data-action="close-sidebar"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <div class="home-tile" data-action="check-in">
-      <div class="home-ring"><i class="fa-solid fa-right-to-bracket" style="color:#0d5c75;"></i></div>
-      <span class="home-label" style="color:#0d5c75;">Check-in</span>
+    <div class="px-4 py-3 border-b border-slate-100">
+      <div class="text-sm font-semibold text-slate-700" id="sb-user-name"></div>
+      <div class="text-[11px] text-slate-400" id="sb-user-role"></div>
     </div>
-  </div>
-
-  <div class="flex items-center gap-2 flex-wrap justify-center">
-    <button id="whos-inside-btn" data-action="show-inside" class="flex items-center gap-2 px-5 py-3 rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 font-semibold text-sm hover:border-cyan-400 transition-colors">
-      <i class="fa-solid fa-users text-cyan-600"></i>
-      <span>Who's inside</span>
-      <span id="inside-count" class="ml-1 min-w-[22px] h-[22px] px-1.5 inline-flex items-center justify-center rounded-full bg-cyan-600 text-white text-xs">0</span>
-    </button>
-    <button data-action="work-pass" class="flex items-center gap-2 px-5 py-3 rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 font-semibold text-sm hover:border-emerald-400 transition-colors">
-      <i class="fa-solid fa-id-card-clip text-emerald-600"></i>
-      <span>Work Gate Pass</span>
-    </button>
-  </div>
-
-  <div class="text-slate-400 text-xs">Nexus · Visitor Management</div>
-</div>
-
-<!-- ================= WORK PASS (TRIAL WORKERS) ================= -->
-<div id="screen-workpass" class="screen hidden">
-  <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200">
-    <button class="btn-kiosk-ghost" data-action="go-back" style="padding:8px 14px"><i class="fa-solid fa-arrow-left mr-1"></i> Back</button>
-    <h2 class="text-base font-bold text-slate-800"><i class="fa-solid fa-id-card-clip text-emerald-600 mr-1"></i> Work Pass — Trial Worker</h2>
-    <span style="width:70px"></span>
-  </div>
-
-  <div id="wp-tab-punch" class="p-4">
-    <p class="text-xs text-slate-500 -mt-1 mb-2">Trial worker — apna naam tap karo. (Naya pass supervisor apne <b>ESS</b> se banata hai.)</p>
-    <input id="wp-search" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base mb-3" placeholder="🔍 Naam ya pass number search karo…">
-    <div id="wp-cards" class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
-      <p class="text-slate-400 text-sm">Loading…</p>
-    </div>
-  </div>
-  <!-- IN-photo camera overlay -->
-  <div id="wp-cam" class="hidden" style="position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px">
-    <p id="wp-cam-name" class="text-white font-bold text-lg mb-2"></p>
-    <video id="wp-cam-video" autoplay playsinline muted style="width:min(92vw,420px);border-radius:18px;transform:scaleX(-1)"></video>
-    <canvas id="wp-cam-canvas" class="hidden"></canvas>
-    <div class="flex gap-3 mt-4">
-      <button id="wp-cam-shoot" class="rounded-2xl bg-emerald-500 text-white font-extrabold px-8 py-4 text-lg">📸 PHOTO LO &amp; CHECK-IN</button>
-      <button id="wp-cam-cancel" class="rounded-2xl bg-white/15 text-white font-bold px-5 py-4">✕</button>
+    <div id="sidebarNav" class="flex-1"></div>
+    <div class="p-3 border-t border-slate-100 flex gap-2">
+      <button class="btn-outline flex-1 justify-center" data-action="show-changepw"><i class="fa-solid fa-key"></i> Password</button>
+      <button class="btn-outline flex-1 justify-center" data-action="logout"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>
     </div>
   </div>
 
-</div>
-
-<!-- ================= WHO'S INSIDE ================= -->
-<div id="screen-inside" class="screen hidden">
-  <div class="kiosk-topbar">
-    <button class="text-sm font-semibold flex items-center gap-2" style="color:#0d5c75;" data-action="go-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
-    <h2 class="text-base font-bold text-slate-800">Currently inside</h2>
-    <button class="text-slate-500" data-action="refresh-inside" title="Refresh"><i class="fa-solid fa-rotate text-lg"></i></button>
-  </div>
-  <div class="px-4 py-2 bg-slate-50 border-b border-slate-200">
-    <div class="relative">
-      <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-      <input id="inside-search" type="text" placeholder="Naam ya mobile se dhoondo..." class="kiosk-input !pl-9" />
-    </div>
-  </div>
-  <div id="inside-list" class="panel !max-w-2xl" style="padding-top:12px;">
-    <div class="text-center text-slate-400 py-10"><div class="spinner mx-auto"></div><p class="mt-3 text-sm">Loading…</p></div>
-  </div>
-</div>
-
-<!-- ================= ACTION ================= -->
-<div id="screen-action" class="screen hidden">
-  <div class="kiosk-topbar">
-    <button class="text-sm font-semibold flex items-center gap-2" style="color:#0d5c75;" data-action="go-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
-    <h2 id="screen-title" class="text-base font-bold text-slate-800">Check-in</h2>
-    <button id="cam-switch-btn" class="cam-switch" data-action="switch-camera">
-      <i class="fa-solid fa-camera-rotate"></i>
-      <span id="cam-switch-label">Back cam</span>
-    </button>
+  <!-- Mobile header -->
+  <div class="mobile-header">
+    <button data-action="open-sidebar" class="w-10 h-10 rounded-lg bg-gray-50 text-gray-700 flex items-center justify-center hover:bg-gray-100 transition-colors"><i class="fa-solid fa-bars text-xl"></i></button>
+    <div class="flex items-center gap-2"><span class="font-bold text-xl tracking-tight"><span class="text-cyan-600">Ne</span><span class="text-amber-500">X</span><span class="text-sky-600">uS</span></span></div>
+    <div class="w-10"></div>
   </div>
 
-  <div class="mode-tabs">
-    <button class="mode-tab active" data-mode="qr"><i class="fa-solid fa-qrcode mr-1"></i> QR Badge</button>
-    <button class="mode-tab" data-mode="otp"><i class="fa-solid fa-shield-halved mr-1"></i> OTP</button>
-    <button class="mode-tab" data-mode="face"><i class="fa-solid fa-face-smile mr-1"></i> Face</button>
-  </div>
-
-  <!-- camera stage -->
-  <div id="stage" class="stage">
-    <video id="video" autoplay muted playsinline></video>
-    <div id="qr-reader" class="hidden"></div>
-    <div id="scan-frame" class="scan-frame">
-      <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
-      <div class="scan-line"></div>
-    </div>
-    <div class="instruction">
-      <p id="instruction-text">Look at the camera</p>
-      <small id="instruction-sub">We'll recognise you automatically</small>
-    </div>
-  </div>
-
-  <!-- otp request -->
-  <div id="otp-request-form" class="panel hidden">
-    <h3 class="text-lg font-bold text-slate-800">Verify yourself</h3>
-    <p class="text-sm text-slate-500 mb-4">We'll send a 6-digit code.</p>
-    <div class="flex gap-5 border-b border-slate-200 mb-5">
-      <button class="mode-tab active" data-channel="whatsapp"><i class="fa-brands fa-whatsapp mr-1"></i> WhatsApp</button>
-      <button class="mode-tab" data-channel="email"><i class="fa-solid fa-envelope mr-1"></i> Email</button>
-    </div>
-    <div id="ch-whatsapp">
-      <label class="text-label">Mobile number</label>
-      <input id="mobile-input" type="tel" inputmode="numeric" maxlength="10" class="kiosk-input mb-4" placeholder="10-digit mobile" />
-    </div>
-    <div id="ch-email" class="hidden">
-      <label class="text-label">Email address</label>
-      <input id="email-input" type="email" class="kiosk-input mb-4" placeholder="you@example.com" />
-    </div>
-    <button class="btn-kiosk" data-action="send-otp"><i class="fa-solid fa-paper-plane"></i> Send code</button>
-  </div>
-
-  <!-- otp entry -->
-  <div id="otp-form" class="panel hidden">
-    <h3 class="text-lg font-bold text-slate-800">Enter your code</h3>
-    <p class="text-sm text-slate-500 mb-4">Sent to <span id="otp-email-display" class="font-semibold text-slate-700"></span></p>
-    <input id="otp-input" class="kiosk-input otp-box mb-4" type="text" inputmode="numeric" maxlength="6" placeholder="000000" />
-    <button class="btn-kiosk" data-action="verify-otp"><i class="fa-solid fa-check"></i> Verify</button>
-    <div class="flex justify-between items-center mt-4 text-sm">
-      <button class="btn-kiosk-ghost" data-action="back-to-otp-request">Change</button>
-      <span id="otp-timer" class="text-slate-500 font-semibold">03:00</span>
-      <button class="btn-kiosk-ghost hidden" id="resend-btn" data-action="resend-otp">Resend</button>
-    </div>
-
-    <div id="otp-fallback-note" class="hidden mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-[13px] text-amber-800">
-      <i class="fa-solid fa-circle-info mr-1"></i><span id="otp-fallback-text"></span>
-    </div>
-
-    <div class="mt-5 pt-4 border-t border-slate-200 text-center">
-      <p class="text-[13px] text-slate-500 mb-2">Code nahi mila?</p>
-      <div class="flex gap-2 justify-center flex-wrap">
-        <button class="btn-kiosk-ghost" id="try-email-btn" data-action="try-email"><i class="fa-solid fa-envelope mr-1"></i> Email pe bhejo</button>
-        <button class="btn-kiosk-ghost" data-action="switch-to-qr"><i class="fa-solid fa-qrcode mr-1"></i> QR badge use karo</button>
+  <!-- Desktop header -->
+  <header class="desktop-header sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-200/70">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-xl tracking-tight"><span class="text-cyan-600">Ne</span><span class="text-amber-500">X</span><span class="text-sky-600">uS</span></span>
+      </div>
+      <div class="flex items-center gap-1" id="navGroup"></div>
+      <div class="flex items-center gap-3">
+        <div class="relative hidden md:block">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input id="globalSearch" type="text" placeholder="Search..." class="custom-input !w-48 !pl-8 !py-1.5" />
+        </div>
+        <div class="text-right leading-tight hidden lg:block">
+          <div class="text-[13px] font-semibold text-slate-700" id="user-name"></div>
+          <div class="text-[11px] text-slate-400" id="user-role"></div>
+        </div>
+        <button class="btn-outline" data-action="show-changepw" title="Change password"><i class="fa-solid fa-key"></i></button>
+        <button class="btn-outline" data-action="logout"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>
       </div>
     </div>
-  </div>
+  </header>
 
-  <!-- data form -->
-  <div id="data-form" class="panel hidden">
-    <span class="chip chip-green mb-3"><i class="fa-solid fa-check"></i> <span id="visitor-name-display">Visitor</span></span>
-    <h3 id="data-form-title" class="text-lg font-bold text-slate-800">Confirm your details</h3>
-    <p class="text-sm text-slate-500 mb-4">Details from your invitation.</p>
-    <div class="mb-3"><label class="text-label">Visitor name</label><input id="f-name" class="kiosk-input" readonly /></div>
-    <div class="mb-3"><label class="text-label">Mobile</label><input id="f-mobile" class="kiosk-input" readonly /></div>
-    <div class="mb-3"><label class="text-label">Email</label><input id="f-email" class="kiosk-input" readonly /></div>
-    <div class="mb-3"><label class="text-label">Address</label><input id="f-address" class="kiosk-input" readonly /></div>
-    <div class="mb-3"><label class="text-label">Purpose</label><input id="f-purpose" class="kiosk-input" readonly /></div>
-    <div class="mb-4"><label class="text-label">Host</label><input id="f-host" class="kiosk-input" readonly /></div>
-    <button class="btn-kiosk" data-action="open-photo" id="capture-btn"><i class="fa-solid fa-camera"></i> Capture photo &amp; check in</button>
-  </div>
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 py-5">
 
+    <!-- ========== INVITES ========== -->
+    <section id="sec-invites" class="hidden">
+      <div class="card-premium mb-4">
+        <div class="flex gap-5 px-4 border-b border-slate-100 overflow-x-auto">
+          <button class="py-3 text-sm font-semibold text-cyan-700 border-b-2 border-cyan-600 whitespace-nowrap" data-invtab="single">Single invite</button>
+          <button class="py-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent whitespace-nowrap" data-invtab="multiple">Multiple invites</button>
+          <button class="py-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent whitespace-nowrap" data-invtab="list">Sent invitations</button>
+        </div>
+      </div>
 
-  <!-- request form -->
-  <div id="request-form" class="panel hidden">
-    <h3 class="text-lg font-bold text-slate-800">Request access</h3>
-    <p class="text-sm text-slate-500 mb-4">No invitation found — fill this and the host will approve.</p>
-    <div class="mb-3"><label class="text-label">Visitor name *</label><input id="r-name" class="kiosk-input" placeholder="Full name" /></div>
-    <div class="mb-3"><label class="text-label">Mobile *</label><input id="r-mobile" type="tel" inputmode="numeric" maxlength="10" class="kiosk-input" placeholder="10-digit mobile" /></div>
-    <div class="mb-3"><label class="text-label">Email <span class="text-slate-400 normal-case font-normal">(optional)</span></label><input id="r-email" type="email" class="kiosk-input" placeholder="you@example.com — optional" /></div>
-    <div class="mb-3"><label class="text-label">Address</label><input id="r-address" class="kiosk-input" placeholder="City / company" /></div>
-    <div class="mb-3"><label class="text-label">Purpose *</label>
-      <select id="r-purpose" class="kiosk-input">
-<option value="">Select purpose</option>
+      <!-- single -->
+      <div id="inv-single" class="card-premium p-5 max-w-3xl">
+        <h3 class="text-base font-bold text-slate-800 mb-4"><i class="fa-solid fa-envelope-open-text text-cyan-600 mr-2"></i>New invitation</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label class="text-label">Visitor name *</label><input id="i-name" class="custom-input" list="guest-list" placeholder="Full name — purane guest ka naam type karo, details apne aap bhar jayengi" autocomplete="off" /><datalist id="guest-list"></datalist></div>
+          <div><label class="text-label">Mobile</label><input id="i-mobile" type="tel" inputmode="numeric" maxlength="10" class="custom-input" placeholder="10-digit" /></div>
+          <div><label class="text-label">Email</label><input id="i-email" type="email" class="custom-input" placeholder="visitor@email.com" /></div>
+          <div><label class="text-label">Host *</label><input id="i-host" list="host-list" class="custom-input" placeholder="Host name" /><datalist id="host-list"></datalist></div>
+          <div><label class="text-label">Purpose *</label>
+            <select id="i-purpose" class="custom-input"><option value="">Select</option>
         <option>Meeting</option>
         <option>Duty</option>
         <option>Client Visit</option>
@@ -525,377 +301,432 @@
         <option>Contractor Work</option>
         <option>Official Work</option>
         <option>Personal</option>
-        <option>Other</option>
-      </select>
-    </div>
-    <div class="mb-4"><label class="text-label">Host name *</label><input id="r-host" list="host-list" class="kiosk-input" placeholder="Whom are you visiting?" /><datalist id="host-list"></datalist></div>
-    <button class="btn-kiosk" data-action="submit-request"><i class="fa-solid fa-paper-plane"></i> Submit request</button>
+        <option>Other</option></select>
+          </div>
+          <div><label class="text-label">Address</label><input id="i-address" class="custom-input" placeholder="City / company" /></div>
+          <div><label class="text-label">Valid from *</label><input id="i-from" type="datetime-local" class="custom-input" /></div>
+          <div><label class="text-label">Valid to *</label><input id="i-to" type="datetime-local" class="custom-input" /></div>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-3 mb-4"><i class="fa-solid fa-circle-info mr-1"></i>Email ya mobile — kam se kam ek chahiye. Badge email + WhatsApp QR automatically chala jayega.</p>
+        <button class="btn-brand" id="i-submit" data-action="submit-invite"><span class="btn-spinner"></span><i class="fa-solid fa-paper-plane"></i> Send invitation &amp; badge</button>
+      </div>
+
+      <!-- multiple -->
+      <div id="inv-multiple" class="card-premium p-5 hidden">
+        <h3 class="text-base font-bold text-slate-800 mb-4"><i class="fa-solid fa-users text-cyan-600 mr-2"></i>Bulk invitations</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          <div><label class="text-label">Host (all rows) *</label><input id="m-host" list="host-list" class="custom-input" placeholder="Host name" /></div>
+          <div><label class="text-label">Purpose (all rows) *</label>
+            <select id="m-purpose" class="custom-input"><option value="">Select</option>
+        <option>Meeting</option>
+        <option>Duty</option>
+        <option>Client Visit</option>
+        <option>Vendor / Supplier</option>
+        <option>Interview</option>
+        <option>Delivery</option>
+        <option>Pickup</option>
+        <option>Service / Repair</option>
+        <option>Maintenance</option>
+        <option>Audit / Inspection</option>
+        <option>Training</option>
+        <option>Sample Collection</option>
+        <option>Contractor Work</option>
+        <option>Official Work</option>
+        <option>Personal</option>
+        <option>Other</option></select>
+          </div>
+          <div><label class="text-label">Valid from *</label><input id="m-from" type="datetime-local" class="custom-input" /></div>
+          <div><label class="text-label">Valid to *</label><input id="m-to" type="datetime-local" class="custom-input" /></div>
+        </div>
+        <div class="overflow-x-auto custom-scroll">
+          <div id="multi-rows" class="min-w-[640px]"></div>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button class="btn-outline" data-action="add-multi-row"><i class="fa-solid fa-plus"></i> Add visitor</button>
+          <button class="btn-brand" id="m-submit" data-action="submit-multi"><span class="btn-spinner"></span><i class="fa-solid fa-paper-plane"></i> Send all invitations</button>
+        </div>
+      </div>
+
+      <!-- list -->
+      <div id="inv-list" class="card-premium hidden">
+        <div class="table-toolbar">
+          <span class="text-xs text-slate-500"><i class="fa-solid fa-circle-info mr-1"></i>Kisi purane guest ko dobara bulana ho to "Re-invite" dabao.</span>
+          <div class="ml-auto"><button class="btn-outline" data-action="export-table" data-table="inv-table" data-name="invitations"><i class="fa-solid fa-file-csv"></i> CSV</button></div>
+        </div>
+        <div class="table-scroll custom-scroll">
+          <table class="table-premium" id="inv-table">
+            <thead><tr><th>Visitor</th><th>Host</th><th>Purpose</th><th>Valid from</th><th>Valid to</th><th>Sent</th><th></th></tr></thead>
+            <tbody id="inv-list-body"><tr class="no-data-row"><td colspan="7">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== ACTIVITIES ========== -->
+    <section id="sec-activities" class="hidden">
+      <div class="card-premium mb-4">
+        <div class="table-toolbar">
+          <div><label class="text-label">From</label><input id="a-from" type="date" class="custom-input !w-40" /></div>
+          <div><label class="text-label">To</label><input id="a-to" type="date" class="custom-input !w-40" /></div>
+          <div id="a-host-wrap"><label class="text-label">Host</label><select id="a-host" class="custom-input !w-44"><option value="">All hosts</option></select></div>
+          <div><label class="text-label">Status</label><select id="a-status" class="custom-input !w-36"><option value="">All</option><option value="in">Inside</option><option value="out">Checked out</option></select></div>
+          <button class="btn-brand" data-action="load-activities"><i class="fa-solid fa-filter"></i> Apply</button>
+          <button class="btn-outline" data-action="export-table" data-table="act-table" data-name="activities"><i class="fa-solid fa-file-csv"></i> CSV</button>
+        </div>
+        <div class="px-4 pb-3 flex flex-wrap gap-2">
+          <button class="preset-chip" data-preset="today" data-target="a">Today</button>
+          <button class="preset-chip" data-preset="yesterday" data-target="a">Yesterday</button>
+          <button class="preset-chip" data-preset="week" data-target="a">This week</button>
+          <button class="preset-chip" data-preset="month" data-target="a">This month</button>
+          <button class="preset-chip" data-preset="lastmonth" data-target="a">Last month</button>
+          <button class="preset-chip" data-preset="7days" data-target="a">Last 7 days</button>
+          <button class="preset-chip" data-preset="30days" data-target="a">Last 30 days</button>
+        </div>
+      </div>
+      <div class="card-premium">
+        <div class="table-scroll custom-scroll">
+          <table class="table-premium" id="act-table">
+            <thead><tr><th>Visitor</th><th>Host</th><th>Purpose</th><th>Check-in</th><th>Check-out</th><th>Status</th><th></th></tr></thead>
+            <tbody id="act-body"><tr class="no-data-row"><td colspan="7">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========== REQUESTS ========== -->
+    <section id="sec-requests" class="hidden">
+      <div class="card-premium mb-4">
+        <div class="flex gap-5 px-4 border-b border-slate-100 overflow-x-auto">
+          <button class="py-3 text-sm font-semibold text-cyan-700 border-b-2 border-cyan-600 whitespace-nowrap" data-reqtab="pending">Pending</button>
+          <button class="py-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent whitespace-nowrap" data-reqtab="approved">Approved</button>
+          <button class="py-3 text-sm font-semibold text-slate-400 border-b-2 border-transparent whitespace-nowrap" data-reqtab="rejected">Rejected</button>
+        </div>
+      </div>
+      <div class="card-premium">
+        <div class="table-scroll custom-scroll">
+          <table class="table-premium" id="req-table">
+            <thead><tr><th>Requested</th><th>Visitor</th><th>Mobile</th><th>Email</th><th>Purpose</th><th>Host</th><th></th></tr></thead>
+            <tbody id="req-body"><tr class="no-data-row"><td colspan="7">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== ANALYTICS ========== -->
+    <section id="sec-analytics" class="hidden">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div class="card-premium p-4">
+          <div class="flex items-center justify-between mb-2"><span class="text-label !mb-0">Visitors today</span><i class="fa-solid fa-user-group text-cyan-600"></i></div>
+          <div class="text-2xl font-bold text-slate-800" id="s-today">–</div>
+        </div>
+        <div class="card-premium p-4">
+          <div class="flex items-center justify-between mb-2"><span class="text-label !mb-0">Currently inside</span><i class="fa-solid fa-door-open text-emerald-600"></i></div>
+          <div class="text-2xl font-bold text-slate-800" id="s-inside">–</div>
+        </div>
+        <div class="card-premium p-4">
+          <div class="flex items-center justify-between mb-2"><span class="text-label !mb-0">Pending requests</span><i class="fa-solid fa-hourglass-half text-amber-500"></i></div>
+          <div class="text-2xl font-bold text-slate-800" id="s-pending">–</div>
+        </div>
+        <div class="card-premium p-4">
+          <div class="flex items-center justify-between mb-2"><span class="text-label !mb-0">This week</span><i class="fa-solid fa-calendar-week text-indigo-500"></i></div>
+          <div class="text-2xl font-bold text-slate-800" id="s-week">–</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="card-premium p-4"><h4 class="text-sm font-bold text-slate-700 mb-3">Visits — last 7 days</h4><canvas id="ch-week" height="220"></canvas></div>
+        <div class="card-premium p-4"><h4 class="text-sm font-bold text-slate-700 mb-3">Purpose split (30 days)</h4><canvas id="ch-purpose" height="220"></canvas></div>
+        <div class="card-premium p-4 lg:col-span-2"><h4 class="text-sm font-bold text-slate-700 mb-3">Host-wise visitors (30 days)</h4><canvas id="ch-host" height="140"></canvas></div>
+      </div>
+    </section>
+
+    <!-- ========== AUDIT ========== -->
+    <section id="sec-audit" class="hidden">
+      <div class="card-premium mb-4">
+        <div class="table-toolbar">
+          <div><label class="text-label">From</label><input id="au-from" type="date" class="custom-input !w-40" /></div>
+          <div><label class="text-label">To</label><input id="au-to" type="date" class="custom-input !w-40" /></div>
+          <button class="btn-brand" data-action="load-audit"><i class="fa-solid fa-magnifying-glass"></i> Load</button>
+          <button class="btn-outline" data-action="export-audit"><i class="fa-solid fa-file-csv"></i> Download CSV</button>
+        </div>
+        <div class="px-4 pb-3 flex flex-wrap gap-2">
+          <button class="preset-chip" data-preset="today" data-target="au">Today</button>
+          <button class="preset-chip" data-preset="week" data-target="au">This week</button>
+          <button class="preset-chip" data-preset="month" data-target="au">This month</button>
+          <button class="preset-chip" data-preset="lastmonth" data-target="au">Last month</button>
+          <button class="preset-chip" data-preset="7days" data-target="au">Last 7 days</button>
+          <button class="preset-chip" data-preset="30days" data-target="au">Last 30 days</button>
+        </div>
+      </div>
+      <div class="card-premium">
+        <div class="table-scroll custom-scroll">
+          <table class="table-premium" id="au-table">
+            <thead><tr><th>Visitor</th><th>Host</th><th>Purpose</th><th>Check-in</th><th>Check-out</th><th>Duration</th></tr></thead>
+            <tbody id="au-body"><tr class="no-data-row"><td colspan="6">Select a date range and load</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========== MANAGE HOSTS (SuperAdmin) ========== -->
+    <section id="sec-hosts" class="hidden">
+      <div class="card-premium p-5 mb-4 max-w-3xl">
+        <h3 class="text-base font-bold text-slate-800 mb-4"><i class="fa-solid fa-user-plus text-cyan-600 mr-2"></i>Add host / user</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label class="text-label">Full name *</label><input id="h-name" class="custom-input" placeholder="Host ka naam" /></div>
+          <div><label class="text-label">Email *</label><input id="h-email" type="email" class="custom-input" placeholder="user@company.com" /></div>
+          <div><label class="text-label">Password *</label><input id="h-pass" type="text" class="custom-input" placeholder="min 8 characters" /></div>
+          <div><label class="text-label">Role *</label>
+            <select id="h-role" class="custom-input">
+              <option value="Employee">Employee — sirf apne guests</option>
+              <option value="Admin">Admin — sab kuch + reports</option>
+              <option value="Security">Security — activities + force out (approve nahi)</option>
+              <option value="SuperAdmin">Super Admin — sab kuch + user management</option>
+              <option value="Kiosk">Kiosk — gate device login</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button class="btn-brand" id="h-submit" data-action="create-host"><span class="btn-spinner"></span><i class="fa-solid fa-plus"></i> Add host</button>
+          <button class="btn-outline" data-action="gen-password"><i class="fa-solid fa-dice"></i> Generate password</button>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-3"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Password sirf ek baar dikhega — user ko share kar do, wo baad mein khud badal sakta hai.</p>
+      </div>
+
+      <div class="card-premium">
+        <div class="table-toolbar">
+          <span class="text-xs font-semibold text-slate-600"><i class="fa-solid fa-users mr-1"></i>All users</span>
+          <div class="ml-auto flex gap-2 flex-wrap">
+            <button class="btn-outline" data-action="load-hosts-table"><i class="fa-solid fa-rotate"></i> Refresh</button>
+            <button class="btn-outline" data-action="sample-csv"><i class="fa-solid fa-file-arrow-down"></i> Sample CSV</button>
+            <button class="btn-outline" data-action="pick-import"><i class="fa-solid fa-file-import"></i> Import CSV</button>
+            <button class="btn-outline" data-action="export-hosts"><i class="fa-solid fa-file-export"></i> Export CSV</button>
+            <input type="file" id="import-file" accept=".csv,text/csv" class="hidden" />
+          </div>
+        </div>
+        <div class="table-scroll custom-scroll">
+          <table class="table-premium" id="hosts-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Added</th><th></th></tr></thead>
+            <tbody id="hosts-body"><tr class="no-data-row"><td colspan="5">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ================= MODALS ================= -->
+<div id="detail-modal" class="modal">
+  <div class="modal-content">
+    <h3 class="text-base font-bold text-slate-800 mb-4"><i class="fa-solid fa-id-badge text-cyan-600 mr-2"></i>Visit details</h3>
+    <div id="detail-body" class="text-sm"></div>
+    <button class="btn-outline w-full justify-center mt-4" data-action="close-detail">Close</button>
   </div>
 </div>
 
-<!-- ================= PHOTO MODAL ================= -->
-<div id="photo-modal" class="modal">
+<div id="approve-modal" class="modal">
+  <div class="modal-content">
+    <h3 class="text-base font-bold text-slate-800 mb-2"><i class="fa-solid fa-circle-check text-emerald-600 mr-2"></i>Approve request</h3>
+    <p id="ap-summary" class="text-xs text-slate-500 mb-4"></p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <div><label class="text-label">Valid from *</label><input id="ap-from" type="datetime-local" class="custom-input" /></div>
+      <div><label class="text-label">Valid to *</label><input id="ap-to" type="datetime-local" class="custom-input" /></div>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn-outline flex-1 justify-center" data-action="close-approve">Cancel</button>
+      <button class="btn-ok flex-1 justify-center" data-action="confirm-approve"><span class="btn-spinner"></span><i class="fa-solid fa-check"></i> Approve &amp; send badge</button>
+    </div>
+  </div>
+</div>
+
+<div id="pw-modal" class="modal">
   <div class="modal-content !max-w-md">
-    <h3 class="text-base font-bold text-slate-800 mb-3"><i class="fa-solid fa-camera mr-2" style="color:#0d5c75;"></i>Look at the camera</h3>
-    <video id="capture-video" autoplay muted playsinline></video>
-    <canvas id="capture-canvas" class="hidden"></canvas>
-    <div class="flex gap-3 mt-4">
-      <button class="btn-kiosk-ghost flex-1" data-action="cancel-photo">Cancel</button>
-      <button class="btn-kiosk flex-1" data-action="take-photo"><i class="fa-solid fa-camera"></i> Capture</button>
+    <h3 class="text-base font-bold text-slate-800 mb-4"><i class="fa-solid fa-key text-cyan-600 mr-2"></i>Change password</h3>
+    <div class="mb-3"><label class="text-label">New password</label><input id="pw-new" type="password" class="custom-input" autocomplete="new-password" /></div>
+    <div class="mb-4"><label class="text-label">Confirm new password</label><input id="pw-confirm" type="password" class="custom-input" autocomplete="new-password" /></div>
+    <div class="flex gap-2">
+      <button class="btn-outline flex-1 justify-center" data-action="close-changepw">Cancel</button>
+      <button class="btn-brand flex-1 justify-center" data-action="save-changepw"><span class="btn-spinner"></span>Update password</button>
     </div>
   </div>
 </div>
 
-<!-- ================= MESSAGE MODAL ================= -->
-<div id="msg-modal" class="modal">
+<div id="confirm-modal" class="modal">
   <div class="modal-content !max-w-sm text-center">
-    <div id="msg-icon" class="text-3xl mb-3"></div>
-    <h3 id="msg-title" class="text-lg font-bold text-slate-800 mb-2"></h3>
-    <p id="msg-body" class="text-sm text-slate-500 mb-5"></p>
-    <button class="btn-kiosk" data-action="close-msg">OK</button>
+    <h3 id="cf-title" class="text-base font-bold text-slate-800 mb-2"></h3>
+    <p id="cf-text" class="text-xs text-slate-500 mb-4"></p>
+    <div class="flex gap-2">
+      <button class="btn-outline flex-1 justify-center" data-action="cf-cancel">Cancel</button>
+      <button class="btn-danger flex-1 justify-center" id="cf-yes" data-action="cf-yes">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="reinvite-modal" class="modal">
+  <div class="modal-content">
+    <h3 class="text-base font-bold text-slate-800 mb-1"><i class="fa-solid fa-rotate-right text-cyan-600 mr-2"></i>Re-invite guest</h3>
+    <p id="ri-summary" class="text-xs text-slate-500 mb-4"></p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+      <div><label class="text-label">Purpose *</label>
+        <select id="ri-purpose" class="custom-input"><option value="">Select</option>
+        <option>Meeting</option>
+        <option>Duty</option>
+        <option>Client Visit</option>
+        <option>Vendor / Supplier</option>
+        <option>Interview</option>
+        <option>Delivery</option>
+        <option>Pickup</option>
+        <option>Service / Repair</option>
+        <option>Maintenance</option>
+        <option>Audit / Inspection</option>
+        <option>Training</option>
+        <option>Sample Collection</option>
+        <option>Contractor Work</option>
+        <option>Official Work</option>
+        <option>Personal</option>
+        <option>Other</option></select>
+      </div>
+      <div><label class="text-label">Host *</label><input id="ri-host" list="host-list" class="custom-input" /></div>
+      <div><label class="text-label">Valid from *</label><input id="ri-from" type="datetime-local" class="custom-input" /></div>
+      <div><label class="text-label">Valid to *</label><input id="ri-to" type="datetime-local" class="custom-input" /></div>
+    </div>
+    <div class="flex gap-2">
+      <button class="btn-outline flex-1 justify-center" data-action="close-reinvite">Cancel</button>
+      <button class="btn-brand flex-1 justify-center" data-action="confirm-reinvite"><span class="btn-spinner"></span><i class="fa-solid fa-paper-plane"></i> Send new badge</button>
+    </div>
+  </div>
+</div>
+
+<div id="hostpw-modal" class="modal">
+  <div class="modal-content !max-w-md">
+    <h3 class="text-base font-bold text-slate-800 mb-1"><i class="fa-solid fa-key text-cyan-600 mr-2"></i>Reset user password</h3>
+    <p id="hp-summary" class="text-xs text-slate-500 mb-4"></p>
+    <div class="mb-4"><label class="text-label">New password *</label><input id="hp-pass" type="text" class="custom-input" placeholder="min 8 characters" /></div>
+    <div class="flex gap-2">
+      <button class="btn-outline flex-1 justify-center" data-action="close-hostpw">Cancel</button>
+      <button class="btn-brand flex-1 justify-center" data-action="confirm-hostpw"><span class="btn-spinner"></span>Reset password</button>
+    </div>
+  </div>
+</div>
+
+<div id="import-modal" class="modal">
+  <div class="modal-content !max-w-3xl">
+    <h3 class="text-base font-bold text-slate-800 mb-1"><i class="fa-solid fa-file-import text-cyan-600 mr-2"></i>Import users</h3>
+    <p id="im-summary" class="text-xs text-slate-500 mb-3"></p>
+
+    <div class="table-scroll custom-scroll border border-slate-200 rounded-lg mb-4" style="max-height:44vh;">
+      <table class="table-premium" id="import-table">
+        <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Password</th><th>Status</th></tr></thead>
+        <tbody id="import-body"></tbody>
+      </table>
+    </div>
+
+    <div id="im-progress" class="hidden mb-3">
+      <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+        <div id="im-bar" class="h-2 rounded-full" style="width:0%;background:#0d5c75;transition:width .2s;"></div>
+      </div>
+      <p id="im-progress-text" class="text-xs text-slate-500 mt-2 text-center"></p>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="btn-outline flex-1 justify-center" data-action="close-import">Cancel</button>
+      <button class="btn-outline hidden" id="im-creds" data-action="download-creds"><i class="fa-solid fa-key"></i> Download credentials</button>
+      <button class="btn-brand flex-1 justify-center" id="im-run" data-action="run-import"><span class="btn-spinner"></span><i class="fa-solid fa-upload"></i> Import valid rows</button>
+    </div>
   </div>
 </div>
 <script>
 (function () {
   'use strict';
 
-  const NEXUS_KIOSK_BUILD = '2026-08-20-WORKPASS1';
-  console.log('Nexus Kiosk build ' + NEXUS_KIOSK_BUILD);
+  const NEXUS_VMS_BUILD = '2026-08-05-RANGE';
+  console.log('Nexus VMS build ' + NEXUS_VMS_BUILD);
 
   var CFG = window.VZT_CONFIG;
   var db = null; // Supabase client — remote config aane ke baad banta hai
-  var MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
   var $ = function (id) { return document.getElementById(id); };
+  var q = function (s) { return document.querySelector(s); };
 
   var S = {
-    checkType: 'Check-in',
-    mode: 'face',
-    otpChannel: 'whatsapp',
-    otpTarget: null,
-    stream: null, facingMode: 'user',
-    detectTimer: null, detecting: false, detectStop: false, workCanvas: null,
-    qr: null, qrRunning: false, qrTouched: false,
-    faceReady: false, matcher: null,
-    matchedEmail: null, visitor: null, invitation: null, openLog: null,
-    otpTimer: null, otpLeft: 180,
-    busy: false,
-    diag: {},   // step timings — diagnostic panel
-    online: navigator.onLine, syncing: false, insideCache: []
+    user: null, section: 'invites', reqTab: 'pending',
+    approveTarget: null, confirmCb: null, charts: {}, lastAudit: [],
+    reinviteRow: null, hostPwTarget: null, pastGuests: [], filters: {},
+    hostsCache: [], importRows: [], importDone: false
   };
 
-  // ============ OFFLINE ENGINE ============
-  // Network flaky ho to check-in local queue (IndexedDB) mein jaata hai,
-  // visitor turant nikal jaata hai, aur wapas online hone pe auto-sync.
-  var NET_TIMEOUT = 8000; // 8 sec se zyada koi call nahi latakega
+  var ROLE = function () { return (S.user && S.user.role) || ''; };
+  var IS_SUPER = function () { return ROLE() === 'SuperAdmin'; };
+  var IS_ADMIN = function () { return ROLE() === 'Admin' || ROLE() === 'SuperAdmin'; };
+  var IS_SECURITY = function () { return ROLE() === 'Security'; };
+  var CAN_APPROVE = function () { return !IS_SECURITY(); };
 
-  // Promise ko timeout ke saath race karo — 10-min hang khatam
-  function withTimeout(promise, ms, label) {
-    return new Promise(function (resolve, reject) {
-      var done = false;
-      var t = setTimeout(function () {
-        if (!done) { done = true; reject(new Error('timeout:' + (label || 'network'))); }
-      }, ms || NET_TIMEOUT);
-      Promise.resolve(promise).then(function (v) {
-        if (!done) { done = true; clearTimeout(t); resolve(v); }
-      }, function (e) {
-        if (!done) { done = true; clearTimeout(t); reject(e); }
-      });
-    });
-  }
+  var NAV = [
+    { key: 'visitors', label: 'Visitors', icon: 'fa-user-group', items: [
+      { sec: 'invites', label: 'Invitations', icon: 'fa-envelope-open-text', roles: ['SuperAdmin', 'Admin', 'Employee'] },
+      { sec: 'activities', label: 'Activities', icon: 'fa-clock-rotate-left', roles: ['SuperAdmin', 'Admin', 'Employee', 'Security'] }
+    ] },
+    { key: 'approvals', label: 'Approvals', icon: 'fa-circle-check', items: [
+      { sec: 'requests', label: 'Access Requests', icon: 'fa-hourglass-half', roles: ['SuperAdmin', 'Admin', 'Employee', 'Security'] }
+    ] },
+    { key: 'reports', label: 'Reports', icon: 'fa-chart-pie', items: [
+      { sec: 'analytics', label: 'Analytics', icon: 'fa-chart-simple', roles: ['SuperAdmin', 'Admin'] },
+      { sec: 'audit', label: 'Audit Log', icon: 'fa-file-shield', roles: ['SuperAdmin', 'Admin'] }
+    ] },
+    { key: 'admin', label: 'Admin', icon: 'fa-users-gear', items: [
+      { sec: 'hosts', label: 'Manage Hosts', icon: 'fa-user-plus', roles: ['SuperAdmin'] }
+    ] }
+  ];
 
-  // ---------- IndexedDB (queue + caches) ----------
-  var IDB = null;
-  function openIDB() {
-    return new Promise(function (resolve) {
-      try {
-        var req = indexedDB.open('nexus_kiosk', 1);
-        req.onupgradeneeded = function (e) {
-          var d = e.target.result;
-          if (!d.objectStoreNames.contains('queue')) d.createObjectStore('queue', { keyPath: 'localId' });
-          if (!d.objectStoreNames.contains('cache')) d.createObjectStore('cache', { keyPath: 'key' });
-        };
-        req.onsuccess = function (e) { IDB = e.target.result; resolve(IDB); };
-        req.onerror = function () { resolve(null); };
-      } catch (e) { resolve(null); }
-    });
-  }
-  function idbPut(store, val) {
-    return new Promise(function (resolve) {
-      if (!IDB) return resolve(false);
-      try {
-        var tx = IDB.transaction(store, 'readwrite');
-        tx.objectStore(store).put(val);
-        tx.oncomplete = function () { resolve(true); };
-        tx.onerror = function () { resolve(false); };
-      } catch (e) { resolve(false); }
-    });
-  }
-  function idbGetAll(store) {
-    return new Promise(function (resolve) {
-      if (!IDB) return resolve([]);
-      try {
-        var tx = IDB.transaction(store, 'readonly');
-        var rq = tx.objectStore(store).getAll();
-        rq.onsuccess = function () { resolve(rq.result || []); };
-        rq.onerror = function () { resolve([]); };
-      } catch (e) { resolve([]); }
-    });
-  }
-  function idbGet(store, key) {
-    return new Promise(function (resolve) {
-      if (!IDB) return resolve(null);
-      try {
-        var tx = IDB.transaction(store, 'readonly');
-        var rq = tx.objectStore(store).get(key);
-        rq.onsuccess = function () { resolve(rq.result || null); };
-        rq.onerror = function () { resolve(null); };
-      } catch (e) { resolve(null); }
-    });
-  }
-  function idbDelete(store, key) {
-    return new Promise(function (resolve) {
-      if (!IDB) return resolve(false);
-      try {
-        var tx = IDB.transaction(store, 'readwrite');
-        tx.objectStore(store).delete(key);
-        tx.oncomplete = function () { resolve(true); };
-        tx.onerror = function () { resolve(false); };
-      } catch (e) { resolve(false); }
-    });
+  function allowedNav() {
+    var r = ROLE();
+    return NAV.map(function (g) {
+      var items = g.items.filter(function (it) { return it.roles.indexOf(r) >= 0; });
+      return items.length ? { key: g.key, label: g.label, icon: g.icon, items: items } : null;
+    }).filter(Boolean);
   }
 
-  // ---------- online/offline indicator ----------
-  function setOnline(v) {
-    S.online = v;
-    var pill = $('net-pill');
-    if (!pill) return;
-    pill.classList.toggle('offline', !v);
-    $('net-text').textContent = v ? 'Online' : 'Offline';
-    if (v) { updateNetInfo(); flushQueue(); }
-  }
-
-  async function refreshSyncBadge() {
-    var q = await idbGetAll('queue');
-    var badge = $('sync-badge');
-    if (q.length) { badge.classList.remove('hidden'); $('sync-count').textContent = q.length; }
-    else badge.classList.add('hidden');
-  }
-
-  // ---------- queue a check-in/out when offline or on failure ----------
-  async function queueEntry(kind, payload) {
-    var item = { localId: 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), kind: kind, payload: payload, ts: Date.now() };
-    await idbPut('queue', item);
-    refreshSyncBadge();
-    return item;
-  }
-
-  // ---------- flush queued entries to Supabase ----------
-  async function flushQueue() {
-    if (S.syncing || !db || !navigator.onLine) return;
-    S.syncing = true;
-    try {
-      var items = await idbGetAll('queue');
-      items.sort(function (a, b) { return a.ts - b.ts; });
-      for (var i = 0; i < items.length; i++) {
-        var it = items[i];
-        try {
-          if (it.kind === 'checkin') {
-            await withTimeout(db.from('visitor_logs').insert(it.payload.row), NET_TIMEOUT, 'sync-in');
-            if (it.payload.face) {
-              try {
-                var ex = await withTimeout(db.from('face_data').select('id').ilike('email', it.payload.face.email).limit(1), NET_TIMEOUT, 'sync-face-chk');
-                if (!ex.data || !ex.data.length) await withTimeout(db.from('face_data').insert(it.payload.face), NET_TIMEOUT, 'sync-face');
-              } catch (e) {}
-            }
-          } else if (it.kind === 'checkout') {
-            await withTimeout(db.from('visitor_logs').update(it.payload.patch).eq('id', it.payload.id).is('check_out_time', null), NET_TIMEOUT, 'sync-out');
-          }
-          await idbDelete('queue', it.localId);
-          refreshSyncBadge();
-        } catch (e) {
-          break; // network phir gir gaya — baad mein try karenge
-        }
-      }
-    } finally {
-      S.syncing = false;
-      var left = await idbGetAll('queue');
-      if (!left.length) { /* all synced */ }
-      loadDescriptors(true);
-    }
-  }
-
-  // ---------- DIAGNOSTIC TIMING ENGINE ----------
-  // Kisi bhi async network call ko wrap karke uska time record karta hai.
-  // Visitor flow bilkul same rehta hai — sirf measure hota hai.
-  async function time(step, promise) {
-    var t0 = (performance && performance.now) ? performance.now() : Date.now();
-    try {
-      var out = await promise;
-      S.diag[step] = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0);
-      return out;
-    } catch (e) {
-      S.diag[step] = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0);
-      S.diag[step + '_err'] = 1;
-      throw e;
-    }
-  }
-
-  function diagSet(id, ms, slowAbove) {
-    var el = $(id);
-    if (!el) return;
-    if (ms == null) { el.textContent = '—'; return; }
-    el.textContent = ms + ' ms';
-    var row = el.closest('.diag-row');
-    if (row) {
-      row.classList.remove('diag-slow', 'diag-ok');
-      if (slowAbove && ms > slowAbove) row.classList.add('diag-slow');
-      else row.classList.add('diag-ok');
-    }
-  }
-
-  function renderCheckinDiag() {
-    diagSet('d-desc', S.diag.descriptor, 1500);
-    diagSet('d-findlog', S.diag.findlog, 2000);
-    diagSet('d-invlookup', S.diag.invlookup, 2000);
-    diagSet('d-insert', S.diag.insert, 3000);
-    var total = (S.diag.descriptor || 0) + (S.diag.findlog || 0) + (S.diag.invlookup || 0) + (S.diag.insert || 0);
-    diagSet('d-total', total, 5000);
-  }
-
-  // ---------- boot ----------
+  // ================= BOOT =================
   document.addEventListener('DOMContentLoaded', function () {
     bindEvents();
-    bindDiag();
-    updateNetInfo();
-    openIDB().then(function () { refreshSyncBadge(); });
-    window.addEventListener('online', function () { setOnline(true); });
-    window.addEventListener('offline', function () { setOnline(false); });
-    setOnline(navigator.onLine);
     showLoader('Connecting...');
-    var cfgT0 = (performance && performance.now) ? performance.now() : Date.now();
     jsonp({ action: 'getPublicConfig' }, async function (res) {
       hideLoader();
-      var cfgMs = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - cfgT0);
-      diagSet('d-config', cfgMs, 3000);
       if (!res.success) {
-        showMsg('Setup error', res.error || 'Config load failed. Check MAIL_API_URL/KEY in this file.', null, 'error');
+        showToast(res.error || 'Config load failed. Check MAIL_API_URL/KEY in this file.', 'error', 6000);
         return;
       }
       db = supabase.createClient(res.url, res.key);
       var sess = (await db.auth.getSession()).data.session;
-      if (!sess) { show('screen-login'); return; }
-      startApp();
-      pingSupabase();
-      flushQueue();
+      if (sess) await enterApp(sess.user);
     });
   });
 
-  // ---------- Network info + Supabase ping ----------
-  function updateNetInfo() {
-    var el = $('d-net');
-    if (!el) return;
-    var parts = [];
-    parts.push(navigator.onLine ? 'Online' : 'OFFLINE');
-    var c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-    if (c) {
-      if (c.effectiveType) parts.push(c.effectiveType);
-      if (typeof c.downlink === 'number') parts.push(c.downlink + ' Mbps');
-      if (typeof c.rtt === 'number') parts.push('RTT ' + c.rtt + 'ms');
-    }
-    el.textContent = parts.join(' · ');
-    var row = el.closest('.diag-row');
-    if (row) {
-      row.classList.remove('diag-slow', 'diag-ok');
-      row.classList.add(navigator.onLine ? 'diag-ok' : 'diag-slow');
-    }
-  }
-
-  async function pingSupabase() {
-    if (!db) return null;
-    var t0 = (performance && performance.now) ? performance.now() : Date.now();
-    try {
-      // Sabse halka possible query — head request, zero rows
-      await db.from('hosts').select('auth_user_id', { count: 'exact', head: true });
-      var ms = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0);
-      diagSet('d-ping', ms, 800);
-      return ms;
-    } catch (e) {
-      diagSet('d-ping', null);
-      $('d-ping').textContent = 'FAIL';
-      return null;
-    }
-  }
-
-  function bindDiag() {
-    $('diag-toggle').addEventListener('click', function () {
-      $('diag-panel').classList.toggle('open');
-      updateNetInfo();
-      pingSupabase();
-    });
-    $('diag-close').addEventListener('click', function () { $('diag-panel').classList.remove('open'); });
-    $('diag-pingtest').addEventListener('click', runPingTest);
-    window.addEventListener('online', updateNetInfo);
-    window.addEventListener('offline', updateNetInfo);
-    var c = navigator.connection;
-    if (c && c.addEventListener) c.addEventListener('change', updateNetInfo);
-  }
-
-  // 5 baar ping karke min/avg/max nikalta hai — flaky wifi yahan clearly dikhti hai
-  async function runPingTest() {
-    var log = $('d-pingresult');
-    log.textContent = 'Testing';
-    var results = [];
-    for (var i = 0; i < 5; i++) {
-      log.textContent = 'Testing ' + (i + 1) + '/5...';
-      var ms = await pingSupabase();
-      results.push(ms);
-      await new Promise(function (r) { setTimeout(r, 400); });
-    }
-    var ok = results.filter(function (x) { return x != null; });
-    if (!ok.length) { log.textContent = 'All 5 pings FAILED — network down ya Supabase reachable nahi.'; return; }
-    var min = Math.min.apply(null, ok), max = Math.max.apply(null, ok);
-    var avg = Math.round(ok.reduce(function (a, b) { return a + b; }, 0) / ok.length);
-    var fails = results.length - ok.length;
-    log.textContent =
-      'Pings: ' + results.map(function (x) { return x == null ? 'FAIL' : x + 'ms'; }).join(', ') + '\n' +
-      'min ' + min + ' · avg ' + avg + ' · max ' + max + ' ms' +
-      (fails ? '\n' + fails + '/5 FAILED — wifi drop ho rahi hai!' : '') +
-      (max > 2000 ? '\n⚠ max bahut high — yahi 10-min hang ki wajah hai' : '');
-  }
-
-  async function startApp() {
+  async function enterApp(authUser) {
+    var res = await db.from('hosts').select('*').eq('auth_user_id', authUser.id).limit(1);
+    var host = res.data && res.data[0];
+    if (!host) { showToast('Your account is not mapped in the hosts table.', 'error', 6000); await db.auth.signOut(); return; }
+    if (host.role === 'Kiosk') { showToast('Kiosk account — use kiosk.html.', 'error', 6000); await db.auth.signOut(); return; }
     playSplash();
-    show('screen-home');
-    loadFaceModels();
-    loadDescriptors();
+    S.user = host;
+    $('login-page').classList.add('hidden');
+    $('main-app').classList.remove('hidden');
+    $('user-name').textContent = host.host_name;
+    $('user-role').textContent = host.role;
+    $('sb-user-name').textContent = host.host_name;
+    $('sb-user-role').textContent = host.role;
+    buildNav();
     loadHosts();
-    cacheInvitations();
-    refreshInsideCount();
-    // Har 2 min: invitations + faces refresh, queue flush, inside count
-    setInterval(function () {
-      cacheInvitations();
-      refreshInsideCount();
-      flushQueue();
-    }, 2 * 60 * 1000);
-  }
-
-  // Aaj ki active invitations local cache mein — offline check-in ke liye
-  async function cacheInvitations() {
-    if (!db || !navigator.onLine) return;
-    try {
-      var nowIso = new Date().toISOString();
-      var res = await withTimeout(
-        db.from('invitations').select('*').eq('status', 'active').gte('to_time', nowIso),
-        NET_TIMEOUT, 'cache-inv');
-      if (!res.error && res.data) {
-        await idbPut('cache', { key: 'invitations', data: res.data, at: Date.now() });
-      }
-    } catch (e) { /* offline — purana cache chalega */ }
-  }
-
-  async function getCachedInvitations() {
-    var c = await idbGet('cache', 'invitations');
-    return (c && c.data) || [];
+    loadPastGuests();
+    if (!IS_ADMIN() && !IS_SECURITY()) {
+      $('i-host').value = host.host_name; $('i-host').readOnly = true;
+      $('m-host').value = host.host_name; $('m-host').readOnly = true;
+      $('a-host-wrap').classList.add('hidden');
+    }
+    initDefaults();
+    var first = allowedNav()[0];
+    switchSection(first ? first.items[0].sec : 'activities');
   }
 
   // ---------- Nexus intro ----------
@@ -910,994 +741,1157 @@
     }, 2600);
   }
 
-  // ---------- event delegation (no inline onclick) ----------
-  function bindEvents() {
-    document.addEventListener('click', function (e) {
-      var el = e.target.closest('[data-action],[data-mode],[data-channel]');
-      if (!el) return;
-      if (el.dataset.mode) { switchMode(el.dataset.mode); return; }
-      if (el.dataset.channel) { switchChannel(el.dataset.channel); return; }
-      var a = el.dataset.action;
-      if (a === 'device-login') deviceLogin();
-      else if (a === 'check-in') openAction('Check-in');
-      else if (a === 'check-out') openAction('Check-out');
-      else if (a === 'work-pass') wpOpen();
-      else if (a === 'go-back') goBack();
-      else if (a === 'switch-camera') {
-        S.facingMode = S.facingMode === 'user' ? 'environment' : 'user';
-        updateCamLabel();
-        showToast(S.facingMode === 'user' ? 'Front camera' : 'Back camera', 'info', 1500);
-        if (S.mode === 'face') startCamera();
-        else if (S.mode === 'qr') { S.qrTouched = true; restartQr(); }
-      }
-      else if (a === 'send-otp') sendOtp();
-      else if (a === 'verify-otp') verifyOtp();
-      else if (a === 'resend-otp') sendOtp();
-      else if (a === 'back-to-otp-request') { hidePanels(); $('otp-request-form').classList.remove('hidden'); }
-      else if (a === 'try-email') { tryEmailInstead(); }
-      else if (a === 'switch-to-qr') { switchMode('qr'); }
-      else if (a === 'open-photo') openPhoto();
-      else if (a === 'take-photo') takePhoto();
-      else if (a === 'cancel-photo') closePhoto();
-      else if (a === 'submit-request') submitRequest();
-      else if (a === 'close-msg') closeMsg();
-      else if (a === 'show-inside') openInside();
-      else if (a === 'refresh-inside') loadInsideList(true);
-      else if (a === 'inside-checkout') insideCheckout(el.dataset.id, el);
-    });
-    $('otp-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
-    $('r-mobile').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
-    $('mobile-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
-    $('inside-search').addEventListener('input', function () { renderInsideList(this.value); });
-  }
+  function buildNav() {
+    var groups = allowedNav();
 
-  // ================= WHO'S INSIDE + DIRECT CHECK-OUT =================
-  async function refreshInsideCount() {
-    if (!db || !navigator.onLine) return;
-    try {
-      var start = new Date(); start.setHours(0, 0, 0, 0);
-      var res = await withTimeout(
-        db.from('visitor_logs').select('id', { count: 'exact', head: true })
-          .gte('check_in_time', start.toISOString()).is('check_out_time', null),
-        NET_TIMEOUT, 'inside-count');
-      if (res.count != null) $('inside-count').textContent = res.count;
-    } catch (e) {}
-  }
+    $('navGroup').innerHTML = groups.map(function (g) {
+      var items = g.items.map(function (it) {
+        return '<button class="dropdown-item" data-section="' + it.sec + '"><i class="fa-solid ' + it.icon + '"></i> ' + it.label + '</button>';
+      }).join('');
+      return '<div class="relative">' +
+        '<button class="nav-link flex items-center gap-1" data-dd="dd-' + g.key + '"><i class="fa-solid ' + g.icon + '"></i> ' + g.label +
+        ' <i class="fa-solid fa-chevron-down text-[10px] opacity-60 ml-0.5"></i></button>' +
+        '<div class="dropdown-menu" id="dd-' + g.key + '">' + items + '</div></div>';
+    }).join('');
 
-  function openInside() {
-    show('screen-inside');
-    $('inside-search').value = '';
-    loadInsideList();
-  }
-
-  async function loadInsideList(isRefresh) {
-    var box = $('inside-list');
-    if (isRefresh) showToast('Refreshing...', 'info', 1200);
-    if (!navigator.onLine) {
-      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-wifi-slash text-2xl mb-2"></i><br>Offline — list dikhane ke liye network chahiye.<br><span class="text-xs">Check-out phir bhi ho jayega, queue mein chala jayega.</span></div>';
-      return;
-    }
-    box.innerHTML = '<div class="text-center text-slate-400 py-10"><div class="spinner mx-auto"></div><p class="mt-3 text-sm">Loading…</p></div>';
-    try {
-      var start = new Date(); start.setHours(0, 0, 0, 0);
-      // photo_in base64 heavy hai — list mein photo nahi laate, sirf initials.
-      // Isse query fast rehti hai aur timeout nahi hota.
-      var res = await withTimeout(
-        db.from('visitor_logs')
-          .select('id,visitor_name,mobile,email,purpose,host_name,check_in_time')
-          .gte('check_in_time', start.toISOString()).is('check_out_time', null)
-          .order('check_in_time', { ascending: false }),
-        15000, 'inside-list');
-      if (res.error) throw new Error(res.error.message);
-      S.insideCache = res.data || [];
-      $('inside-count').textContent = S.insideCache.length;
-      renderInsideList($('inside-search').value);
-    } catch (e) {
-      var msg = (e && e.message) ? e.message : 'unknown';
-      var offlineMsg = (msg.indexOf('timeout') >= 0) ? 'Network slow — dobara try karo.' : ('Error: ' + esc(msg));
-      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i><br>' + offlineMsg +
-        '<br><button class="btn-kiosk-ghost mt-3" data-action="refresh-inside">Retry</button></div>';
-    }
-  }
-
-  function renderInsideList(filter) {
-    var box = $('inside-list');
-    var f = (filter || '').toLowerCase().trim();
-    var rows = S.insideCache.filter(function (r) {
-      if (!f) return true;
-      return (r.visitor_name || '').toLowerCase().indexOf(f) >= 0 || (r.mobile || '').indexOf(f) >= 0;
-    });
-    if (!rows.length) {
-      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-user-group text-2xl mb-2"></i><br>' +
-        (f ? 'Koi match nahi mila.' : 'Abhi koi andar nahi hai.') + '</div>';
-      return;
-    }
-    box.innerHTML = rows.map(function (r) {
-      var photo = '<div class="inside-photo-ph">' + esc((r.visitor_name || '?').charAt(0).toUpperCase()) + '</div>';
-      return '<div class="inside-card">' + photo +
-        '<div class="inside-info">' +
-          '<div class="inside-name">' + esc(r.visitor_name || 'Visitor') + '</div>' +
-          '<div class="inside-meta">' + esc(r.host_name || '—') + (r.purpose ? ' · ' + esc(r.purpose) : '') + '</div>' +
-          '<div class="inside-time"><i class="fa-regular fa-clock"></i> In: ' + tfmt(r.check_in_time) + (r.mobile ? ' · ' + esc(r.mobile) : '') + '</div>' +
-        '</div>' +
-        '<button class="inside-out-btn" data-action="inside-checkout" data-id="' + r.id + '"><i class="fa-solid fa-right-from-bracket"></i> Check-out</button>' +
-        '</div>';
+    $('sidebarNav').innerHTML = groups.map(function (g) {
+      return '<div class="px-4 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">' + g.label + '</div>' +
+        g.items.map(function (it) {
+          return '<button class="sidebar-sub-item" data-section="' + it.sec + '"><i class="fa-solid ' + it.icon + '"></i> ' + it.label + '</button>';
+        }).join('');
     }).join('');
   }
 
-  async function insideCheckout(id, btn) {
-    var row = S.insideCache.filter(function (r) { return r.id === id; })[0];
-    var name = row ? row.visitor_name : 'visitor';
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
-    var patch = { check_out_time: new Date().toISOString() };
-    try {
-      var up = await withTimeout(
-        db.from('visitor_logs').update(patch).eq('id', id).is('check_out_time', null),
-        NET_TIMEOUT, 'inside-out');
-      if (up.error) throw new Error(up.error.message);
-      S.insideCache = S.insideCache.filter(function (r) { return r.id !== id; });
-      $('inside-count').textContent = S.insideCache.length;
-      renderInsideList($('inside-search').value);
-      showToast(name + ' checked out.', 'success', 2500);
-    } catch (e) {
-      // network fail — queue kar do
-      await queueEntry('checkout', { id: id, patch: patch });
-      S.insideCache = S.insideCache.filter(function (r) { return r.id !== id; });
-      $('inside-count').textContent = S.insideCache.length;
-      renderInsideList($('inside-search').value);
-      showToast(name + ' checkout queue mein — network aane par sync hoga.', 'warning', 3500);
-    }
+  function initDefaults() {
+    var now = new Date();
+    $('a-from').value = dstr(now); $('a-to').value = dstr(now);
+    $('au-to').value = dstr(now);
+    var wk = new Date(now); wk.setDate(wk.getDate() - 7);
+    $('au-from').value = dstr(wk);
+    var from = new Date(now); from.setMinutes(0, 0, 0); from.setHours(from.getHours() + 1);
+    var to = new Date(from); to.setHours(to.getHours() + 2);
+    $('i-from').value = dtLocal(from); $('i-to').value = dtLocal(to);
+    $('m-from').value = dtLocal(from); $('m-to').value = dtLocal(to);
+    if (!$('multi-rows').children.length) addMultiRow();
   }
 
-  // ---------- device login ----------
-  async function deviceLogin() {
-    if (!db) { showMsg('Connecting...', 'Ek second — config load ho rahi hai.'); return; }
+  // Date-range presets (Today, This month, etc.)
+  function applyPreset(preset, target) {
+    var now = new Date();
+    var from = new Date(now), to = new Date(now);
+    if (preset === 'today') { /* from=to=today */ }
+    else if (preset === 'yesterday') { from.setDate(from.getDate() - 1); to.setDate(to.getDate() - 1); }
+    else if (preset === 'week') { from.setDate(from.getDate() - from.getDay()); } // Sunday start
+    else if (preset === 'month') { from = new Date(now.getFullYear(), now.getMonth(), 1); }
+    else if (preset === 'lastmonth') { from = new Date(now.getFullYear(), now.getMonth() - 1, 1); to = new Date(now.getFullYear(), now.getMonth(), 0); }
+    else if (preset === '7days') { from.setDate(from.getDate() - 6); }
+    else if (preset === '30days') { from.setDate(from.getDate() - 29); }
+    $(target + '-from').value = dstr(from);
+    $(target + '-to').value = dstr(to);
+    document.querySelectorAll('[data-target="' + target + '"]').forEach(function (c) {
+      c.classList.toggle('active', c.dataset.preset === preset);
+    });
+    if (target === 'a') loadActivities();
+    else if (target === 'au') loadAudit();
+  }
+
+  // ================= EVENTS (delegation — no inline onclick) =================
+  function bindEvents() {
+    document.addEventListener('click', function (e) {
+      var dd = e.target.closest('[data-dd]');
+      if (dd) {
+        var id = dd.dataset.dd;
+        document.querySelectorAll('.dropdown-menu').forEach(function (m) { if (m.id !== id) m.classList.remove('show'); });
+        var menu = $(id); if (menu) menu.classList.toggle('show');
+        return;
+      }
+      if (!e.target.closest('.dropdown-menu')) {
+        document.querySelectorAll('.dropdown-menu').forEach(function (m) { m.classList.remove('show'); });
+      }
+
+      var el = e.target.closest('[data-action],[data-section],[data-invtab],[data-reqtab],[data-preset]');
+      if (!el) return;
+      if (el.dataset.preset) { applyPreset(el.dataset.preset, el.dataset.target); return; }
+      if (el.dataset.section) { switchSection(el.dataset.section); closeSidebar(); return; }
+      if (el.dataset.invtab) { switchInvTab(el.dataset.invtab); return; }
+      if (el.dataset.reqtab) { switchReqTab(el.dataset.reqtab); return; }
+
+      var a = el.dataset.action, d = el.dataset;
+      var map = {
+        'login': doLogin, 'logout': doLogout,
+        'open-sidebar': openSidebar, 'close-sidebar': closeSidebar,
+        'show-forgot': function () { $('login-form').classList.add('hidden'); $('forgot-form').classList.remove('hidden'); },
+        'back-to-login': function () { $('forgot-form').classList.add('hidden'); $('login-form').classList.remove('hidden'); },
+        'send-reset': sendReset,
+        'show-changepw': function () { closeSidebar(); $('pw-modal').classList.add('show'); },
+        'close-changepw': function () { $('pw-modal').classList.remove('show'); },
+        'save-changepw': savePassword,
+        'submit-invite': submitInvite,
+        'add-multi-row': addMultiRow,
+        'submit-multi': submitMulti,
+        'load-activities': loadActivities,
+        'load-audit': loadAudit, 'export-audit': exportAudit,
+        'close-detail': function () { $('detail-modal').classList.remove('show'); },
+        'close-approve': function () { $('approve-modal').classList.remove('show'); },
+        'confirm-approve': confirmApprove,
+        'cf-cancel': function () { $('confirm-modal').classList.remove('show'); S.confirmCb = null; },
+        'cf-yes': function () { $('confirm-modal').classList.remove('show'); var c = S.confirmCb; S.confirmCb = null; if (c) c(); },
+        'close-reinvite': function () { $('reinvite-modal').classList.remove('show'); },
+        'confirm-reinvite': confirmReinvite,
+        'create-host': createHost,
+        'gen-password': function () { $('h-pass').value = genPassword(); },
+        'load-hosts-table': loadHostsTable,
+        'close-hostpw': function () { $('hostpw-modal').classList.remove('show'); },
+        'confirm-hostpw': confirmHostPw,
+        'sample-csv': sampleCsv,
+        'export-hosts': exportHosts,
+        'pick-import': function () { $('import-file').value = ''; $('import-file').click(); },
+        'close-import': function () { $('import-modal').classList.remove('show'); if (S.importDone) loadHostsTable(); },
+        'run-import': runImport,
+        'download-creds': downloadCredentials
+      };
+      if (map[a]) { map[a](); return; }
+      if (a === 'remove-multi-row') { el.closest('.multi-row').remove(); }
+      else if (a === 'view-log') { showDetail(d.id); }
+      else if (a === 'force-out') { askConfirm('Force check-out?', 'Visitor ko abhi checked-out mark kar diya jayega.', function () { forceOut(d.id); }); }
+      else if (a === 'resend-badge') { resendBadge(d.id, el); }
+      else if (a === 'open-approve') { openApprove(d.id); }
+      else if (a === 'reject-req') { askConfirm('Reject request?', 'Visitor ko access nahi milega.', function () { rejectReq(d.id); }); }
+      else if (a === 'reinvite') { openReinvite(d.id); }
+      else if (a === 'host-pw') { openHostPw(d.id, d.email); }
+      else if (a === 'host-del') { askConfirm('Remove user?', d.email + ' ka access hamesha ke liye hat jayega.', function () { deleteHost(d.id); }); }
+      else if (a === 'export-table') { exportTable(d.table, d.name); }
+      else if (a === 'col-filter') { openFilter(el); }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !$('login-page').classList.contains('hidden')) {
+        if (!$('login-form').classList.contains('hidden')) doLogin();
+      }
+    });
+
+    window.addEventListener('resize', function () { if (window.innerWidth >= 768) closeSidebar(); });
+
+    document.addEventListener('change', function (e) {
+      var sel = e.target.closest('[data-action="host-role"]');
+      if (sel) { changeHostRole(sel.dataset.id); return; }
+      if (e.target.id === 'import-file') handleImportFile(e.target.files && e.target.files[0]);
+    });
+
+    var gs = $('globalSearch');
+    if (gs) gs.addEventListener('input', function () { applyGlobalSearch(this.value); });
+
+    $('i-name').addEventListener('change', function () { autofillGuest(this.value); });
+    $('i-name').addEventListener('blur', function () { autofillGuest(this.value); });
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.filter-pop') && !e.target.closest('[data-action="col-filter"]')) closeFilterPop();
+    }, true);
+  }
+
+  function openSidebar() {
+    $('mobileSidebar').classList.add('open');
+    $('sidebarOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    $('mobileSidebar').classList.remove('open');
+    $('sidebarOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  function askConfirm(title, text, cb) {
+    $('cf-title').textContent = title; $('cf-text').textContent = text;
+    S.confirmCb = cb; $('confirm-modal').classList.add('show');
+  }
+
+  // ================= AUTH =================
+  async function doLogin() {
+    if (!db) { showToast('Ek second — config load ho rahi hai.', 'warning'); return; }
     var email = $('login-email').value.trim(), pw = $('login-password').value;
-    if (!email || !pw) return;
+    if (!email || !pw) { showToast('Email aur password dono chahiye.', 'warning'); return; }
     showLoader('Signing in...');
     var res = await db.auth.signInWithPassword({ email: email, password: pw });
     hideLoader();
-    if (res.error) { showToast(res.error.message, 'error', 5000); return; }
-    startApp();
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    enterApp(res.data.user);
   }
 
-  // ---------- face models + descriptors ----------
-  async function loadFaceModels() {
-    try {
-      // GPU backend — CPU se kai guna tez
-      if (faceapi.tf && faceapi.tf.setBackend) {
-        try { await faceapi.tf.setBackend('webgl'); await faceapi.tf.ready(); } catch (e) {}
-      }
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-      ]);
-      S.faceReady = true;
-      warmUp();
-    } catch (e) { console.error('Face models failed', e); }
+  async function doLogout() { await db.auth.signOut(); location.reload(); }
+
+  async function sendReset() {
+    var email = $('forgot-email').value.trim();
+    if (!email) return;
+    showLoader('Sending...');
+    var res = await db.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    hideLoader();
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    showToast('Reset link bhej diya — email check karo.', 'success');
+    $('forgot-form').classList.add('hidden'); $('login-form').classList.remove('hidden');
   }
 
-  // Pehli asli detection se pehle model ko ek dummy frame pe chala do,
-  // warna first scan pe 2-3 second ka freeze aata hai.
-  async function warmUp() {
-    try {
-      var c = document.createElement('canvas');
-      c.width = 224; c.height = 224;
-      var x = c.getContext('2d');
-      x.fillStyle = '#888'; x.fillRect(0, 0, 224, 224);
-      await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
-        .withFaceLandmarks().withFaceDescriptor();
-    } catch (e) {}
+  async function savePassword() {
+    var p1 = $('pw-new').value, p2 = $('pw-confirm').value;
+    if (p1.length < 8) { showToast('Kam se kam 8 characters.', 'warning'); return; }
+    if (p1 !== p2) { showToast('Dono passwords same nahi hain.', 'warning'); return; }
+    showLoader('Updating...');
+    var res = await db.auth.updateUser({ password: p1 });
+    hideLoader();
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    $('pw-modal').classList.remove('show'); $('pw-new').value = ''; $('pw-confirm').value = '';
+    showToast('Password updated.', 'success');
   }
 
-  async function loadDescriptors(silent) {
-    if (!db) return;
-    if (!navigator.onLine) { await loadDescriptorsFromCache(); return; }
-    var t0 = (performance && performance.now) ? performance.now() : Date.now();
-    try {
-      var res = await withTimeout(db.from('face_data').select('email,descriptor'), NET_TIMEOUT, 'faces');
-      diagSet('d-faces', Math.round(((performance && performance.now) ? performance.now() : Date.now()) - t0), 3000);
-      if (res.error || !res.data || !res.data.length) { S.matcher = null; return; }
-      // cache for offline
-      await idbPut('cache', { key: 'faces', data: res.data, at: Date.now() });
-      buildMatcher(res.data, silent);
-    } catch (e) {
-      await loadDescriptorsFromCache();
-    }
+  // ================= NAV =================
+  function switchSection(sec) {
+    S.section = sec;
+    document.querySelectorAll('.dropdown-menu').forEach(function (m) { m.classList.remove('show'); });
+    document.querySelectorAll('.sidebar-sub-item').forEach(function (b) { b.classList.toggle('active', b.dataset.section === sec); });
+    document.querySelectorAll('[data-dd]').forEach(function (b) {
+      var g = allowedNav().filter(function (x) { return 'dd-' + x.key === b.dataset.dd; })[0];
+      var owns = g && g.items.some(function (i) { return i.sec === sec; });
+      b.classList.toggle('active', !!owns);
+    });
+    ['invites', 'activities', 'requests', 'analytics', 'audit', 'hosts'].forEach(function (x) {
+      $('sec-' + x).classList.toggle('hidden', x !== sec);
+    });
+    if (sec === 'activities') loadActivities();
+    else if (sec === 'requests') loadRequests();
+    else if (sec === 'analytics') loadAnalytics();
+    else if (sec === 'hosts') loadHostsTable();
+    else if (sec === 'invites' && !$('inv-list').classList.contains('hidden')) loadInvList();
   }
 
-  async function loadDescriptorsFromCache() {
-    var c = await idbGet('cache', 'faces');
-    if (c && c.data && c.data.length) { buildMatcher(c.data, true); }
-    else { S.matcher = null; }
+  function setTabs(attr, val) {
+    document.querySelectorAll('[' + attr + ']').forEach(function (t) {
+      var on = t.getAttribute(attr) === val;
+      t.classList.toggle('text-cyan-700', on);
+      t.classList.toggle('border-cyan-600', on);
+      t.classList.toggle('text-slate-400', !on);
+      t.classList.toggle('border-transparent', !on);
+    });
   }
 
-  function buildMatcher(data, silent) {
-    try {
-      var labeled = data.map(function (r) {
-        return new faceapi.LabeledFaceDescriptors(r.email, [new Float32Array(r.descriptor)]);
-      });
-      S.matcher = new faceapi.FaceMatcher(labeled, CFG.FACE_MATCH_THRESHOLD);
-      if (!silent) showToast(labeled.length + ' faces ready', 'info', 2500);
-    } catch (e) { S.matcher = null; }
+  function switchInvTab(tab) {
+    setTabs('data-invtab', tab);
+    $('inv-single').classList.toggle('hidden', tab !== 'single');
+    $('inv-multiple').classList.toggle('hidden', tab !== 'multiple');
+    $('inv-list').classList.toggle('hidden', tab !== 'list');
+    if (tab === 'list') loadInvList();
   }
 
+  function switchReqTab(tab) {
+    S.reqTab = tab;
+    setTabs('data-reqtab', tab);
+    loadRequests();
+  }
+
+  // ================= HOSTS =================
   async function loadHosts() {
-    var res = await db.from('hosts').select('host_name,role').neq('role', 'Kiosk');
+    var res = await db.from('hosts').select('host_name,role').neq('role', 'Kiosk').order('host_name');
     if (res.error || !res.data) return;
-    $('host-list').innerHTML = res.data.map(function (h) {
-      return '<option value="' + esc(h.host_name) + '"></option>';
+    $('host-list').innerHTML = res.data.map(function (h) { return '<option value="' + esc(h.host_name) + '"></option>'; }).join('');
+    $('a-host').innerHTML = '<option value="">All hosts</option>' + res.data.map(function (h) {
+      return '<option value="' + esc(h.host_name) + '">' + esc(h.host_name) + '</option>';
     }).join('');
   }
 
-  // ---------- navigation ----------
-  function show(id) {
-    ['screen-login', 'screen-home', 'screen-action', 'screen-inside'].forEach(function (s) { var el = $(s); if (el) el.classList.add('hidden'); });
-    var t = $(id); if (t) t.classList.remove('hidden');
-  }
-  function hidePanels() {
-    ['otp-request-form', 'otp-form', 'data-form', 'request-form'].forEach(function (p) { $(p).classList.add('hidden'); });
-    $('stage').classList.add('hidden');
-  }
-
-  function switchChannel(ch) {
-    S.otpChannel = ch;
-    document.querySelectorAll('[data-channel]').forEach(function (t) {
-      t.classList.toggle('active', t.dataset.channel === ch);
-    });
-    $('ch-whatsapp').classList.toggle('hidden', ch !== 'whatsapp');
-    $('ch-email').classList.toggle('hidden', ch !== 'email');
-  }
-
-  function openAction(type) {
-    S.checkType = type;
-    S.matchedEmail = null; S.visitor = null; S.invitation = null; S.openLog = null;
-    S.qrTouched = false; S.facingMode = 'environment'; // naya visitor — QR back se shuru
-    $('screen-title').textContent = type;
-    show('screen-action');
-    switchMode('qr');
-  }
-
-  function goBack() { stopAll(); show('screen-home'); }
-
-  function switchMode(mode) {
-    S.mode = mode;
-    document.querySelectorAll('.mode-tab[data-mode]').forEach(function (t) {
-      t.classList.toggle('active', t.dataset.mode === mode);
-    });
-    stopAll(true);
-    hidePanels();
-    frameState('');
-    if (mode === 'face') {
-      S.facingMode = 'user'; // face ke liye front
-      $('cam-switch-btn').style.display = '';
-      updateCamLabel();
-      $('stage').classList.remove('hidden');
-      $('video').classList.remove('hidden'); $('qr-reader').classList.add('hidden');
-      setInstruction('Look at the camera', "We'll recognise you automatically");
-      startCamera();
-    } else if (mode === 'qr') {
-      if (!S.qrTouched) S.facingMode = 'environment'; // QR default back — jab tak user switch na kare
-      $('cam-switch-btn').style.display = '';
-      updateCamLabel();
-      $('stage').classList.remove('hidden');
-      $('video').classList.add('hidden'); $('qr-reader').classList.remove('hidden');
-      setInstruction('Show your badge QR', 'Hold it inside the frame');
-      startQr();
-    } else {
-      $('cam-switch-btn').style.display = 'none'; // OTP mode — camera nahi
-      $('otp-request-form').classList.remove('hidden');
-      switchChannel(S.otpChannel);
-    }
-  }
-
-  function updateCamLabel() {
-    var lbl = $('cam-switch-label');
-    if (lbl) lbl.textContent = (S.facingMode === 'user') ? 'Front cam' : 'Back cam';
-  }
-
-  function setInstruction(t, s) { $('instruction-text').textContent = t; $('instruction-sub').textContent = s || ''; }
-  function frameState(st) { var f = $('scan-frame'); f.classList.remove('ok', 'err'); if (st) f.classList.add(st); }
-
-  function stopAll(keepScreen) {
-    stopDetection();
-    if (S.stream) { S.stream.getTracks().forEach(function (t) { t.stop(); }); S.stream = null; }
-    if (S.qr && S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function () {}); }
-    if (S.otpTimer) { clearInterval(S.otpTimer); S.otpTimer = null; }
-    if (!keepScreen) hidePanels();
-  }
-
-  // ---------- face flow ----------
-  async function startCamera() {
-    try {
-      if (S.stream) S.stream.getTracks().forEach(function (t) { t.stop(); });
-      S.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: S.facingMode, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false
-      });
-      $('video').srcObject = S.stream;
-      startDetection();
-    } catch (e) {
-      showMsg('Camera error', 'Camera access failed. Check permissions and try again.', null, 'error');
-    }
-  }
-
-  // Detection ke liye chhota work canvas — full-res video pe detect karna 4x mehnga hai
-  function getWorkCanvas() {
-    if (!S.workCanvas) {
-      S.workCanvas = document.createElement('canvas');
-      S.workCanvas.width = 320;
-      S.workCanvas.height = 240;
-    }
-    return S.workCanvas;
-  }
-
-  // Self-scheduling loop: agla frame tabhi chalta hai jab pichhla poora ho jaye.
-  // (setInterval overlap kar ke lag build-up karta tha)
-  function startDetection() {
-    stopDetection();
-    S.detectStop = false;
-    tick();
-  }
-
-  function stopDetection() {
-    S.detectStop = true;
-    if (S.detectTimer) { clearTimeout(S.detectTimer); S.detectTimer = null; }
-  }
-
-  async function tick() {
-    if (S.detectStop) return;
-    if (S.detecting) { S.detectTimer = setTimeout(tick, 120); return; }
-
-    var video = $('video');
-    if (!S.faceReady || S.busy || !video || video.readyState < 2) {
-      S.detectTimer = setTimeout(tick, 200);
-      return;
-    }
-
-    S.detecting = true;
-    try {
-      var c = getWorkCanvas();
-      c.getContext('2d').drawImage(video, 0, 0, c.width, c.height);
-
-      // Stage 1 — sirf detection (sasta). Khaali frames pe descriptor waste nahi hota.
-      var box = await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.45 }));
-      if (box) {
-        // Stage 2 — face mila tabhi landmarks + descriptor (mehnga)
-        var det = await faceapi
-          .detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.45 }))
-          .withFaceLandmarks().withFaceDescriptor();
-        if (det) {
-          if (!S.matcher) {
-            setInstruction('Face not registered', 'Use QR badge or OTP');
-          } else {
-            var best = S.matcher.findBestMatch(det.descriptor);
-            if (best.label === 'unknown') {
-              setInstruction('Not recognised yet...', 'Try QR badge or OTP');
-            } else {
-              stopDetection();
-              frameState('ok');
-              S.detecting = false;
-              onIdentified('email', best.label);
-              return;
-            }
-          }
-        }
-      }
-    } catch (e) { /* transient frame errors ignore */ }
-    S.detecting = false;
-    S.detectTimer = setTimeout(tick, 90);
-  }
-
-  // ---------- qr flow ----------
-  function startQr() {
-    if (typeof Html5Qrcode === 'undefined') {
-      showMsg('QR library load nahi hui', 'Internet check karo aur page reload karo. Tab tak OTP ya Face use karo.', function () { switchMode('otp'); }, 'error');
-      return;
-    }
-    if (!S.qr) {
-      var opts = { verbose: false };
-      try {
-        if (window.Html5QrcodeSupportedFormats) {
-          opts.formatsToSupport = [Html5QrcodeSupportedFormats.QR_CODE];
-        }
-      } catch (e) {}
-      try { S.qr = new Html5Qrcode('qr-reader', opts); }
-      catch (e) { showMsg('QR error', 'QR scanner init nahi hua: ' + (e.message || e), function () { switchMode('otp'); }, 'error'); return; }
-    }
-
-    var scanConfig = {
-      fps: 10,
-      qrbox: function (vw, vh) { var m = Math.floor(Math.min(vw, vh) * 0.7); return { width: m, height: m }; },
-      aspectRatio: 1.7778,
-      experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+  // ================= INVITES =================
+  function readInviteForm() {
+    return {
+      visitor_name: $('i-name').value.trim(), mobile: $('i-mobile').value.trim(),
+      email: $('i-email').value.trim().toLowerCase(), address: $('i-address').value.trim(),
+      purpose: $('i-purpose').value, host_name: $('i-host').value.trim(),
+      from_time: $('i-from').value, to_time: $('i-to').value
     };
-    var onScan = function (text) { if (S.qrRunning) { S.qrRunning = false; S.qr.stop().catch(function () {}); onQr(text); } };
-
-    // QR ke liye default back camera (behtar focus), par switch button front pe le jaa sake.
-    var wantBack = (S.facingMode !== 'user');
-
-    Html5Qrcode.getCameras().then(function (cams) {
-      var camId = null;
-      if (cams && cams.length) {
-        var backId = null, frontId = null;
-        for (var i = 0; i < cams.length; i++) {
-          var lbl = (cams[i].label || '').toLowerCase();
-          if (lbl.indexOf('back') >= 0 || lbl.indexOf('rear') >= 0 || lbl.indexOf('environment') >= 0) { if (!backId) backId = cams[i].id; }
-          if (lbl.indexOf('front') >= 0 || lbl.indexOf('user') >= 0 || lbl.indexOf('face') >= 0) { if (!frontId) frontId = cams[i].id; }
-        }
-        if (wantBack) camId = backId || cams[cams.length - 1].id;   // back — ya aakhri (aksar back)
-        else camId = frontId || cams[0].id;                         // front — ya pehla
-      }
-      var camSource = camId ? camId : { facingMode: (wantBack ? 'environment' : 'user') };
-      S.qr.start(camSource, scanConfig, onScan, function () {})
-        .then(function () { S.qrRunning = true; setInstruction('Show your badge QR', 'Hold it inside the frame'); })
-        .catch(function (e) { qrStartFallback(scanConfig, onScan, wantBack, e); });
-    }).catch(function () {
-      // enumeration fail — facingMode se try karo
-      S.qr.start({ facingMode: (wantBack ? 'environment' : 'user') }, scanConfig, onScan, function () {})
-        .then(function () { S.qrRunning = true; })
-        .catch(function (e) { qrStartFallback(scanConfig, onScan, wantBack, e); });
-    });
   }
 
-  // Pehla side fail ho to doosra side try karo
-  function qrStartFallback(scanConfig, onScan, triedBack, err) {
-    var other = triedBack ? 'user' : 'environment';
-    S.qr.start({ facingMode: other }, scanConfig, onScan, function () {})
-      .then(function () { S.qrRunning = true; showToast(other === 'user' ? 'Front camera' : 'Back camera', 'info', 1800); })
-      .catch(function (e2) {
-        var msg = (err && (err.message || err)) || (e2 && (e2.message || e2)) || 'unknown';
-        showMsg('Camera start nahi hua', 'QR scanner camera nahi khol paaya (' + msg + '). Camera permission allow karo, ya OTP/Face use karo.', function () { switchMode('otp'); }, 'error');
-      });
+  function validateInvite(d) {
+    if (!d.visitor_name || !d.purpose || !d.host_name || !d.from_time || !d.to_time) return 'Sab required fields bharo.';
+    if (!d.email && !d.mobile) return 'Email ya mobile — kam se kam ek do.';
+    if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) return 'Email valid nahi hai.';
+    if (d.mobile && !/^\d{10}$/.test(d.mobile)) return 'Mobile 10 digit ka hona chahiye.';
+    if (new Date(d.to_time) <= new Date(d.from_time)) return '"To" time "From" ke baad hona chahiye.';
+    return null;
   }
 
-  function restartQr() {
-    if (S.qr && S.qrRunning) {
-      S.qrRunning = false;
-      S.qr.stop().then(function () { startQr(); }).catch(function () { startQr(); });
-    } else {
-      startQr();
-    }
-  }
-
-  async function onQr(text) {
-    frameState('ok');
-    var m = /^VZT:([0-9a-f-]{36})$/i.exec(text.trim());
-    if (m) {
-      showLoader('Checking invitation...');
-      var inv = null;
-      try {
-        var res = await withTimeout(db.from('invitations').select('*').eq('id', m[1]).limit(1), NET_TIMEOUT, 'qr-inv');
-        inv = res.data && res.data[0];
-      } catch (e) {
-        // offline — cache se badge id dhoondo
-        var list = await getCachedInvitations();
-        inv = list.filter(function (x) { return x.id === m[1]; })[0] || null;
-      }
-      hideLoader();
-      if (!inv) { frameState('err'); showMsg('Badge nahi mila', 'Ye invitation database/cache mein nahi hai. OTP ya Face try karo.', function () { switchMode('qr'); }, 'error'); return; }
-      // dedupe + already-checked-in check onIdentified route se ho jaata hai;
-      // yahan seedha invitation ke identifier se identify karo
-      var key = inv.mobile ? 'mobile' : 'email';
-      var val = inv.mobile || inv.email;
-      // check-out ya duplicate handle karne ke liye onIdentified use karo, phir uska invitation resolve wahi ho jayega
-      onIdentified(key, val);
-      return;
-    }
-    try {
-      var j = JSON.parse(text);
-      var email = j.email || j['e-Mail'] || j['Visitor e-Mail'];
-      if (email) { onIdentified('email', String(email).toLowerCase()); return; }
-    } catch (e) {}
-    frameState('err');
-    showMsg('Invalid QR', 'Ye QR Nexus badge nahi hai.', function () { switchMode('qr'); }, 'error');
-  }
-
-  // ---------- otp flow ----------
-  function sendOtp() {
-    var params = { action: 'sendOtp', channel: S.otpChannel };
-    var display;
-    if (S.otpChannel === 'whatsapp') {
-      var mob = ($('mobile-input').value || '').replace(/\D/g, '');
-      if (!/^\d{10}$/.test(mob)) { showMsg('Invalid mobile', 'Enter a 10-digit mobile number.'); return; }
-      params.mobile = mob; S.otpTarget = mob;
-      display = 'WhatsApp on +91 ' + mob;
-    } else {
-      var email = ($('email-input').value || '').trim().toLowerCase();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showMsg('Invalid email', 'Please enter a valid email address.'); return; }
-      params.email = email; S.otpTarget = email;
-      display = email;
-    }
-    showLoader('Sending code...');
-    jsonp(params, function (res) {
-      hideLoader();
-      if (!res.success) { showMsg('Code nahi bhej paaye', res.error, null, 'error'); return; }
-
-      hidePanels();
-      $('otp-form').classList.remove('hidden');
-      $('otp-input').value = '';
-
-      // Server ne WhatsApp fail hone pe email pe bhej diya ho to wahi dikhao
-      var note = $('otp-fallback-note');
-      if (res.fallback === 'email') {
-        $('otp-email-display').textContent = res.sentTo || 'your email';
-        $('otp-fallback-text').textContent = (res.reason || 'WhatsApp pe nahi ja paaya.') + ' Code aapke email pe bhej diya hai.';
-        note.classList.remove('hidden');
-        $('try-email-btn').classList.add('hidden');
+  async function submitInvite() {
+    var d = readInviteForm();
+    var err = validateInvite(d);
+    if (err) { showToast(err, 'warning'); return; }
+    var btn = $('i-submit');
+    setBtnProcessing(btn, true);
+    showLoader('Creating invitation...');
+    var res = await db.from('invitations').insert({
+      visitor_name: d.visitor_name, mobile: d.mobile || null, email: d.email || null,
+      address: d.address || null, purpose: d.purpose, host_name: d.host_name,
+      from_time: new Date(d.from_time).toISOString(), to_time: new Date(d.to_time).toISOString(),
+      created_by: S.user.host_name
+    }).select('id').single();
+    if (res.error) { hideLoader(); setBtnProcessing(btn, false); showToast(res.error.message, 'error'); return; }
+    audit('invitation_created', { visitor: d.visitor_name, host: d.host_name });
+    sendBadge(res.data.id, function (ok, msg) {
+      hideLoader(); setBtnProcessing(btn, false);
+      if (ok) {
+        showToast('Invitation sent — badge email + WhatsApp bhej diya.', 'success');
+        ['i-name', 'i-mobile', 'i-email', 'i-address'].forEach(function (id) { $(id).value = ''; });
+        $('i-purpose').value = '';
+        if (IS_ADMIN()) $('i-host').value = '';
       } else {
-        $('otp-email-display').textContent = display;
-        note.classList.add('hidden');
-        $('try-email-btn').classList.toggle('hidden', S.otpChannel === 'email');
+        showToast('Invitation bani, par badge fail: ' + msg, 'warning', 6000);
       }
-      startOtpTimer();
     });
   }
 
-  // WhatsApp pe code na aaye to seedha email channel pe switch
-  function tryEmailInstead() {
-    if (S.otpTimer) { clearInterval(S.otpTimer); S.otpTimer = null; }
-    hidePanels();
-    $('otp-request-form').classList.remove('hidden');
-    switchChannel('email');
-    // agar invitation ka email pata ho to prefill
-    if (S.matchedEmail) $('email-input').value = S.matchedEmail;
-    $('email-input').focus();
-    showToast('Email address daalo, code wahan bhej denge.', 'info', 3000);
+  function addMultiRow() {
+    var div = document.createElement('div');
+    div.className = 'multi-row grid gap-2 py-2 border-b border-dashed border-slate-200';
+    div.style.gridTemplateColumns = '1.2fr 1.2fr 1fr 1fr auto';
+    div.innerHTML =
+      '<input class="mr-name custom-input" placeholder="Visitor name *">' +
+      '<input class="mr-email custom-input" type="email" placeholder="Email">' +
+      '<input class="mr-mobile custom-input" type="tel" inputmode="numeric" maxlength="10" placeholder="Mobile">' +
+      '<input class="mr-address custom-input" placeholder="Address">' +
+      '<button class="btn-outline" data-action="remove-multi-row" title="Remove"><i class="fa-solid fa-xmark"></i></button>';
+    $('multi-rows').appendChild(div);
   }
 
-  function startOtpTimer() {
-    S.otpLeft = 180;
-    $('resend-btn').classList.add('hidden');
-    if (S.otpTimer) clearInterval(S.otpTimer);
-    S.otpTimer = setInterval(function () {
-      S.otpLeft--;
-      var m = String(Math.floor(S.otpLeft / 60)).padStart(2, '0');
-      var s = String(S.otpLeft % 60).padStart(2, '0');
-      $('otp-timer').textContent = m + ':' + s;
-      if (S.otpLeft <= 0) {
-        clearInterval(S.otpTimer); S.otpTimer = null;
-        $('resend-btn').classList.remove('hidden');
-        $('otp-timer').textContent = 'Expired';
-      }
-    }, 1000);
-  }
+  async function submitMulti() {
+    var host = $('m-host').value.trim(), purpose = $('m-purpose').value;
+    var from = $('m-from').value, to = $('m-to').value;
+    if (!host || !purpose || !from || !to) { showToast('Host, purpose, from, to — sab bharo.', 'warning'); return; }
+    if (new Date(to) <= new Date(from)) { showToast('"To" time "From" ke baad hona chahiye.', 'warning'); return; }
 
-  function verifyOtp() {
-    var otp = $('otp-input').value.trim();
-    if (otp.length !== 6) { showMsg('Invalid code', 'Enter the 6-digit code.'); return; }
-    showLoader('Verifying...');
-    jsonp({ action: 'verifyOtp', channel: S.otpChannel, target: S.otpTarget, otp: otp }, function (res) {
-      hideLoader();
-      if (!res.success) { showMsg('Verification failed', res.error, null, 'error'); return; }
-      if (S.otpTimer) { clearInterval(S.otpTimer); S.otpTimer = null; }
-      if (S.otpChannel === 'whatsapp') onIdentified('mobile', S.otpTarget);
-      else onIdentified('email', S.otpTarget);
+    var rows = [], bad = 0;
+    document.querySelectorAll('#multi-rows .multi-row').forEach(function (r) {
+      var name = r.querySelector('.mr-name').value.trim();
+      var email = r.querySelector('.mr-email').value.trim().toLowerCase();
+      var mobile = r.querySelector('.mr-mobile').value.trim();
+      if (!name) return;
+      if (!email && !mobile) { bad++; return; }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { bad++; return; }
+      if (mobile && !/^\d{10}$/.test(mobile)) { bad++; return; }
+      rows.push({
+        visitor_name: name, email: email || null, mobile: mobile || null,
+        address: r.querySelector('.mr-address').value.trim() || null,
+        purpose: purpose, host_name: host,
+        from_time: new Date(from).toISOString(), to_time: new Date(to).toISOString(),
+        created_by: S.user.host_name
+      });
     });
-  }
+    if (bad) { showToast(bad + ' row(s) mein email/mobile invalid ya missing.', 'warning'); return; }
+    if (!rows.length) { showToast('Kam se kam ek visitor add karo.', 'warning'); return; }
 
-  // ---------- identified → invitation lookup ----------
-  async function onIdentified(key, val) {
-    if (key === 'email') S.matchedEmail = val;
-    S.diag = {}; // naye check-in ke timings reset
-    showLoader(S.checkType === 'Check-in' ? 'Checking invitation...' : 'Finding your check-in...');
+    var btn = $('m-submit');
+    setBtnProcessing(btn, true);
+    showLoader('Creating ' + rows.length + ' invitations...');
+    var res = await db.from('invitations').insert(rows).select('id');
+    if (res.error) { hideLoader(); setBtnProcessing(btn, false); showToast(res.error.message, 'error'); return; }
+    audit('invitations_bulk_created', { count: rows.length, host: host });
 
-    // ---- CHECK-OUT ----
-    if (S.checkType === 'Check-out') {
-      var open = null;
-      try {
-        open = await time('findlog', withTimeout(findOpenLogQuery(key, val), NET_TIMEOUT, 'findlog'));
-      } catch (e) {
-        // offline / slow — inside cache se dhoondo
-        open = findOpenInCache(key, val);
-      }
-      hideLoader();
-      renderCheckinDiag();
-      if (!open) { showMsg('No check-in found', 'Aaj ka koi active check-in nahi mila ' + val + ' ke liye.', function () { goBack(); }); return; }
-      S.visitor = { name: open.visitor_name, mobile: open.mobile, email: open.email, address: open.address };
-      S.invitation = { purpose: open.purpose, host_name: open.host_name };
-      S.openLog = open;
-      showDataForm();
-      return;
-    }
-
-    // ---- CHECK-IN ----
-    var open2 = null, offline = false;
-    try {
-      open2 = await time('findlog', withTimeout(findOpenLogQuery(key, val), NET_TIMEOUT, 'findlog'));
-    } catch (e) {
-      offline = true;
-      open2 = findOpenInCache(key, val);
-    }
-    if (open2) { hideLoader(); renderCheckinDiag(); showMsg('Already checked in', 'Aap aaj already checked-in ho. Jaate waqt Check-out karna.', function () { goBack(); }); return; }
-
-    var inv = null;
-    if (!offline) {
-      try {
-        var nowIso = new Date().toISOString();
-        var q = db.from('invitations').select('*').eq('status', 'active')
-          .lte('from_time', nowIso).gte('to_time', nowIso);
-        q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
-        var res = await time('invlookup', withTimeout(q.order('from_time', { ascending: false }).limit(1), NET_TIMEOUT, 'invlookup'));
-        inv = res.data && res.data[0];
-      } catch (e) {
-        offline = true;
-      }
-    }
-    // offline ya live-miss — cache se dhoondo
-    if (!inv) {
-      var cInv = await findInvitationInCache(key, val);
-      if (cInv) inv = cInv;
-    }
-    hideLoader();
-    renderCheckinDiag();
-    if (!inv) { promptNoInvitation(key, val); return; }
-    handleInvitation(inv, (key === 'email') ? val : null);
-  }
-
-  // Cache mein aaj ki active invitation dhoondo (offline check-in)
-  async function findInvitationInCache(key, val) {
-    var list = await getCachedInvitations();
-    var now = new Date();
-    var matches = list.filter(function (inv) {
-      var ok = new Date(inv.from_time) <= now && new Date(inv.to_time) >= now && inv.status === 'active';
-      if (!ok) return false;
-      return (key === 'mobile') ? (inv.mobile === val) : ((inv.email || '').toLowerCase() === String(val).toLowerCase());
-    });
-    matches.sort(function (a, b) { return new Date(b.from_time) - new Date(a.from_time); });
-    return matches[0] || null;
-  }
-
-  // Inside cache (jo list load hui thi) se open log dhoondo — offline checkout
-  function findOpenInCache(key, val) {
-    return (S.insideCache || []).filter(function (r) {
-      return (key === 'mobile') ? (r.mobile === val) : ((r.email || '').toLowerCase() === String(val).toLowerCase());
-    })[0] || null;
-  }
-
-  async function handleInvitation(inv, email) {
-    var now = new Date();
-    var idKey = email ? 'email' : (inv.mobile ? 'mobile' : 'email');
-    var idVal = email || inv.mobile || inv.email;
-    if (S.checkType === 'Check-in') {
-      if (new Date(inv.from_time) > now || new Date(inv.to_time) < now) {
-        showMsg('Invitation not active', 'Ye invitation valid hai ' + fmtDT(inv.from_time) + ' - ' + fmtDT(inv.to_time) + '.', function () { goBack(); });
+    var ids = res.data.map(function (r) { return r.id; }), sent = 0, failed = 0;
+    (function next(idx) {
+      if (idx >= ids.length) {
+        hideLoader(); setBtnProcessing(btn, false);
+        showToast(sent + ' badge(s) sent' + (failed ? ', ' + failed + ' failed' : '') + '.', failed ? 'warning' : 'success');
+        $('multi-rows').innerHTML = ''; addMultiRow();
         return;
       }
-    }
-    S.matchedEmail = (email || inv.email || '').toLowerCase();
-    S.invitation = inv;
-    S.visitor = {
-      name: inv.visitor_name || '',
-      mobile: inv.mobile || '',
-      email: S.matchedEmail,
-      address: inv.address || ''
-    };
-    showDataForm();
+      showLoader('Sending badge ' + (idx + 1) + '/' + ids.length + '...');
+      sendBadge(ids[idx], function (ok) { ok ? sent++ : failed++; next(idx + 1); });
+    })(0);
   }
 
-  function findOpenLogQuery(key, val) {
-    var start = new Date(); start.setHours(0, 0, 0, 0);
-    var q = db.from('visitor_logs').select('*')
-      .gte('check_in_time', start.toISOString())
-      .is('check_out_time', null);
-    q = (key === 'mobile') ? q.eq('mobile', val) : q.ilike('email', val);
-    return q.order('check_in_time', { ascending: false }).limit(1).then(function (res) {
-      return res.data && res.data[0];
+  async function loadInvList() {
+    var q2 = db.from('invitations').select('*').order('created_at', { ascending: false }).limit(100);
+    if (!IS_ADMIN()) q2 = q2.eq('host_name', S.user.host_name);
+    var res = await q2;
+    var body = $('inv-list-body');
+    if (res.error) { body.innerHTML = noData(7, res.error.message); return; }
+    if (!res.data.length) { body.innerHTML = noData(7, 'Abhi tak koi invitation nahi bheji.'); return; }
+    body.innerHTML = res.data.map(function (r) {
+      return '<tr>' +
+        td('Visitor', '<b>' + esc(r.visitor_name) + '</b><br><span class="text-slate-400 text-[11px]">' + esc(r.email || r.mobile || '') + '</span>') +
+        td('Host', esc(r.host_name)) + td('Purpose', esc(r.purpose || '—')) +
+        td('Valid from', fmt(r.from_time)) + td('Valid to', fmt(r.to_time)) + td('Sent', fmt(r.created_at)) +
+        td('', '<button class="btn-outline" data-action="resend-badge" data-id="' + r.id + '"><span class="btn-spinner"></span><i class="fa-solid fa-paper-plane"></i> Resend</button> ' +
+          '<button class="btn-outline" data-action="reinvite" data-id="' + r.id + '"><i class="fa-solid fa-rotate-right"></i> Re-invite</button>') +
+        '</tr>';
+    }).join('');
+    setupFilters('inv-table');
+  }
+
+  function resendBadge(id, btn) {
+    setBtnProcessing(btn, true);
+    showLoader('Sending badge...');
+    sendBadge(id, function (ok, msg) {
+      hideLoader(); setBtnProcessing(btn, false);
+      showToast(ok ? 'Badge sent.' : ('Failed: ' + msg), ok ? 'success' : 'error');
     });
   }
 
-  async function findOpenLog(key, val) {
-    return findOpenLogQuery(key, val);
+  // ================= ACTIVITIES =================
+  async function loadActivities() {
+    var fromStr = $('a-from').value || dstr(new Date());
+    var toStr = $('a-to').value || fromStr;
+    if (toStr < fromStr) { var t = fromStr; fromStr = toStr; toStr = t; $('a-from').value = fromStr; $('a-to').value = toStr; }
+    var start = new Date(fromStr + 'T00:00:00'), end = new Date(toStr + 'T23:59:59.999');
+    var q2 = db.from('visitor_logs').select('id,invitation_id,visitor_name,mobile,email,address,purpose,host_name,check_in_time,check_out_time,forced_out')
+      .gte('check_in_time', start.toISOString()).lte('check_in_time', end.toISOString())
+      .order('check_in_time', { ascending: false }).limit(5000);
+    if (!IS_ADMIN()) q2 = q2.eq('host_name', S.user.host_name);
+    else if ($('a-host').value) q2 = q2.eq('host_name', $('a-host').value);
+    var st = $('a-status').value;
+    if (st === 'in') q2 = q2.is('check_out_time', null);
+    else if (st === 'out') q2 = q2.not('check_out_time', 'is', null);
+
+    var res = await q2;
+    var body = $('act-body');
+    if (res.error) { body.innerHTML = noData(7, res.error.message); return; }
+    if (!res.data.length) { body.innerHTML = noData(7, 'Is range mein koi activity nahi.'); return; }
+    body.innerHTML = res.data.map(function (r) {
+      var inside = !r.check_out_time;
+      var chip = inside ? '<span class="chip chip-green">Inside</span>'
+        : (r.forced_out ? '<span class="chip chip-yellow">Forced out</span>' : '<span class="chip chip-blue">Checked out</span>');
+      var actions = '<button class="btn-outline" data-action="view-log" data-id="' + r.id + '"><i class="fa-solid fa-eye"></i></button>' +
+        (inside ? ' <button class="btn-danger" data-action="force-out" data-id="' + r.id + '"><i class="fa-solid fa-right-from-bracket"></i></button>' : '');
+      return '<tr>' +
+        td('Visitor', '<b>' + esc(r.visitor_name) + '</b><br><span class="text-slate-400 text-[11px]">' + esc(r.mobile || r.email || '') + '</span>') +
+        td('Host', esc(r.host_name || '—')) + td('Purpose', esc(r.purpose || '—')) +
+        td('Check-in', fmt(r.check_in_time)) + td('Check-out', r.check_out_time ? fmt(r.check_out_time) : '—') +
+        td('Status', chip) + td('', actions) + '</tr>';
+    }).join('');
+    setupFilters('act-table');
   }
 
-  function promptNoInvitation(key, val) {
-    showMsg('No invitation found', 'No active invitation for ' + val + '. You can request access instead.', function () {
-      stopAll(true); hidePanels();
-      $('request-form').classList.remove('hidden');
-      if (key === 'mobile') $('r-mobile').value = val || '';
-      else $('r-email').value = val || '';
-      if (S.visitor) {
-        $('r-name').value = S.visitor.name || '';
-        if (key !== 'mobile') $('r-mobile').value = S.visitor.mobile || '';
-        if (key !== 'email' && S.visitor.email) $('r-email').value = S.visitor.email;
-        $('r-address').value = S.visitor.address || '';
-      }
-    });
-  }
-
-
-  function showDataForm() {
-    stopAll(true); hidePanels();
-    $('data-form').classList.remove('hidden');
-    $('visitor-name-display').textContent = S.visitor.name || 'Visitor';
-    $('data-form-title').textContent = S.checkType === 'Check-out' ? 'Confirm check-out' : 'Confirm your details';
-    $('f-name').value = S.visitor.name || '';
-    $('f-mobile').value = S.visitor.mobile || '';
-    $('f-email').value = S.visitor.email || '';
-    $('f-address').value = S.visitor.address || '';
-    $('f-purpose').value = (S.invitation && S.invitation.purpose) || '';
-    $('f-host').value = (S.invitation && S.invitation.host_name) || '';
-    $('capture-btn').innerHTML = S.checkType === 'Check-out'
-      ? '<i class="fa-solid fa-camera"></i> Capture photo &amp; check out'
-      : '<i class="fa-solid fa-camera"></i> Capture photo &amp; check in';
-  }
-
-  // ---------- photo + submit ----------
-  var captureStream = null;
-
-  function openPhoto() {
-    $('photo-modal').classList.add('show');
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-      .then(function (st) { captureStream = st; $('capture-video').srcObject = st; })
-      .catch(function () { $('photo-modal').classList.remove('show'); showMsg('Camera error', 'Camera access failed.', null, 'error'); });
-  }
-
-  function closePhoto() {
-    if (captureStream) { captureStream.getTracks().forEach(function (t) { t.stop(); }); captureStream = null; }
-    $('photo-modal').classList.remove('show');
-  }
-
-  async function takePhoto() {
-    if (S.busy) return;
-    S.busy = true;
-    showLoader('Processing...');
-    try {
-      var v = $('capture-video'), c = $('capture-canvas');
-      c.width = 320; c.height = 240;
-      var ctx = c.getContext('2d');
-      ctx.translate(320, 0); ctx.scale(-1, 1);
-      ctx.drawImage(v, 0, 0, 320, 240);
-      var blob = await new Promise(function (r) { c.toBlob(r, 'image/jpeg', 0.6); });
-      closePhoto();
-
-      var descriptor = null;
-      if (S.checkType === 'Check-in' && S.faceReady) {
-        var dt0 = (performance && performance.now) ? performance.now() : Date.now();
-        try {
-          var det = await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
-            .withFaceLandmarks().withFaceDescriptor();
-          if (det) descriptor = Array.from(det.descriptor);
-        } catch (e) { console.warn('Face descriptor skip:', e); }
-        S.diag.descriptor = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - dt0);
-      }
-
-      var photoB64 = await new Promise(function (res, rej) {
-        var fr = new FileReader();
-        fr.onload = function () { res(fr.result); };
-        fr.onerror = rej;
-        fr.readAsDataURL(blob);
-      });
-
-      if (S.checkType === 'Check-out') await doCheckOut(photoB64);
-      else await doCheckIn(photoB64, descriptor);
-    } catch (e) {
-      hideLoader();
-      showMsg('Error', e.message || String(e), null, 'error');
-    } finally {
-      S.busy = false;
-    }
-  }
-
-  async function doCheckIn(photoB64, descriptor) {
-    var row = {
-      invitation_id: (S.invitation && S.invitation.id) || null,
-      visitor_name: S.visitor.name, mobile: S.visitor.mobile, email: S.visitor.email,
-      address: S.visitor.address, purpose: S.invitation && S.invitation.purpose,
-      host_name: S.invitation && S.invitation.host_name,
-      photo_in: photoB64
-    };
-    var faceRow = (descriptor && descriptor.length === 128 && S.visitor.email) ? {
-      email: S.visitor.email, visitor_name: S.visitor.name,
-      mobile: S.visitor.mobile, address: S.visitor.address, descriptor: descriptor
-    } : null;
-
-    try {
-      var ins = await time('insert', withTimeout(db.from('visitor_logs').insert(row), NET_TIMEOUT, 'insert'));
-      if (ins.error) throw new Error(ins.error.message);
-      renderCheckinDiag();
-
-      if (faceRow) {
-        try {
-          var ex = await withTimeout(db.from('face_data').select('id').ilike('email', S.visitor.email).limit(1), NET_TIMEOUT, 'face-chk');
-          if (!ex.data || !ex.data.length) {
-            await withTimeout(db.from('face_data').insert(faceRow), NET_TIMEOUT, 'face-ins');
-            loadDescriptors(true);
-          }
-        } catch (e) { /* face save best-effort */ }
-      }
-      hideLoader();
-      refreshInsideCount();
-      showMsg('Checked in', 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.', goBack, 'success');
-    } catch (e) {
-      // Network fail/timeout — queue kar do, visitor turant nikal jaaye
-      renderCheckinDiag();
-      await queueEntry('checkin', { row: row, face: faceRow });
-      hideLoader();
-      showMsg('Checked in (offline)',
-        (S.visitor.name || 'Visitor') + ' ki entry save ho gayi. Network aane par apne aap sync ho jayegi.',
-        goBack, 'success');
-    }
-  }
-
-  async function doCheckOut(photoB64) {
-    if (!S.openLog) throw new Error('No open check-in found');
-    var patch = { check_out_time: new Date().toISOString(), photo_out: photoB64 };
-    try {
-      var up = await time('insert', withTimeout(db.from('visitor_logs')
-        .update(patch).eq('id', S.openLog.id).is('check_out_time', null), NET_TIMEOUT, 'insert'));
-      if (up.error) throw new Error(up.error.message);
-      renderCheckinDiag();
-      hideLoader();
-      refreshInsideCount();
-      showMsg('Checked out', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', goBack, 'success');
-    } catch (e) {
-      renderCheckinDiag();
-      await queueEntry('checkout', { id: S.openLog.id, patch: { check_out_time: patch.check_out_time, photo_out: photoB64 } });
-      hideLoader();
-      showMsg('Checked out (offline)',
-        'Out-time save ho gaya. Network aane par sync ho jayega.',
-        goBack, 'success');
-    }
-  }
-
-  // ---------- request ----------
-  async function submitRequest() {
-    var data = {
-      visitor_name: $('r-name').value.trim(),
-      mobile: $('r-mobile').value.trim(),
-      email: $('r-email').value.trim().toLowerCase(),
-      address: $('r-address').value.trim(),
-      purpose: $('r-purpose').value,
-      host_name: $('r-host').value.trim()
-    };
-    if (!data.visitor_name || !data.mobile || !data.purpose || !data.host_name) {
-      showMsg('Missing details', 'Name, mobile, purpose aur host — ye zaroori hain.'); return;
-    }
-    if (!/^\d{10}$/.test(data.mobile)) { showMsg('Invalid mobile', 'Enter a 10-digit mobile number.'); return; }
-    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) { showMsg('Invalid email', 'Email galat hai — sahi karo ya khali chhod do.'); return; }
-    if (!data.email) data.email = null;
-    showLoader('Submitting...');
-    var res = await db.from('requests').insert(data);
+  async function showDetail(id) {
+    showLoader('Loading...');
+    var res = await db.from('visitor_logs').select('*').eq('id', id).single();
     hideLoader();
-    if (res.error) { showMsg('Error', res.error.message, null, 'error'); return; }
-    showMsg('Request sent', "Your host will review it. You'll receive a badge once approved.", goBack, 'success');
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    var r = res.data;
+    var photoIn = r.photo_in ? '<div><span class="text-label">Check-in photo</span><img class="photo-thumb" src="' + r.photo_in + '"></div>' : '';
+    var photoOut = r.photo_out ? '<div><span class="text-label">Check-out photo</span><img class="photo-thumb" src="' + r.photo_out + '"></div>' : '';
+    $('detail-body').innerHTML =
+      drow('Visitor', esc(r.visitor_name)) + drow('Mobile', esc(r.mobile || '—')) +
+      drow('Email', esc(r.email || '—')) + drow('Address', esc(r.address || '—')) +
+      drow('Purpose', esc(r.purpose || '—')) + drow('Host', esc(r.host_name || '—')) +
+      drow('Check-in', fmt(r.check_in_time)) + drow('Check-out', r.check_out_time ? fmt(r.check_out_time) : '—') +
+      '<div class="flex gap-3 mt-4 flex-wrap">' + photoIn + photoOut + '</div>';
+    $('detail-modal').classList.add('show');
   }
 
-  // ---------- jsonp ----------
-  var jsonpN = 0;
-  // ============ WORK PASS (Trial Workers) — HR Supabase se ============
-  var hrdb = null;
-  var HR_CONFIG_URL = 'https://script.google.com/macros/s/AKfycbyLyxuzYzGZ1odibF_-ORvn314hFY_zKg4595HpDZrhMObhqbcAh_LIw60sTc4b_dPI/exec';
-  function hrConnect() {
-    return new Promise(function (res, rej) {
-      if (hrdb) return res(hrdb);
-      var cb = 'hrcfg_' + Date.now();
-      var t = setTimeout(function () { rej(new Error('HR config timeout')); }, 8000);
-      window[cb] = function (r) {
-        clearTimeout(t);
-        try { document.getElementById('hrcfgs').remove(); } catch (e) {}
-        if (!r || !r.url || !r.key) return rej(new Error(r && r.error || 'HR config error'));
-        window.HR_URL = r.url;
-        hrdb = supabase.createClient(r.url, r.key);
-        res(hrdb);
-      };
-      var sc = document.createElement('script');
-      sc.id = 'hrcfgs';
-      sc.src = HR_CONFIG_URL + '?callback=' + cb + '&t=' + Date.now();
-      sc.onerror = function () { clearTimeout(t); rej(new Error('HR config load fail')); };
-      document.body.appendChild(sc);
+  function drow(k, v) {
+    return '<div class="flex justify-between gap-3 py-2 border-b border-slate-100">' +
+      '<span class="text-slate-400">' + k + '</span><span class="font-semibold text-right">' + v + '</span></div>';
+  }
+
+  async function forceOut(id) {
+    showLoader('Updating...');
+    var res = await db.from('visitor_logs')
+      .update({ check_out_time: new Date().toISOString(), forced_out: true })
+      .eq('id', id).is('check_out_time', null);
+    hideLoader();
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    audit('force_checkout', { log_id: id });
+    showToast('Visitor forced out.', 'success');
+    loadActivities();
+  }
+
+
+  // ================= REQUESTS =================
+  async function loadRequests() {
+    var q2 = db.from('requests').select('*').eq('status', S.reqTab).order('created_at', { ascending: false }).limit(100);
+    if (!IS_ADMIN()) q2 = q2.eq('host_name', S.user.host_name);
+    var res = await q2;
+    var body = $('req-body');
+    if (res.error) { body.innerHTML = noData(7, res.error.message); return; }
+    if (!res.data.length) { body.innerHTML = noData(7, 'Koi ' + S.reqTab + ' request nahi.'); return; }
+    body.innerHTML = res.data.map(function (r) {
+      var actions;
+      if (r.status === 'pending') {
+        actions = CAN_APPROVE()
+          ? '<button class="btn-ok" data-action="open-approve" data-id="' + r.id + '"><i class="fa-solid fa-check"></i> Approve</button> ' +
+            '<button class="btn-outline" data-action="reject-req" data-id="' + r.id + '"><i class="fa-solid fa-xmark"></i></button>'
+          : '<span class="chip chip-yellow">Pending</span>';
+      } else if (r.status === 'approved') {
+        actions = '<span class="chip chip-green">Approved ' + (r.approved_at ? tfmt(r.approved_at) : '') + '</span>';
+      } else {
+        actions = '<span class="chip chip-red">Rejected</span>';
+      }
+      return '<tr>' +
+        td('Requested', fmt(r.created_at)) + td('Visitor', '<b>' + esc(r.visitor_name) + '</b>') +
+        td('Mobile', esc(r.mobile || '—')) + td('Email', esc(r.email || '—')) +
+        td('Purpose', esc(r.purpose || '—')) + td('Host', esc(r.host_name || '—')) +
+        td('', actions) + '</tr>';
+    }).join('');
+    setupFilters('req-table');
+  }
+
+  function openApprove(id) {
+    S.approveTarget = id;
+    var now = new Date(); now.setMinutes(0, 0, 0);
+    var to = new Date(now); to.setHours(to.getHours() + 4);
+    $('ap-from').value = dtLocal(now); $('ap-to').value = dtLocal(to);
+    $('ap-summary').textContent = 'Approve karne par invitation banegi aur badge email + WhatsApp chala jayega.';
+    $('approve-modal').classList.add('show');
+  }
+
+  async function confirmApprove() {
+    if (!CAN_APPROVE()) { showToast('Security role request approve nahi kar sakta.', 'error'); return; }
+    var id = S.approveTarget;
+    var from = $('ap-from').value, to = $('ap-to').value;
+    if (!from || !to || new Date(to) <= new Date(from)) { showToast('Valid from/to bharo.', 'warning'); return; }
+    $('approve-modal').classList.remove('show');
+    showLoader('Approving...');
+
+    var rq = await db.from('requests').select('*').eq('id', id).single();
+    if (rq.error) { hideLoader(); showToast(rq.error.message, 'error'); return; }
+    var r = rq.data;
+
+    var inv = await db.from('invitations').insert({
+      visitor_name: r.visitor_name, email: r.email, mobile: r.mobile, address: r.address,
+      purpose: r.purpose, host_name: r.host_name,
+      from_time: new Date(from).toISOString(), to_time: new Date(to).toISOString(),
+      created_by: S.user.host_name
+    }).select('id').single();
+    if (inv.error) { hideLoader(); showToast(inv.error.message, 'error'); return; }
+
+    var up = await db.from('requests').update({
+      status: 'approved', approved_at: new Date().toISOString(), approved_by: S.user.host_name
+    }).eq('id', id);
+    if (up.error) { hideLoader(); showToast('Invitation bani par request update fail: ' + up.error.message, 'warning', 6000); return; }
+
+    audit('request_approved', { request_id: id, visitor: r.visitor_name });
+    sendBadge(inv.data.id, function (ok, msg) {
+      hideLoader();
+      showToast(ok ? 'Request approved — badge sent.' : ('Approved, par badge fail: ' + msg), ok ? 'success' : 'warning');
+      loadRequests();
     });
   }
-  var WP_LIST = [];
-  async function wpOpen() {
-    show('screen-workpass');
-    wpRefresh();
+
+  async function rejectReq(id) {
+    if (!CAN_APPROVE()) { showToast('Security role request reject nahi kar sakta.', 'error'); return; }
+    showLoader('Updating...');
+    var res = await db.from('requests').update({ status: 'rejected', approved_by: S.user.host_name }).eq('id', id);
+    hideLoader();
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    audit('request_rejected', { request_id: id });
+    showToast('Request rejected.', 'success');
+    loadRequests();
   }
-  async function wpRefresh() {
-    try {
-      var db2 = await hrConnect();
-      var r = await db2.rpc('wp_list');
-      if (r.error) throw r.error;
-      WP_LIST = r.data || [];
-      wpRenderPunch();
-    } catch (e) {
-      var h = document.getElementById('wp-cards');
-      if (h) h.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + (e.message || e) + '</p>';
-    }
+
+  // ================= ANALYTICS =================
+  async function loadAnalytics() {
+    var now = new Date();
+    var dayStart = new Date(now); dayStart.setHours(0, 0, 0, 0);
+    var weekStart = new Date(dayStart); weekStart.setDate(weekStart.getDate() - 6);
+    var monthStart = new Date(dayStart); monthStart.setDate(monthStart.getDate() - 29);
+
+    var logs = await db.from('visitor_logs').select('check_in_time,check_out_time,host_name,purpose')
+      .gte('check_in_time', monthStart.toISOString());
+    var pend = await db.from('requests').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+
+    if (logs.error) { showToast('Analytics failed: ' + logs.error.message, 'error'); return; }
+    var data = logs.data || [];
+
+    var today = 0, inside = 0, week = 0;
+    var byDay = {}, byHost = {}, byPurpose = {};
+    for (var i = 6; i >= 0; i--) { var dd2 = new Date(dayStart); dd2.setDate(dd2.getDate() - i); byDay[dstr(dd2)] = 0; }
+
+    data.forEach(function (r) {
+      var t = new Date(r.check_in_time);
+      if (t >= dayStart) { today++; if (!r.check_out_time) inside++; }
+      if (t >= weekStart) { week++; var k = dstr(t); if (k in byDay) byDay[k]++; }
+      var h = r.host_name || '—'; byHost[h] = (byHost[h] || 0) + 1;
+      var p = r.purpose || 'Other'; byPurpose[p] = (byPurpose[p] || 0) + 1;
+    });
+
+    $('s-today').textContent = today;
+    $('s-inside').textContent = inside;
+    $('s-pending').textContent = pend.count != null ? pend.count : '–';
+    $('s-week').textContent = week;
+
+    chart('ch-week', 'bar', Object.keys(byDay).map(function (k) { return k.slice(5); }), Object.values(byDay), '#0d5c75');
+    var hostKeys = Object.keys(byHost).sort(function (a, b) { return byHost[b] - byHost[a]; }).slice(0, 10);
+    chart('ch-host', 'bar', hostKeys, hostKeys.map(function (k) { return byHost[k]; }), '#17c1e8', true);
+    doughnut('ch-purpose', Object.keys(byPurpose), Object.values(byPurpose));
   }
-  function wpRenderPunch() {
-    var host = document.getElementById('wp-cards');
-    if (!host) return;
-    var q = (document.getElementById('wp-search').value || '').toUpperCase();
-    var list = WP_LIST.filter(function (w) { return !w.expired; });
-    if (q) list = list.filter(function (w) { return (w.name + ' ' + w.pass_no).toUpperCase().indexOf(q) > -1; });
-    if (!list.length) { host.innerHTML = '<p class="text-slate-400 text-sm">Koi active work pass nahi. "Naya Pass" se banao.</p>'; return; }
-    host.innerHTML = list.map(function (w) {
-      var next = (!w.today_in) ? 'IN' : (!w.today_out ? 'OUT' : 'DONE');
-      var color = next === 'IN' ? '#0d9488' : next === 'OUT' ? '#d97706' : '#94a3b8';
-      var sub = (w.today_in ? 'IN ' + String(w.today_in).slice(0, 5) : '') + (w.today_out ? ' · OUT ' + String(w.today_out).slice(0, 5) : '');
-      return '<button class="text-left rounded-2xl border-2 bg-white p-4 wp-punch-btn" style="border-color:' + color + '33" data-wpid="' + w.id + '"' + (next === 'DONE' ? ' disabled' : '') + '>' +
-        '<div class="flex justify-between items-center"><b class="text-slate-800" style="font-size:16px">' + w.name + '</b>' +
-        '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:' + color + '">' + (next === 'DONE' ? '✓ ' + sub : 'TAP → ' + next) + '</span></div>' +
-        '<div class="text-xs text-slate-500 mt-1">' + w.pass_no + ' · Day ' + w.day_no + '/3' + (w.department ? ' · ' + w.department : '') + (sub && next !== 'DONE' ? ' · ' + sub : '') + '</div></button>';
+
+  function chart(id, type, labels, values, color, horizontal) {
+    if (S.charts[id]) S.charts[id].destroy();
+    S.charts[id] = new Chart($(id), {
+      type: type,
+      data: { labels: labels, datasets: [{ data: values, backgroundColor: color, borderRadius: 6, maxBarThickness: 34 }] },
+      options: {
+        indexAxis: horizontal ? 'y' : 'x',
+        plugins: { legend: { display: false } },
+        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } },
+        responsive: true, maintainAspectRatio: true
+      }
+    });
+  }
+
+  function doughnut(id, labels, values) {
+    if (S.charts[id]) S.charts[id].destroy();
+    S.charts[id] = new Chart($(id), {
+      type: 'doughnut',
+      data: { labels: labels, datasets: [{ data: values, backgroundColor: ['#0d5c75', '#17c1e8', '#10b981', '#f59e0b', '#ec4899', '#64748b'] }] },
+      options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } } }, cutout: '62%' }
+    });
+  }
+
+  // ================= AUDIT =================
+  async function loadAudit() {
+    var from = $('au-from').value, to = $('au-to').value;
+    if (!from || !to) { showToast('From/To dates select karo.', 'warning'); return; }
+    showLoader('Loading...');
+    var res = await db.from('visitor_logs').select('id,invitation_id,visitor_name,mobile,email,address,purpose,host_name,check_in_time,check_out_time,forced_out')
+      .gte('check_in_time', new Date(from + 'T00:00:00').toISOString())
+      .lte('check_in_time', new Date(to + 'T23:59:59.999').toISOString())
+      .order('check_in_time', { ascending: false }).limit(2000);
+    hideLoader();
+    var body = $('au-body');
+    if (res.error) { body.innerHTML = noData(6, res.error.message); return; }
+    S.lastAudit = res.data || [];
+    if (!S.lastAudit.length) { body.innerHTML = noData(6, 'Is range mein koi record nahi.'); return; }
+    body.innerHTML = S.lastAudit.map(function (r) {
+      return '<tr>' +
+        td('Visitor', '<b>' + esc(r.visitor_name) + '</b>') + td('Host', esc(r.host_name || '—')) +
+        td('Purpose', esc(r.purpose || '—')) + td('Check-in', fmt(r.check_in_time)) +
+        td('Check-out', r.check_out_time ? fmt(r.check_out_time) : '—') + td('Duration', dur(r.check_in_time, r.check_out_time)) +
+        '</tr>';
+    }).join('');
+    setupFilters('au-table');
+  }
+
+  function exportAudit() {
+    if (!S.lastAudit.length) { showToast('Pehle Load karo.', 'warning'); return; }
+    var head = ['Visitor', 'Mobile', 'Email', 'Address', 'Purpose', 'Host', 'Check-in', 'Check-out', 'Duration', 'Forced out'];
+    var rows = S.lastAudit.map(function (r) {
+      return [r.visitor_name, r.mobile, r.email, r.address, r.purpose, r.host_name,
+        fmt(r.check_in_time), r.check_out_time ? fmt(r.check_out_time) : '', dur(r.check_in_time, r.check_out_time),
+        r.forced_out ? 'Yes' : ''];
+    });
+    var csv = [head].concat(rows).map(function (row) {
+      return row.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'nexus_visitor_audit_' + $('au-from').value + '_to_' + $('au-to').value + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+
+  // ================= PAST GUESTS (re-invite autofill) =================
+  async function loadPastGuests() {
+    var q2 = db.from('invitations').select('visitor_name,email,mobile,address,purpose,host_name,created_at')
+      .order('created_at', { ascending: false }).limit(400);
+    if (!IS_ADMIN()) q2 = q2.eq('host_name', S.user.host_name);
+    var res = await q2;
+    if (res.error || !res.data) return;
+    var seen = {};
+    S.pastGuests = res.data.filter(function (r) {
+      var k = (r.visitor_name || '').toLowerCase().trim();
+      if (!k || seen[k]) return false;
+      seen[k] = true; return true;
+    });
+    $('guest-list').innerHTML = S.pastGuests.map(function (g) {
+      return '<option value="' + esc(g.visitor_name) + '">' + esc(g.mobile || g.email || '') + '</option>';
     }).join('');
   }
-  var _wpCamStream = null, _wpCamId = null;
-  window.wpPunch = wpPunch;   // inline onclick ke liye global
-  function wpPunch(id) {
-    var w = null;
-    for (var i = 0; i < WP_LIST.length; i++) if (WP_LIST[i].id === id) w = WP_LIST[i];
-    var isIn = !(w && w.today_in);
-    if (isIn) wpCamOpen(id, w ? w.name : '');   // CHECK-IN -> pehle photo
-    else wpPunchDo(id, null);                    // OUT -> seedha
+
+  function autofillGuest(name) {
+    var k = (name || '').toLowerCase().trim();
+    if (!k) return;
+    var g = S.pastGuests.filter(function (x) { return (x.visitor_name || '').toLowerCase().trim() === k; })[0];
+    if (!g) return;
+    if (!$('i-mobile').value) $('i-mobile').value = g.mobile || '';
+    if (!$('i-email').value) $('i-email').value = g.email || '';
+    if (!$('i-address').value) $('i-address').value = g.address || '';
+    if (!$('i-purpose').value) $('i-purpose').value = g.purpose || '';
+    showToast('Purane record se details bhar di.', 'info', 2200);
   }
-  async function wpCamOpen(id, nm) {
-    _wpCamId = id;
-    document.getElementById('wp-cam-name').innerText = nm + ' — photo lo, phir check-in hoga';
-    document.getElementById('wp-cam').classList.remove('hidden');
-    try {
-      _wpCamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 } }, audio: false });
-      document.getElementById('wp-cam-video').srcObject = _wpCamStream;
-    } catch (e) {
-      wpCamClose();
-      showMsg('Camera nahi khula', 'Photo ke bina hi check-in kar rahe hain…', function () { wpPunchDo(id, null); }, 'error');
-      setTimeout(function () { wpPunchDo(id, null); }, 900);
-    }
+
+  // ================= RE-INVITE =================
+  async function openReinvite(invId) {
+    showLoader('Loading...');
+    var res = await db.from('invitations').select('*').eq('id', invId).single();
+    hideLoader();
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    S.reinviteRow = res.data;
+    var now = new Date(); now.setMinutes(0, 0, 0); now.setHours(now.getHours() + 1);
+    var to = new Date(now); to.setHours(to.getHours() + 2);
+    $('ri-from').value = dtLocal(now); $('ri-to').value = dtLocal(to);
+    $('ri-purpose').value = res.data.purpose || '';
+    $('ri-host').value = res.data.host_name || '';
+    if (!IS_ADMIN()) $('ri-host').readOnly = true;
+    $('ri-summary').textContent = res.data.visitor_name + ' · ' + (res.data.mobile || res.data.email || '') +
+      ' — nayi date/time do, naya badge chala jayega.';
+    $('reinvite-modal').classList.add('show');
   }
-  function wpCamClose() {
-    try { if (_wpCamStream) _wpCamStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
-    _wpCamStream = null;
-    document.getElementById('wp-cam').classList.add('hidden');
-  }
-  document.addEventListener('click', function (ev) {
-    var pb = ev.target.closest ? ev.target.closest('.wp-punch-btn') : null;
-    if (pb && !pb.disabled) { wpPunch(Number(pb.dataset.wpid)); return; }
-    if (ev.target && ev.target.id === 'wp-cam-cancel') { wpCamClose(); }
-    if (ev.target && ev.target.id === 'wp-cam-shoot') {
-      var v = document.getElementById('wp-cam-video'), c = document.getElementById('wp-cam-canvas');
-      var img = null;
-      try {
-        c.width = v.videoWidth || 640; c.height = v.videoHeight || 480;
-        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-        img = c.toDataURL('image/jpeg', 0.75);
-      } catch (e) {}
-      var pid = _wpCamId;
-      wpCamClose();
-      wpPunchDo(pid, img);
-    }
-  });
-  async function wpPunchDo(id, imgData) {
-    try {
-      showLoader('Punch...');
-      var db2 = await hrConnect();
-      var r = await db2.rpc('wp_punch', { p_id: id });
+
+  async function confirmReinvite() {
+    var r = S.reinviteRow;
+    if (!r) return;
+    var from = $('ri-from').value, to = $('ri-to').value;
+    var purpose = $('ri-purpose').value, host = $('ri-host').value.trim();
+    if (!from || !to || !purpose || !host) { showToast('Purpose, host, from, to — sab bharo.', 'warning'); return; }
+    if (new Date(to) <= new Date(from)) { showToast('"To" time "From" ke baad hona chahiye.', 'warning'); return; }
+    $('reinvite-modal').classList.remove('show');
+    showLoader('Creating invitation...');
+    var ins = await db.from('invitations').insert({
+      visitor_name: r.visitor_name, mobile: r.mobile, email: r.email, address: r.address,
+      purpose: purpose, host_name: host,
+      from_time: new Date(from).toISOString(), to_time: new Date(to).toISOString(),
+      created_by: S.user.host_name
+    }).select('id').single();
+    if (ins.error) { hideLoader(); showToast(ins.error.message, 'error'); return; }
+    audit('invitation_reinvited', { visitor: r.visitor_name, from_invitation: r.id });
+    sendBadge(ins.data.id, function (ok, msg) {
       hideLoader();
-      if (r.error) throw r.error;
-      if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
-      showMsg((r.data.action === 'IN' ? '✅ Check-IN' : '👋 Check-OUT') + ' — ' + r.data.name,
-        'Time: ' + String(r.data.time).slice(0, 5) + ' · Work Pass attendance save ho gayi', null, 'success');
-      // photo background mein attach (IN par)
-      if (imgData && r.data.att_id) {
-        (async function () {
-          try {
-            var bin = atob(imgData.split(',')[1]), arr = new Uint8Array(bin.length);
-            for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-            var fn = 'wp_photos/WP' + id + '_' + Date.now() + '.jpg';
-            var up = await db2.storage.from('attendance-photos').upload(fn, new Blob([arr], { type: 'image/jpeg' }), { contentType: 'image/jpeg', cacheControl: '86400' });
-            if (up && up.error) return;
-            await db2.rpc('wp_photo', { p_att_id: r.data.att_id, p_url: window.HR_URL + '/storage/v1/object/public/attendance-photos/' + fn });
-          } catch (e) {}
-        })();
-      }
-      wpRefresh();
-    } catch (e) { hideLoader(); showMsg('Error', e.message || String(e), null, 'error'); }
+      showToast(ok ? 'Re-invite sent — naya badge chala gaya.' : ('Invitation bani, badge fail: ' + msg), ok ? 'success' : 'warning');
+      loadInvList(); loadPastGuests();
+    });
   }
-  document.addEventListener('input', function (ev) { if (ev.target && ev.target.id === 'wp-search') wpRenderPunch(); });
+
+  // ================= MANAGE HOSTS (SuperAdmin) =================
+  async function authToken() {
+    var sess = (await db.auth.getSession()).data.session;
+    return sess ? sess.access_token : '';
+  }
+
+  function genPassword() {
+    var chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var out = '';
+    for (var i = 0; i < 12; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+    return out;
+  }
+
+  async function loadHostsTable() {
+    if (!IS_SUPER()) return;
+    var res = await db.from('hosts').select('*').order('role').order('host_name');
+    S.hostsCache = res.data || [];
+    var body = $('hosts-body');
+    if (res.error) { body.innerHTML = noData(5, res.error.message); return; }
+    if (!res.data.length) { body.innerHTML = noData(5, 'Koi user nahi.'); return; }
+    var roles = ['SuperAdmin', 'Admin', 'Employee', 'Security', 'Kiosk'];
+    var chipFor = { SuperAdmin: 'chip-indigo', Admin: 'chip-blue', Employee: 'chip-green', Security: 'chip-yellow', Kiosk: 'chip-red' };
+    body.innerHTML = res.data.map(function (h) {
+      var isSelf = h.auth_user_id === (S.user && S.user.auth_user_id);
+      var sel = '<select class="custom-input !w-36" data-action="host-role" data-id="' + h.auth_user_id + '">' +
+        roles.map(function (r) {
+          return '<option value="' + r + '"' + (h.role === r ? ' selected' : '') + '>' + r + '</option>';
+        }).join('') + '</select>';
+      var actions = isSelf
+        ? '<span class="chip chip-green">You</span>'
+        : '<button class="btn-outline" data-action="host-pw" data-id="' + h.auth_user_id + '" data-email="' + esc(h.email) + '"><i class="fa-solid fa-key"></i></button> ' +
+          '<button class="btn-danger" data-action="host-del" data-id="' + h.auth_user_id + '" data-email="' + esc(h.email) + '"><i class="fa-solid fa-trash"></i></button>';
+      return '<tr>' +
+        td('Name', '<b>' + esc(h.host_name) + '</b>') +
+        td('Email', esc(h.email)) +
+        td('Role', isSelf ? '<span class="chip ' + (chipFor[h.role] || 'chip-blue') + '">' + esc(h.role) + '</span>' : sel) +
+        td('Added', fmt(h.created_at)) +
+        td('', actions) + '</tr>';
+    }).join('');
+    setupFilters('hosts-table');
+  }
+
+  async function createHost() {
+    if (!IS_SUPER()) { showToast('Sirf Super Admin host add kar sakta hai.', 'error'); return; }
+    var name = $('h-name').value.trim(), email = $('h-email').value.trim().toLowerCase();
+    var pass = $('h-pass').value.trim(), role = $('h-role').value;
+    if (!name || !email || !pass) { showToast('Name, email, password — sab chahiye.', 'warning'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Email valid nahi hai.', 'warning'); return; }
+    if (pass.length < 8) { showToast('Password kam se kam 8 characters.', 'warning'); return; }
+
+    var btn = $('h-submit');
+    setBtnProcessing(btn, true);
+    showLoader('Creating user...');
+    var token = await authToken();
+    jsonp({ action: 'createHost', token: token, name: name, email: email, role: role, password: pass }, function (res) {
+      hideLoader(); setBtnProcessing(btn, false);
+      if (!res.success) { showToast(res.error, 'error', 6000); return; }
+      showToast(name + ' add ho gaya. Password share kar do: ' + pass, 'success', 9000);
+      $('h-name').value = ''; $('h-email').value = ''; $('h-pass').value = '';
+      loadHostsTable(); loadHosts();
+    });
+  }
+
+  async function changeHostRole(authUserId) {
+    var selEl = document.querySelector('[data-action="host-role"][data-id="' + authUserId + '"]');
+    if (!selEl) return;
+    var role = selEl.value;
+    showLoader('Updating role...');
+    var token = await authToken();
+    jsonp({ action: 'updateHostRole', token: token, authUserId: authUserId, role: role }, function (res) {
+      hideLoader();
+      if (!res.success) { showToast(res.error, 'error', 6000); loadHostsTable(); return; }
+      showToast('Role updated.', 'success');
+      loadHosts();
+    });
+  }
+
+  function openHostPw(authUserId, email) {
+    S.hostPwTarget = authUserId;
+    $('hp-summary').textContent = email;
+    $('hp-pass').value = genPassword();
+    $('hostpw-modal').classList.add('show');
+  }
+
+  async function confirmHostPw() {
+    var pass = $('hp-pass').value.trim();
+    if (pass.length < 8) { showToast('Password kam se kam 8 characters.', 'warning'); return; }
+    $('hostpw-modal').classList.remove('show');
+    showLoader('Resetting...');
+    var token = await authToken();
+    jsonp({ action: 'resetHostPassword', token: token, authUserId: S.hostPwTarget, password: pass }, function (res) {
+      hideLoader();
+      showToast(res.success ? ('Password reset. Naya password: ' + pass) : res.error, res.success ? 'success' : 'error', 9000);
+    });
+  }
+
+  async function deleteHost(authUserId) {
+    showLoader('Removing...');
+    var token = await authToken();
+    jsonp({ action: 'deleteHost', token: token, authUserId: authUserId }, function (res) {
+      hideLoader();
+      if (!res.success) { showToast(res.error, 'error', 6000); return; }
+      showToast('User removed.', 'success');
+      loadHostsTable(); loadHosts();
+    });
+  }
+
+
+  // ================= HOSTS: CSV IMPORT / EXPORT =================
+  var ROLES = ['SuperAdmin', 'Admin', 'Employee', 'Security', 'Kiosk'];
+
+  function sampleCsv() {
+    var rows = [
+      ['Name', 'Email', 'Role', 'Password'],
+      ['Kartik Sharma', 'kartik@company.com', 'Employee', ''],
+      ['Ravi Gupta', 'ravi@company.com', 'Admin', 'Ravi@2026xyz'],
+      ['Gate Security', 'security@company.com', 'Security', '']
+    ];
+    downloadCsv(rows, 'nexus_users_template');
+    showToast('Template download ho gaya. Password blank chhodoge to auto-generate hoga.', 'info', 5000);
+  }
+
+  async function exportHosts() {
+    showLoader('Preparing export...');
+    var res = await db.from('hosts').select('host_name,email,role,created_at').order('role').order('host_name');
+    hideLoader();
+    if (res.error) { showToast(res.error.message, 'error'); return; }
+    if (!res.data.length) { showToast('Export ke liye koi user nahi.', 'warning'); return; }
+    var rows = [['Name', 'Email', 'Role', 'Added']].concat(res.data.map(function (h) {
+      return [h.host_name, h.email, h.role, fmt(h.created_at)];
+    }));
+    downloadCsv(rows, 'nexus_users');
+  }
+
+  // RFC-4180 style parser — quoted fields, embedded commas/newlines handle karta hai
+  function parseCsv(text) {
+    var rows = [], row = [], cur = '', inQ = false;
+    text = String(text).replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      if (inQ) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { cur += '"'; i++; }
+          else inQ = false;
+        } else cur += c;
+      } else {
+        if (c === '"') inQ = true;
+        else if (c === ',') { row.push(cur); cur = ''; }
+        else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+        else cur += c;
+      }
+    }
+    if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (c2) { return String(c2).trim() !== ''; }); });
+  }
+
+  function handleImportFile(file) {
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var rows = parseCsv(reader.result);
+      if (rows.length < 2) { showToast('CSV khali hai ya sirf header hai.', 'warning'); return; }
+      buildImportPreview(rows);
+    };
+    reader.onerror = function () { showToast('File read nahi hui.', 'error'); };
+    reader.readAsText(file);
+  }
+
+  function buildImportPreview(rows) {
+    var head = rows[0].map(function (h) { return String(h).trim().toLowerCase(); });
+    var idxName = head.indexOf('name');
+    var idxEmail = head.indexOf('email');
+    var idxRole = head.indexOf('role');
+    var idxPass = head.indexOf('password');
+    if (idxName < 0 || idxEmail < 0) {
+      showToast('CSV mein "Name" aur "Email" columns hone chahiye.', 'error', 6000);
+      return;
+    }
+
+    var existing = {};
+    (S.hostsCache || []).forEach(function (h) { existing[(h.email || '').toLowerCase()] = 1; });
+
+    var seen = {};
+    S.importRows = rows.slice(1).map(function (r, i) {
+      var name = String(r[idxName] || '').trim();
+      var email = String(r[idxEmail] || '').trim().toLowerCase();
+      var role = idxRole >= 0 ? String(r[idxRole] || '').trim() : '';
+      var pass = idxPass >= 0 ? String(r[idxPass] || '').trim() : '';
+      if (!role) role = 'Employee';
+
+      var err = '';
+      if (!name) err = 'Name missing';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) err = 'Email invalid';
+      else if (ROLES.indexOf(role) < 0) err = 'Role invalid';
+      else if (pass && pass.length < 8) err = 'Password < 8 chars';
+      else if (existing[email]) err = 'Pehle se maujood';
+      else if (seen[email]) err = 'CSV mein duplicate';
+      if (!err) seen[email] = 1;
+      if (!pass) pass = genPassword();
+
+      return { n: i + 1, name: name, email: email, role: role, password: pass, error: err, status: err ? 'skip' : 'ready' };
+    });
+
+    renderImportPreview();
+    S.importDone = false;
+    $('im-run').classList.remove('hidden');
+    $('im-creds').classList.add('hidden');
+    $('im-progress').classList.add('hidden');
+    $('import-modal').classList.add('show');
+  }
+
+  function renderImportPreview() {
+    var ready = S.importRows.filter(function (r) { return r.status === 'ready'; }).length;
+    var bad = S.importRows.length - ready;
+    $('im-summary').textContent = S.importRows.length + ' rows mili — ' + ready + ' import hongi' +
+      (bad ? ', ' + bad + ' skip hongi' : '') + '.';
+    $('im-run').disabled = ready === 0;
+
+    $('import-body').innerHTML = S.importRows.map(function (r) {
+      var chip;
+      if (r.status === 'ok') chip = '<span class="chip chip-green">Added</span>';
+      else if (r.status === 'fail') chip = '<span class="chip chip-red">' + esc(r.error || 'Failed') + '</span>';
+      else if (r.status === 'skip') chip = '<span class="chip chip-yellow">' + esc(r.error) + '</span>';
+      else chip = '<span class="chip chip-blue">Ready</span>';
+      return '<tr>' +
+        td('#', r.n) + td('Name', esc(r.name)) + td('Email', esc(r.email)) +
+        td('Role', esc(r.role)) + td('Password', '<code class="text-[11px]">' + esc(r.password) + '</code>') +
+        td('Status', chip) + '</tr>';
+    }).join('');
+  }
+
+  async function runImport() {
+    var queue = S.importRows.filter(function (r) { return r.status === 'ready'; });
+    if (!queue.length) return;
+
+    var btn = $('im-run');
+    setBtnProcessing(btn, true);
+    $('im-progress').classList.remove('hidden');
+    var token = await authToken();
+    var done = 0, ok = 0, fail = 0;
+
+    (function next(i) {
+      if (i >= queue.length) {
+        setBtnProcessing(btn, false);
+        btn.classList.add('hidden');
+        $('im-creds').classList.remove('hidden');
+        $('im-progress-text').textContent = ok + ' users added' + (fail ? ', ' + fail + ' failed' : '') + '.';
+        showToast(ok + ' users import ho gaye' + (fail ? ', ' + fail + ' fail' : '') + '.', fail ? 'warning' : 'success', 6000);
+        S.importDone = true;
+        loadHostsTable(); loadHosts();
+        return;
+      }
+      var r = queue[i];
+      $('im-progress-text').textContent = 'Adding ' + (i + 1) + '/' + queue.length + ' — ' + r.email;
+      $('im-bar').style.width = Math.round((i / queue.length) * 100) + '%';
+
+      jsonp({ action: 'createHost', token: token, name: r.name, email: r.email, role: r.role, password: r.password }, function (res) {
+        done++;
+        if (res.success) { r.status = 'ok'; ok++; }
+        else { r.status = 'fail'; r.error = res.error || 'Failed'; fail++; }
+        renderImportPreview();
+        $('im-bar').style.width = Math.round((done / queue.length) * 100) + '%';
+        next(i + 1);
+      });
+    })(0);
+  }
+
+  function downloadCredentials() {
+    var added = S.importRows.filter(function (r) { return r.status === 'ok'; });
+    if (!added.length) { showToast('Koi user add nahi hua.', 'warning'); return; }
+    var rows = [['Name', 'Email', 'Role', 'Password']].concat(added.map(function (r) {
+      return [r.name, r.email, r.role, r.password];
+    }));
+    downloadCsv(rows, 'nexus_new_user_credentials');
+    showToast('Credentials file download ho gayi — users ko share karke delete kar dena.', 'warning', 7000);
+  }
+
+  function downloadCsv(rows, name) {
+    var csv = rows.map(function (row) {
+      return row.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = name + '_' + dstr(new Date()) + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // ================= EXCEL-STYLE COLUMN FILTERS =================
+  var openPop = null;
+
+  function setupFilters(tableId) {
+    var table = $(tableId);
+    if (!table) return;
+    S.filters[tableId] = S.filters[tableId] || {};
+    var ths = table.querySelectorAll('thead th');
+    ths.forEach(function (th, idx) {
+      var label = (th.dataset.label || th.textContent || '').trim();
+      if (!label) { th.innerHTML = th.innerHTML; return; }
+      th.dataset.label = label;
+      var active = S.filters[tableId][idx] && S.filters[tableId][idx].length;
+      th.innerHTML = '<span class="th-wrap"><span>' + esc(label) + '</span>' +
+        '<button class="th-filter' + (active ? ' on' : '') + '" data-action="col-filter" data-table="' + tableId + '" data-col="' + idx + '" title="Filter">' +
+        '<i class="fa-solid fa-filter"></i></button></span>';
+    });
+    applyFilters(tableId);
+  }
+
+  function colValues(tableId, col) {
+    var rows = $(tableId).querySelectorAll('tbody tr:not(.no-data-row)');
+    var set = {}, out = [];
+    rows.forEach(function (tr) {
+      var cell = tr.children[col];
+      if (!cell) return;
+      var v = (cell.innerText || '').trim() || '(blank)';
+      if (!set[v]) { set[v] = 1; out.push(v); }
+    });
+    return out.sort();
+  }
+
+  function openFilter(btn) {
+    closeFilterPop();
+    var tableId = btn.dataset.table, col = parseInt(btn.dataset.col, 10);
+    var values = colValues(tableId, col);
+    var chosen = S.filters[tableId][col] || null;
+
+    var pop = document.createElement('div');
+    pop.className = 'filter-pop';
+    pop.innerHTML =
+      '<input class="fp-search" placeholder="Search values..." />' +
+      '<div class="fp-list">' + values.map(function (v, i) {
+        var on = !chosen || chosen.indexOf(v) >= 0;
+        return '<label><input type="checkbox" value="' + esc(v) + '"' + (on ? ' checked' : '') + '><span>' + esc(v) + '</span></label>';
+      }).join('') + '</div>' +
+      '<div class="fp-actions"><button data-fp="all">Select all</button><button data-fp="none">Clear</button>' +
+      '<button data-fp="apply" class="primary">Apply</button></div>';
+    document.body.appendChild(pop);
+
+    var r = btn.getBoundingClientRect();
+    var left = Math.min(r.left, window.innerWidth - 252);
+    pop.style.left = Math.max(8, left) + 'px';
+    pop.style.top = Math.min(r.bottom + 4, window.innerHeight - 350) + 'px';
+
+    pop.querySelector('.fp-search').addEventListener('input', function () {
+      var t = this.value.toLowerCase();
+      pop.querySelectorAll('.fp-list label').forEach(function (l) {
+        l.style.display = l.textContent.toLowerCase().indexOf(t) >= 0 ? '' : 'none';
+      });
+    });
+
+    pop.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-fp]');
+      if (!b) return;
+      var boxes = pop.querySelectorAll('.fp-list input[type=checkbox]');
+      if (b.dataset.fp === 'all') { boxes.forEach(function (c) { c.checked = true; }); return; }
+      if (b.dataset.fp === 'none') { boxes.forEach(function (c) { c.checked = false; }); return; }
+      var picked = [];
+      boxes.forEach(function (c) { if (c.checked) picked.push(c.value); });
+      S.filters[tableId][col] = (picked.length === boxes.length) ? null : picked;
+      closeFilterPop();
+      setupFilters(tableId);
+    });
+
+    openPop = pop;
+  }
+
+  function closeFilterPop() {
+    if (openPop) { openPop.remove(); openPop = null; }
+  }
+
+  function applyFilters(tableId) {
+    var f = S.filters[tableId] || {};
+    var rows = $(tableId).querySelectorAll('tbody tr:not(.no-data-row)');
+    rows.forEach(function (tr) {
+      var visible = true;
+      Object.keys(f).forEach(function (col) {
+        var allow = f[col];
+        if (!allow || !allow.length) return;
+        var cell = tr.children[col];
+        var v = cell ? ((cell.innerText || '').trim() || '(blank)') : '(blank)';
+        if (allow.indexOf(v) < 0) visible = false;
+      });
+      tr.dataset.filtered = visible ? '' : '1';
+      tr.style.display = visible ? '' : 'none';
+    });
+    applyGlobalSearch(($('globalSearch') || {}).value || '');
+  }
+
+  function applyGlobalSearch(term) {
+    var t = (term || '').toLowerCase().trim();
+    document.querySelectorAll('.table-premium tbody tr').forEach(function (tr) {
+      if (tr.classList.contains('no-data-row')) return;
+      if (tr.dataset.filtered === '1') { tr.style.display = 'none'; return; }
+      tr.style.display = (!t || (tr.innerText || '').toLowerCase().indexOf(t) >= 0) ? '' : 'none';
+    });
+  }
+
+  // ================= CSV EXPORT (koi bhi table) =================
+  function exportTable(tableId, name) {
+    var table = $(tableId);
+    if (!table) return;
+    var heads = [];
+    table.querySelectorAll('thead th').forEach(function (th) { heads.push((th.dataset.label || th.innerText || '').trim()); });
+    var rows = [];
+    table.querySelectorAll('tbody tr').forEach(function (tr) {
+      if (tr.classList.contains('no-data-row') || tr.style.display === 'none') return;
+      var r = [];
+      tr.querySelectorAll('td').forEach(function (td2) { r.push((td2.innerText || '').replace(/\s+/g, ' ').trim()); });
+      rows.push(r);
+    });
+    if (!rows.length) { showToast('Export ke liye koi row nahi.', 'warning'); return; }
+    var csv = [heads].concat(rows).map(function (row) {
+      return row.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(',');
+    }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'nexus_' + (name || 'export') + '_' + dstr(new Date()) + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // ================= HELPERS =================
+  function sendBadge(invitationId, cb) {
+    jsonp({ action: 'sendBadge', invitationId: invitationId }, function (res) {
+      cb(!!res.success, res.error || '');
+    });
+  }
+
+  async function audit(action, details) {
+    try { await db.from('audit_log').insert({ actor: S.user.host_name, action: action, details: details || {} }); } catch (e) {}
+  }
+
+  var jsonpN = 0;
   function jsonp(params, cb) {
     var name = 'nxcb' + (++jsonpN);
-    params.key = CFG.MAIL_API_KEY;
-    params.callback = name;
+    params.key = CFG.MAIL_API_KEY; params.callback = name;
     var qstr = Object.keys(params).map(function (k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
     var s = document.createElement('script');
     var done = false;
@@ -1905,44 +1899,48 @@
     s.onerror = function () { if (!done) { delete window[name]; s.remove(); cb({ success: false, error: 'Network error' }); } };
     s.src = CFG.MAIL_API_URL + '?' + qstr;
     document.body.appendChild(s);
-    setTimeout(function () { if (!done && window[name]) { delete window[name]; s.remove(); cb({ success: false, error: 'Request timed out' }); } }, 30000);
+    setTimeout(function () { if (!done && window[name]) { delete window[name]; s.remove(); cb({ success: false, error: 'Timed out' }); } }, 30000);
   }
 
-  // ---------- ui helpers ----------
-  function showLoader(t) { var lt = $('loader-text'); if (lt) lt.innerText = t || 'Processing...'; var gl = $('global-loader'); if (gl) gl.style.display = 'flex'; }
-  function hideLoader() { var gl = $('global-loader'); if (gl) gl.style.display = 'none'; }
-
-  var msgCb = null;
-  function showMsg(title, body, cb, type) {
-    var icons = { success: '<i class="fa-solid fa-circle-check text-emerald-500"></i>', error: '<i class="fa-solid fa-circle-exclamation text-red-500"></i>', warning: '<i class="fa-solid fa-triangle-exclamation text-amber-500"></i>' };
-    $('msg-icon').innerHTML = icons[type] || '<i class="fa-solid fa-circle-info text-sky-500"></i>';
-    $('msg-title').textContent = title;
-    $('msg-body').textContent = body;
-    msgCb = cb || null;
-    $('msg-modal').classList.add('show');
-  }
-  function closeMsg() { $('msg-modal').classList.remove('show'); var c = msgCb; msgCb = null; if (c) c(); }
+  function showLoader(t) { $('loader-text').innerText = t || 'Processing...'; $('global-loader').style.display = 'flex'; }
+  function hideLoader() { $('global-loader').style.display = 'none'; }
 
   function showToast(msg, type, duration) {
-    type = type || 'info'; duration = duration || 3000;
+    type = type || 'info'; duration = duration || 3500;
     var icons = { success: 'fa-circle-check', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
     var colors = { success: '#10b981', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
     var t = document.createElement('div');
     t.className = 'toast ' + type;
-    t.innerHTML = '<i class="fa-solid ' + icons[type] + '" style="color:' + colors[type] + '"></i><span class="flex-1 text-sm">' + esc(msg) + '</span>';
+    t.innerHTML = '<i class="fa-solid ' + icons[type] + '" style="color:' + colors[type] + '"></i>' +
+      '<span class="flex-1 text-sm">' + esc(msg) + '</span>';
     $('toast-container').appendChild(t);
     setTimeout(function () { t.style.animation = 'slideIn 0.3s reverse'; setTimeout(function () { t.remove(); }, 300); }, duration);
   }
 
-  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-  function tfmt(iso) {
-    if (!iso) return '—';
-    try { return new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }); }
-    catch (e) { return '—'; }
+  function setBtnProcessing(btn, on) {
+    if (!btn) return;
+    btn.classList.toggle('btn-processing', !!on);
+    btn.disabled = !!on;
   }
-  function fmtDT(iso) {
+
+  function td(label, html) { return '<td data-label="' + label + '">' + html + '</td>'; }
+  function noData(cols, msg) { return '<tr class="no-data-row"><td colspan="' + cols + '">' + esc(msg) + '</td></tr>'; }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function dstr(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function dtLocal(d) { return dstr(d) + 'T' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+  function fmt(iso) {
+    if (!iso) return '—';
     var d = new Date(iso);
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ', ' + d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+  }
+  function tfmt(iso) { return new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }); }
+  function dur(a, b) {
+    if (!a || !b) return '—';
+    var ms = new Date(b) - new Date(a);
+    if (ms < 0) return '—';
+    var m = Math.round(ms / 60000);
+    return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
   }
 })();
 </script>
