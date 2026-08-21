@@ -559,7 +559,7 @@
 (function () {
   'use strict';
 
-  const NEXUS_KIOSK_BUILD = '2026-08-05-QRCAM2';
+  const NEXUS_KIOSK_BUILD = '2026-08-20-WORKPASS1';
   console.log('Nexus Kiosk build ' + NEXUS_KIOSK_BUILD);
 
   var CFG = window.VZT_CONFIG;
@@ -1817,13 +1817,14 @@
       var next = (!w.today_in) ? 'IN' : (!w.today_out ? 'OUT' : 'DONE');
       var color = next === 'IN' ? '#0d9488' : next === 'OUT' ? '#d97706' : '#94a3b8';
       var sub = (w.today_in ? 'IN ' + String(w.today_in).slice(0, 5) : '') + (w.today_out ? ' · OUT ' + String(w.today_out).slice(0, 5) : '');
-      return '<button class="text-left rounded-2xl border-2 bg-white p-4" style="border-color:' + color + '33" onclick="wpPunch(' + w.id + ')"' + (next === 'DONE' ? ' disabled' : '') + '>' +
+      return '<button class="text-left rounded-2xl border-2 bg-white p-4 wp-punch-btn" style="border-color:' + color + '33" data-wpid="' + w.id + '"' + (next === 'DONE' ? ' disabled' : '') + '>' +
         '<div class="flex justify-between items-center"><b class="text-slate-800" style="font-size:16px">' + w.name + '</b>' +
         '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:' + color + '">' + (next === 'DONE' ? '✓ ' + sub : 'TAP → ' + next) + '</span></div>' +
         '<div class="text-xs text-slate-500 mt-1">' + w.pass_no + ' · Day ' + w.day_no + '/3' + (w.department ? ' · ' + w.department : '') + (sub && next !== 'DONE' ? ' · ' + sub : '') + '</div></button>';
     }).join('');
   }
   var _wpCamStream = null, _wpCamId = null;
+  window.wpPunch = wpPunch;   // inline onclick ke liye global
   function wpPunch(id) {
     var w = null;
     for (var i = 0; i < WP_LIST.length; i++) if (WP_LIST[i].id === id) w = WP_LIST[i];
@@ -1850,6 +1851,8 @@
     document.getElementById('wp-cam').classList.add('hidden');
   }
   document.addEventListener('click', function (ev) {
+    var pb = ev.target.closest ? ev.target.closest('.wp-punch-btn') : null;
+    if (pb && !pb.disabled) { wpPunch(Number(pb.dataset.wpid)); return; }
     if (ev.target && ev.target.id === 'wp-cam-cancel') { wpCamClose(); }
     if (ev.target && ev.target.id === 'wp-cam-shoot') {
       var v = document.getElementById('wp-cam-video'), c = document.getElementById('wp-cam-canvas');
