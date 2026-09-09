@@ -227,8 +227,8 @@
     .home-tile { display: flex; flex-direction: column; align-items: center; gap: 16px; cursor: pointer; }
     .home-ring { width: clamp(140px,26vw,220px); height: clamp(140px,26vw,220px); border-radius: 50%; background: #fff; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; transition: border-color .2s, box-shadow .2s, transform .1s; box-shadow: 0 4px 16px rgba(15,30,50,.06); }
     .home-tile:active .home-ring { transform: scale(.96); }
-    .home-tile[data-action="check-in"] .home-ring:hover { border-color: #0d5c75; box-shadow: 0 0 0 6px rgba(13,92,117,.08); }
-    .home-tile[data-action="check-out"] .home-ring:hover { border-color: #f59e0b; box-shadow: 0 0 0 6px rgba(245,158,11,.1); }
+    .home-tile[data-action="open-visitors"] .home-ring:hover { border-color: #0d5c75; box-shadow: 0 0 0 6px rgba(13,92,117,.08); }
+    .home-tile[data-action="work-pass"] .home-ring:hover { border-color: #10b981; box-shadow: 0 0 0 6px rgba(16,185,129,.1); }
     .home-ring i { font-size: clamp(38px,7vw,64px); }
     .home-label { font-size: clamp(18px,3vw,26px); font-weight: 700; }
 
@@ -265,6 +265,13 @@
     .panel { flex: 1; overflow-y: auto; padding: 22px 18px 40px; max-width: 520px; width: 100%; margin: 0 auto; }
     .otp-box { letter-spacing: 12px; text-align: center; font-size: 1.9rem; font-weight: 700; }
     #capture-video { width: 100%; border-radius: 12px; background: #0f172a; transform: scaleX(-1); aspect-ratio: 4/3; object-fit: cover; }
+
+    /* ===== VISITOR LIST (today's invitations) ===== */
+    .vl-tab { flex: none; font-size: 0.78rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid #e2e8f0; background: #fff; color: #475569; cursor: pointer; white-space: nowrap; }
+    .vl-tab.active { background: #0d5c75; border-color: #0d5c75; color: #fff; }
+    .vl-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(15,30,50,.05); }
+    .vl-card .vl-name { font-weight: 700; color: #1e293b; font-size: 1rem; }
+    .vl-card .btn-kiosk { padding: 0.7rem 1rem; font-size: 0.9rem; }
   </style>
 </head>
 <body class="antialiased text-slate-800">
@@ -338,29 +345,41 @@
   </div>
 
   <div class="home-actions">
-    <div class="home-tile" data-action="check-out">
-      <div class="home-ring"><i class="fa-solid fa-right-from-bracket text-amber-500"></i></div>
-      <span class="home-label text-amber-600">Check-out</span>
+    <div class="home-tile" data-action="open-visitors">
+      <div class="home-ring"><i class="fa-solid fa-user-group" style="color:#0d5c75;"></i></div>
+      <span class="home-label" style="color:#0d5c75;">Visitor</span>
     </div>
-    <div class="home-tile" data-action="check-in">
-      <div class="home-ring"><i class="fa-solid fa-right-to-bracket" style="color:#0d5c75;"></i></div>
-      <span class="home-label" style="color:#0d5c75;">Check-in</span>
+    <div class="home-tile" data-action="work-pass">
+      <div class="home-ring"><i class="fa-solid fa-id-card-clip text-emerald-500"></i></div>
+      <span class="home-label text-emerald-600">Work Gate Pass</span>
     </div>
-  </div>
-
-  <div class="flex items-center gap-2 flex-wrap justify-center">
-    <button id="whos-inside-btn" data-action="show-inside" class="flex items-center gap-2 px-5 py-3 rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 font-semibold text-sm hover:border-cyan-400 transition-colors">
-      <i class="fa-solid fa-users text-cyan-600"></i>
-      <span>Who's inside</span>
-      <span id="inside-count" class="ml-1 min-w-[22px] h-[22px] px-1.5 inline-flex items-center justify-center rounded-full bg-cyan-600 text-white text-xs">0</span>
-    </button>
-    <button data-action="work-pass" class="flex items-center gap-2 px-5 py-3 rounded-full bg-white border border-slate-200 shadow-sm text-slate-700 font-semibold text-sm hover:border-emerald-400 transition-colors">
-      <i class="fa-solid fa-id-card-clip text-emerald-600"></i>
-      <span>Work Gate Pass</span>
-    </button>
   </div>
 
   <div class="text-slate-400 text-xs">Nexus · Visitor Management</div>
+</div>
+
+<!-- ================= VISITOR LIST (aaj ke invitations) ================= -->
+<div id="screen-visitor" class="screen hidden">
+  <div class="kiosk-topbar">
+    <button class="text-sm font-semibold flex items-center gap-2" style="color:#0d5c75;" data-action="go-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
+    <h2 class="text-base font-bold text-slate-800">Aaj ke Visitors</h2>
+    <button class="text-slate-500" data-action="refresh-visitors" title="Refresh"><i class="fa-solid fa-rotate text-lg"></i></button>
+  </div>
+  <div class="px-4 py-2 bg-slate-50 border-b border-slate-200 space-y-2">
+    <div class="relative">
+      <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+      <input id="vl-search" type="text" placeholder="Naam, mobile ya host se dhoondo..." class="kiosk-input !pl-9" />
+    </div>
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <button class="vl-tab active" data-action="vl-filter" data-vlf="all">Sabhi (<span id="vlc-all">0</span>)</button>
+      <button class="vl-tab" data-action="vl-filter" data-vlf="pending">Pending (<span id="vlc-pending">0</span>)</button>
+      <button class="vl-tab" data-action="vl-filter" data-vlf="checked_in">Inside (<span id="vlc-in">0</span>)</button>
+      <button class="vl-tab" data-action="vl-filter" data-vlf="checked_out">Out (<span id="vlc-out">0</span>)</button>
+    </div>
+  </div>
+  <div id="vl-list" class="panel !max-w-2xl" style="padding-top:12px;">
+    <div class="text-center text-slate-400 py-10"><div class="spinner mx-auto"></div><p class="mt-3 text-sm">Loading…</p></div>
+  </div>
 </div>
 
 <!-- ================= WORK PASS (TRIAL WORKERS) ================= -->
@@ -580,7 +599,8 @@
     otpTimer: null, otpLeft: 180,
     busy: false,
     diag: {},   // step timings — diagnostic panel
-    online: navigator.onLine, syncing: false, insideCache: []
+    online: navigator.onLine, syncing: false, insideCache: [],
+    returnTo: null, visitorList: [], vlFilter: 'all'
   };
 
   // ============ OFFLINE ENGINE ============
@@ -876,6 +896,8 @@
       cacheInvitations();
       refreshInsideCount();
       flushQueue();
+      var vs = $('screen-visitor');
+      if (vs && !vs.classList.contains('hidden') && !S.busy) loadVisitorList('auto');
     }, 2 * 60 * 1000);
   }
 
@@ -944,11 +966,17 @@
       else if (a === 'show-inside') openInside();
       else if (a === 'refresh-inside') loadInsideList(true);
       else if (a === 'inside-checkout') insideCheckout(el.dataset.id, el);
+      else if (a === 'open-visitors') openVisitors();
+      else if (a === 'refresh-visitors') loadVisitorList('manual');
+      else if (a === 'vl-filter') setVlFilter(el.dataset.vlf, el);
+      else if (a === 'vl-checkin') visitorCardCheckIn(el.dataset.id);
+      else if (a === 'vl-checkout') visitorCardCheckOut(el.dataset.id);
     });
     $('otp-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
     $('r-mobile').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
     $('mobile-input').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
     $('inside-search').addEventListener('input', function () { renderInsideList(this.value); });
+    $('vl-search').addEventListener('input', function () { renderVisitorList(); });
   }
 
   // ================= WHO'S INSIDE + DIRECT CHECK-OUT =================
@@ -960,7 +988,8 @@
         db.from('visitor_logs').select('id', { count: 'exact', head: true })
           .gte('check_in_time', start.toISOString()).is('check_out_time', null),
         NET_TIMEOUT, 'inside-count');
-      if (res.count != null) $('inside-count').textContent = res.count;
+      var ic = $('inside-count');
+      if (ic && res.count != null) ic.textContent = res.count;
     } catch (e) {}
   }
 
@@ -1049,6 +1078,203 @@
     }
   }
 
+  // ================= VISITOR LIST (aaj ke invitations + logs) =================
+  function openVisitors() {
+    show('screen-visitor');
+    var s = $('vl-search'); if (s) s.value = '';
+    S.vlFilter = 'all';
+    document.querySelectorAll('.vl-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.vlf === 'all'); });
+    loadVisitorList();
+  }
+
+  function setVlFilter(f, btn) {
+    S.vlFilter = f || 'all';
+    document.querySelectorAll('.vl-tab').forEach(function (t) { t.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    renderVisitorList();
+  }
+
+  // mode: undefined = initial (spinner dikhao), 'manual' = refresh button (toast), 'auto' = silent background refresh
+  async function loadVisitorList(mode) {
+    var box = $('vl-list');
+    if (!box) return;
+    if (mode === 'manual') showToast('Refreshing...', 'info', 1000);
+    if (!navigator.onLine) {
+      if (mode === 'auto') return;
+      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-wifi-slash text-2xl mb-2"></i><br>Offline — visitor list ke liye network chahiye.</div>';
+      return;
+    }
+    if (!mode) box.innerHTML = '<div class="text-center text-slate-400 py-10"><div class="spinner mx-auto"></div><p class="mt-3 text-sm">Loading…</p></div>';
+    try {
+      var start = new Date(); start.setHours(0, 0, 0, 0);
+      var end = new Date(); end.setHours(23, 59, 59, 999);
+      var startIso = start.toISOString(), endIso = end.toISOString();
+      // Aaj valid rehne wali active invitations
+      var invRes = await withTimeout(
+        db.from('invitations').select('*').eq('status', 'active')
+          .lte('from_time', endIso).gte('to_time', startIso)
+          .order('from_time', { ascending: true }),
+        15000, 'vl-inv');
+      if (invRes.error) throw new Error(invRes.error.message);
+      // Aaj ke check-in logs (photo heavy fields nahi laate — list fast rahe)
+      var logRes = await withTimeout(
+        db.from('visitor_logs')
+          .select('id,invitation_id,visitor_name,mobile,email,address,purpose,host_name,check_in_time,check_out_time')
+          .gte('check_in_time', startIso)
+          .order('check_in_time', { ascending: false }),
+        15000, 'vl-logs');
+      if (logRes.error) throw new Error(logRes.error.message);
+      S.visitorList = mergeVisitors(invRes.data || [], logRes.data || []);
+      renderVisitorList();
+    } catch (e) {
+      if (mode === 'auto') return; // background refresh fail — purani list rakho
+      var msg = (e && e.message) ? e.message : 'unknown';
+      var m2 = (msg.indexOf('timeout') >= 0) ? 'Network slow — dobara try karo.' : ('Error: ' + esc(msg));
+      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i><br>' + m2 +
+        '<br><button class="btn-kiosk-ghost mt-3" data-action="refresh-visitors">Retry</button></div>';
+    }
+  }
+
+  // Invitations ko unke aaj ke log se match karke ek unified list banao.
+  // Jo log kisi invitation se match na ho (walk-in) unhe bhi list mein rakho
+  // taaki koi andar phansa na reh jaye.
+  function mergeVisitors(invs, logs) {
+    var used = {};
+    function findLog(inv) {
+      var i, l;
+      for (i = 0; i < logs.length; i++) {
+        l = logs[i];
+        if (!used[l.id] && l.invitation_id && l.invitation_id === inv.id) { used[l.id] = 1; return l; }
+      }
+      for (i = 0; i < logs.length; i++) {
+        l = logs[i];
+        if (used[l.id]) continue;
+        var mMatch = inv.mobile && l.mobile && (String(l.mobile) === String(inv.mobile));
+        var eMatch = inv.email && l.email && (String(l.email).toLowerCase() === String(inv.email).toLowerCase());
+        if (mMatch || eMatch) { used[l.id] = 1; return l; }
+      }
+      return null;
+    }
+    var out = [];
+    invs.forEach(function (inv) {
+      var log = findLog(inv);
+      var status = !log ? 'pending' : (log.check_out_time ? 'checked_out' : 'checked_in');
+      out.push({
+        inv: inv, log: log, status: status,
+        invId: inv.id, logId: log ? log.id : null,
+        name: (log && log.visitor_name) || inv.visitor_name || 'Visitor',
+        mobile: (log && log.mobile) || inv.mobile || '',
+        email: ((log && log.email) || inv.email || '').toLowerCase(),
+        address: (log && log.address) || inv.address || '',
+        purpose: (log && log.purpose) || inv.purpose || '',
+        host: (log && log.host_name) || inv.host_name || '',
+        scheduled: inv.from_time || null,
+        checkIn: log ? log.check_in_time : null,
+        checkOut: log ? log.check_out_time : null,
+        walkin: false
+      });
+    });
+    logs.forEach(function (l) {
+      if (used[l.id]) return; // already kisi invitation ke saath dikh gaya
+      out.push({
+        inv: null, log: l, status: l.check_out_time ? 'checked_out' : 'checked_in',
+        invId: null, logId: l.id,
+        name: l.visitor_name || 'Visitor', mobile: l.mobile || '', email: (l.email || '').toLowerCase(),
+        address: l.address || '', purpose: l.purpose || '', host: l.host_name || '',
+        scheduled: null, checkIn: l.check_in_time, checkOut: l.check_out_time, walkin: true
+      });
+    });
+    return out;
+  }
+
+  function renderVisitorList() {
+    var box = $('vl-list');
+    if (!box) return;
+    var list = S.visitorList || [];
+    var cAll = list.length, cP = 0, cI = 0, cO = 0;
+    list.forEach(function (e) { if (e.status === 'pending') cP++; else if (e.status === 'checked_in') cI++; else cO++; });
+    var setTxt = function (id, v) { var el = $(id); if (el) el.textContent = v; };
+    setTxt('vlc-all', cAll); setTxt('vlc-pending', cP); setTxt('vlc-in', cI); setTxt('vlc-out', cO);
+
+    var sEl = $('vl-search');
+    var f = ((sEl && sEl.value) || '').toLowerCase().trim();
+    var flt = S.vlFilter || 'all';
+    var rows = list.filter(function (e) {
+      if (flt !== 'all' && e.status !== flt) return false;
+      if (!f) return true;
+      return (e.name || '').toLowerCase().indexOf(f) >= 0
+        || (e.mobile || '').indexOf(f) >= 0
+        || (e.host || '').toLowerCase().indexOf(f) >= 0;
+    });
+
+    if (!rows.length) {
+      box.innerHTML = '<div class="inside-empty"><i class="fa-solid fa-user-slash text-2xl mb-2"></i><br>' +
+        (f || flt !== 'all' ? 'Koi match nahi mila.' : 'Aaj koi invitation nahi hai.') + '</div>';
+      return;
+    }
+
+    box.innerHTML = rows.map(function (e) {
+      var accent = e.status === 'pending' ? '#f59e0b' : (e.status === 'checked_in' ? '#10b981' : '#94a3b8');
+      var chip = e.status === 'pending'
+        ? '<span class="chip chip-yellow"><i class="fa-solid fa-clock text-[10px]"></i> Pending</span>'
+        : e.status === 'checked_in'
+          ? '<span class="chip chip-green"><i class="fa-solid fa-user-check text-[10px]"></i> Inside</span>'
+          : '<span class="chip" style="background:#f1f5f9;color:#475569"><i class="fa-solid fa-check text-[10px]"></i> Out</span>';
+      var meta = '<div><i class="fa-solid fa-user-tie w-4 text-slate-400"></i> Host: <b class="text-slate-700">' + esc(e.host || '—') + '</b></div>';
+      if (e.scheduled) meta += '<div><i class="fa-regular fa-clock w-4 text-slate-400"></i> Expected: ' + esc(fmtDT(e.scheduled)) + '</div>';
+      if (e.mobile) meta += '<div><i class="fa-solid fa-phone w-4 text-slate-400"></i> ' + esc(e.mobile) + '</div>';
+      if (e.checkIn) meta += '<div class="text-emerald-700"><i class="fa-solid fa-right-to-bracket w-4"></i> In: ' + esc(tfmt(e.checkIn)) + '</div>';
+      if (e.checkOut) meta += '<div class="text-rose-600"><i class="fa-solid fa-right-from-bracket w-4"></i> Out: ' + esc(tfmt(e.checkOut)) + '</div>';
+
+      var action;
+      if (e.status === 'pending') {
+        action = '<button class="btn-kiosk" data-action="vl-checkin" data-id="' + esc(e.invId) + '"><i class="fa-solid fa-right-to-bracket"></i> Check In</button>';
+      } else if (e.status === 'checked_in') {
+        action = '<button class="btn-kiosk" style="background:#e11d48" data-action="vl-checkout" data-id="' + esc(e.logId) + '"><i class="fa-solid fa-right-from-bracket"></i> Check Out</button>';
+      } else {
+        action = '<div class="text-center text-xs text-slate-400 py-1"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i>Visit complete</div>';
+      }
+
+      return '<div class="vl-card" style="border-left:4px solid ' + accent + '">' +
+        '<div class="flex items-start justify-between gap-2">' +
+          '<div class="min-w-0"><div class="vl-name truncate">' + esc(e.name) + (e.walkin ? ' <span class="text-[10px] text-slate-400 font-normal">(walk-in)</span>' : '') + '</div>' +
+          (e.purpose ? '<div class="text-xs text-slate-500 mt-0.5 truncate">' + esc(e.purpose) + '</div>' : '') + '</div>' +
+          chip +
+        '</div>' +
+        '<div class="text-xs text-slate-500 mt-2 space-y-0.5">' + meta + '</div>' +
+        '<div class="mt-3">' + action + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function visitorCardCheckIn(invId) {
+    var e = (S.visitorList || []).filter(function (x) { return String(x.invId) === String(invId) && x.status === 'pending'; })[0];
+    if (!e || !e.inv) { showToast('Invitation nahi mila — refresh karo.', 'error', 3000); return; }
+    var now = new Date();
+    if (new Date(e.inv.from_time) > now || new Date(e.inv.to_time) < now) {
+      showMsg('Invitation active nahi', 'Ye invitation valid hai ' + fmtDT(e.inv.from_time) + ' - ' + fmtDT(e.inv.to_time) + '.', null, 'warning');
+      return;
+    }
+    S.checkType = 'Check-in';
+    S.returnTo = 'visitor';
+    S.matchedEmail = e.email || '';
+    S.invitation = e.inv;
+    S.visitor = { name: e.name, mobile: e.mobile, email: e.email, address: e.address };
+    S.openLog = null;
+    openPhoto();
+  }
+
+  function visitorCardCheckOut(logId) {
+    var e = (S.visitorList || []).filter(function (x) { return String(x.logId) === String(logId) && x.status === 'checked_in'; })[0];
+    if (!e || !e.log) { showToast('Check-in record nahi mila — refresh karo.', 'error', 3000); return; }
+    S.checkType = 'Check-out';
+    S.returnTo = 'visitor';
+    S.openLog = e.log;
+    S.visitor = { name: e.name, mobile: e.mobile, email: e.email, address: e.address };
+    S.invitation = { purpose: e.purpose, host_name: e.host };
+    openPhoto();
+  }
+
   // ---------- device login ----------
   async function deviceLogin() {
     if (!db) { showMsg('Connecting...', 'Ek second — config load ho rahi hai.'); return; }
@@ -1133,7 +1359,7 @@
 
   // ---------- navigation ----------
   function show(id) {
-    ['screen-login', 'screen-home', 'screen-action', 'screen-inside'].forEach(function (s) { var el = $(s); if (el) el.classList.add('hidden'); });
+    ['screen-login', 'screen-home', 'screen-action', 'screen-inside', 'screen-workpass', 'screen-visitor'].forEach(function (s) { var el = $(s); if (el) el.classList.add('hidden'); });
     var t = $(id); if (t) t.classList.remove('hidden');
   }
   function hidePanels() {
@@ -1152,6 +1378,7 @@
 
   function openAction(type) {
     S.checkType = type;
+    S.returnTo = null;
     S.matchedEmail = null; S.visitor = null; S.invitation = null; S.openLog = null;
     S.qrTouched = false; S.facingMode = 'environment'; // naya visitor — QR back se shuru
     $('screen-title').textContent = type;
@@ -1159,7 +1386,18 @@
     switchMode('qr');
   }
 
-  function goBack() { stopAll(); show('screen-home'); }
+  function goBack() { S.returnTo = null; stopAll(); show('screen-home'); }
+
+  // Check-in/out ke baad wapas kahan jaana hai — visitor list ya home
+  function afterCheckDone() {
+    if (S.returnTo === 'visitor') {
+      S.returnTo = null;
+      show('screen-visitor');
+      loadVisitorList();
+    } else {
+      goBack();
+    }
+  }
 
   function switchMode(mode) {
     S.mode = mode;
@@ -1708,7 +1946,7 @@
       }
       hideLoader();
       refreshInsideCount();
-      showMsg('Checked in', 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.', goBack, 'success');
+      showMsg('Checked in', 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.', afterCheckDone, 'success');
     } catch (e) {
       // Network fail/timeout — queue kar do, visitor turant nikal jaaye
       renderCheckinDiag();
@@ -1716,7 +1954,7 @@
       hideLoader();
       showMsg('Checked in (offline)',
         (S.visitor.name || 'Visitor') + ' ki entry save ho gayi. Network aane par apne aap sync ho jayegi.',
-        goBack, 'success');
+        afterCheckDone, 'success');
     }
   }
 
@@ -1730,14 +1968,14 @@
       renderCheckinDiag();
       hideLoader();
       refreshInsideCount();
-      showMsg('Checked out', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', goBack, 'success');
+      showMsg('Checked out', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', afterCheckDone, 'success');
     } catch (e) {
       renderCheckinDiag();
       await queueEntry('checkout', { id: S.openLog.id, patch: { check_out_time: patch.check_out_time, photo_out: photoB64 } });
       hideLoader();
       showMsg('Checked out (offline)',
         'Out-time save ho gaya. Network aane par sync ho jayega.',
-        goBack, 'success');
+        afterCheckDone, 'success');
     }
   }
 
