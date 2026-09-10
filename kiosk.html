@@ -229,6 +229,7 @@
     .home-tile:active .home-ring { transform: scale(.96); }
     .home-tile[data-action="open-visitors"] .home-ring:hover { border-color: #0d5c75; box-shadow: 0 0 0 6px rgba(13,92,117,.08); }
     .home-tile[data-action="work-pass"] .home-ring:hover { border-color: #10b981; box-shadow: 0 0 0 6px rgba(16,185,129,.1); }
+    .home-tile[data-action="open-ot"] .home-ring:hover { border-color: #f59e0b; box-shadow: 0 0 0 6px rgba(245,158,11,.1); }
     .home-ring i { font-size: clamp(38px,7vw,64px); }
     .home-label { font-size: clamp(18px,3vw,26px); font-weight: 700; }
 
@@ -353,6 +354,10 @@
       <div class="home-ring"><i class="fa-solid fa-id-card-clip text-emerald-500"></i></div>
       <span class="home-label text-emerald-600">Work Gate Pass</span>
     </div>
+    <div class="home-tile" data-action="open-ot">
+      <div class="home-ring"><i class="fa-solid fa-clock text-amber-500"></i></div>
+      <span class="home-label text-amber-600">Overtime</span>
+    </div>
   </div>
 
   <div class="text-slate-400 text-xs">Nexus · Visitor Management</div>
@@ -408,6 +413,40 @@
     </div>
   </div>
 
+</div>
+
+<!-- ================= OVERTIME (approved OT verify) ================= -->
+<div id="screen-ot" class="screen hidden">
+  <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200">
+    <button class="btn-kiosk-ghost" data-action="go-back" style="padding:8px 14px"><i class="fa-solid fa-arrow-left mr-1"></i> Back</button>
+    <h2 class="text-base font-bold text-slate-800"><i class="fa-solid fa-clock text-amber-500 mr-1"></i> Overtime — Verify</h2>
+    <button class="text-slate-500" data-action="ot-refresh" title="Refresh"><i class="fa-solid fa-rotate text-lg"></i></button>
+  </div>
+  <div class="px-4 py-2 bg-slate-50 border-b border-slate-200 space-y-2">
+    <div class="flex items-center gap-2">
+      <label class="text-label !mb-0 whitespace-nowrap">Date</label>
+      <input id="ot-date" type="date" class="kiosk-input !py-2" />
+    </div>
+    <input id="ot-search" class="kiosk-input !py-2" placeholder="🔍 Naam / code search…">
+    <div class="flex items-center gap-2 text-xs">
+      <span class="rounded-full bg-amber-100 text-amber-700 font-bold px-3 py-1">Pending: <span id="ot-c-pending">0</span></span>
+      <span class="rounded-full bg-emerald-100 text-emerald-700 font-bold px-3 py-1">Verified: <span id="ot-c-done">0</span></span>
+    </div>
+  </div>
+  <div id="ot-cards" class="p-4 grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
+    <p class="text-slate-400 text-sm">Loading…</p>
+  </div>
+  <!-- verify photo camera overlay -->
+  <div id="ot-cam" class="hidden" style="position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px">
+    <p id="ot-cam-name" class="text-white font-bold text-lg mb-2"></p>
+    <video id="ot-cam-video" autoplay playsinline muted style="width:min(92vw,420px);border-radius:18px;transform:scaleX(-1)"></video>
+    <canvas id="ot-cam-canvas" class="hidden"></canvas>
+    <div class="flex gap-3 mt-4">
+      <button id="ot-cam-shoot" class="rounded-2xl bg-amber-500 text-white font-extrabold px-8 py-4 text-lg">📸 PHOTO &amp; VERIFY</button>
+      <button id="ot-cam-skip" class="rounded-2xl bg-white/15 text-white font-bold px-5 py-4">Bina photo</button>
+      <button id="ot-cam-cancel" class="rounded-2xl bg-white/15 text-white font-bold px-5 py-4">✕</button>
+    </div>
+  </div>
 </div>
 
 <!-- ================= WHO'S INSIDE ================= -->
@@ -944,6 +983,8 @@
       else if (a === 'check-in') openAction('Check-in');
       else if (a === 'check-out') openAction('Check-out');
       else if (a === 'work-pass') wpOpen();
+      else if (a === 'open-ot') otOpen();
+      else if (a === 'ot-refresh') otRefresh();
       else if (a === 'go-back') goBack();
       else if (a === 'switch-camera') {
         S.facingMode = S.facingMode === 'user' ? 'environment' : 'user';
@@ -1359,7 +1400,7 @@
 
   // ---------- navigation ----------
   function show(id) {
-    ['screen-login', 'screen-home', 'screen-action', 'screen-inside', 'screen-workpass', 'screen-visitor'].forEach(function (s) { var el = $(s); if (el) el.classList.add('hidden'); });
+    ['screen-login', 'screen-home', 'screen-action', 'screen-inside', 'screen-workpass', 'screen-visitor', 'screen-ot'].forEach(function (s) { var el = $(s); if (el) el.classList.add('hidden'); });
     var t = $(id); if (t) t.classList.remove('hidden');
   }
   function hidePanels() {
@@ -2132,6 +2173,120 @@
     } catch (e) { hideLoader(); showMsg('Error', e.message || String(e), null, 'error'); }
   }
   document.addEventListener('input', function (ev) { if (ev.target && ev.target.id === 'wp-search') wpRenderPunch(); });
+
+  // ===================== OVERTIME (approved OT verify) =====================
+  var OT_LIST = [];
+  function otToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function otOpen() {
+    var di = document.getElementById('ot-date');
+    if (di && !di.value) di.value = otToday();
+    show('screen-ot');
+    otRefresh();
+  }
+  async function otRefresh() {
+    var host = document.getElementById('ot-cards');
+    if (host) host.innerHTML = '<p class="text-slate-400 text-sm">Loading…</p>';
+    try {
+      var d = (document.getElementById('ot-date').value) || otToday();
+      var db2 = await hrConnect();
+      var r = await db2.rpc('ot_kiosk_list', { p_date: d });
+      if (r.error) throw r.error;
+      OT_LIST = r.data || [];
+      otRender();
+    } catch (e) {
+      if (host) host.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + (e.message || e) + '</p>';
+    }
+  }
+  function otRender() {
+    var host = document.getElementById('ot-cards');
+    if (!host) return;
+    var q = (document.getElementById('ot-search').value || '').toUpperCase();
+    var done = OT_LIST.filter(function (o) { return o.ot_verified; }).length;
+    var pend = OT_LIST.length - done;
+    var pc = document.getElementById('ot-c-pending'); if (pc) pc.innerText = pend;
+    var dc = document.getElementById('ot-c-done'); if (dc) dc.innerText = done;
+    var list = OT_LIST;
+    if (q) list = list.filter(function (o) { return ((o.name || '') + ' ' + (o.employee_code || '')).toUpperCase().indexOf(q) > -1; });
+    if (!list.length) { host.innerHTML = '<p class="text-slate-400 text-sm">Is date ke liye koi approved OT nahi.</p>'; return; }
+    host.innerHTML = list.map(function (o) {
+      var v = o.ot_verified;
+      var bd = v ? '#10b981' : '#f59e0b';
+      var badge = v
+        ? '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:#10b981"><i class="fa-solid fa-circle-check"></i> VERIFIED</span>'
+        : '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:#f59e0b">TAP → VERIFY</span>';
+      return '<button class="text-left rounded-2xl border-2 bg-white p-4 ot-card-btn" style="border-color:' + bd + '33" data-otid="' + o.id + '">' +
+        '<div class="flex justify-between items-center gap-2"><b class="text-slate-800" style="font-size:16px">' + esc(o.name) + '</b>' + badge + '</div>' +
+        '<div class="text-xs text-slate-500 mt-1">' + esc(o.employee_code) + (o.department ? ' · ' + esc(o.department) : '') + ' · <b>' + (o.hours || 0) + ' hrs</b>' + (o.reason ? ' · ' + esc(o.reason) : '') + '</div>' +
+        (v ? '<div class="text-[11px] text-emerald-600 mt-1">✓ ' + tfmt(o.verified_at) + ' — dobara tap karke hata sakte ho</div>' : '') +
+        '</button>';
+    }).join('');
+  }
+  var _otCamStream = null, _otCamId = null;
+  function otVerify(id) {
+    var o = null;
+    for (var i = 0; i < OT_LIST.length; i++) if (OT_LIST[i].id === id) o = OT_LIST[i];
+    if (!o) return;
+    if (o.ot_verified) {
+      showMsg('Verify hata dein?', esc(o.name) + ' ka OT verify hataya jaye?', function () { otVerifyDo(id, null, true); }, 'warning');
+      return;
+    }
+    otCamOpen(id, o.name);
+  }
+  async function otCamOpen(id, nm) {
+    _otCamId = id;
+    document.getElementById('ot-cam-name').innerText = nm + ' — photo lo, phir verify hoga';
+    document.getElementById('ot-cam').classList.remove('hidden');
+    try {
+      _otCamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 } }, audio: false });
+      document.getElementById('ot-cam-video').srcObject = _otCamStream;
+    } catch (e) {
+      otCamClose();
+      otVerifyDo(id, null, false);   // camera na khule to bina photo verify
+    }
+  }
+  function otCamClose() {
+    try { if (_otCamStream) _otCamStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    _otCamStream = null;
+    document.getElementById('ot-cam').classList.add('hidden');
+  }
+  document.addEventListener('click', function (ev) {
+    var cb = ev.target.closest ? ev.target.closest('.ot-card-btn') : null;
+    if (cb) { otVerify(Number(cb.dataset.otid)); return; }
+    if (ev.target && ev.target.id === 'ot-cam-cancel') { otCamClose(); return; }
+    if (ev.target && ev.target.id === 'ot-cam-skip') { var sid = _otCamId; otCamClose(); otVerifyDo(sid, null, false); return; }
+    if (ev.target && ev.target.id === 'ot-cam-shoot') {
+      var v = document.getElementById('ot-cam-video'), c = document.getElementById('ot-cam-canvas'); var img = null;
+      try { c.width = v.videoWidth || 640; c.height = v.videoHeight || 480; c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); img = c.toDataURL('image/jpeg', 0.75); } catch (e) {}
+      var pid = _otCamId; otCamClose(); otVerifyDo(pid, img, false);
+    }
+  });
+  async function otVerifyDo(id, imgData, unset) {
+    try {
+      showLoader(unset ? 'Hata rahe hain…' : 'Verify…');
+      var db2 = await hrConnect();
+      var photoUrl = '';
+      if (imgData && !unset) {
+        try {
+          var bin = atob(imgData.split(',')[1]), arr = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          var fn = 'ot_photos/OT' + id + '_' + Date.now() + '.jpg';
+          var up = await db2.storage.from('attendance-photos').upload(fn, new Blob([arr], { type: 'image/jpeg' }), { contentType: 'image/jpeg', cacheControl: '86400' });
+          if (!(up && up.error)) photoUrl = window.HR_URL + '/storage/v1/object/public/attendance-photos/' + fn;
+        } catch (e) {}
+      }
+      var r = await db2.rpc('ot_kiosk_verify', { p_id: id, p_photo: photoUrl, p_unset: !!unset });
+      hideLoader();
+      if (r.error) throw r.error;
+      if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
+      showToast(unset ? 'Verify hata diya' : 'Verified ✓', unset ? 'info' : 'success', 1800);
+      otRefresh();
+    } catch (e) { hideLoader(); showMsg('Error', e.message || String(e), null, 'error'); }
+  }
+  document.addEventListener('input', function (ev) {
+    if (ev.target && ev.target.id === 'ot-search') otRender();
+    if (ev.target && ev.target.id === 'ot-date') otRefresh();
+  });
+
   function jsonp(params, cb) {
     var name = 'nxcb' + (++jsonpN);
     params.key = CFG.MAIL_API_KEY;
