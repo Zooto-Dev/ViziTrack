@@ -436,17 +436,6 @@
   <div id="ot-cards" class="p-4 grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
     <p class="text-slate-400 text-sm">Loading…</p>
   </div>
-  <!-- verify photo camera overlay -->
-  <div id="ot-cam" class="hidden" style="position:fixed;inset:0;z-index:200;background:rgba(15,23,42,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px">
-    <p id="ot-cam-name" class="text-white font-bold text-lg mb-2"></p>
-    <video id="ot-cam-video" autoplay playsinline muted style="width:min(92vw,420px);border-radius:18px;transform:scaleX(-1)"></video>
-    <canvas id="ot-cam-canvas" class="hidden"></canvas>
-    <div class="flex gap-3 mt-4">
-      <button id="ot-cam-shoot" class="rounded-2xl bg-amber-500 text-white font-extrabold px-8 py-4 text-lg">📸 PHOTO &amp; VERIFY</button>
-      <button id="ot-cam-skip" class="rounded-2xl bg-white/15 text-white font-bold px-5 py-4">Bina photo</button>
-      <button id="ot-cam-cancel" class="rounded-2xl bg-white/15 text-white font-bold px-5 py-4">✕</button>
-    </div>
-  </div>
 </div>
 
 <!-- ================= WHO'S INSIDE ================= -->
@@ -2201,80 +2190,52 @@
     var host = document.getElementById('ot-cards');
     if (!host) return;
     var q = (document.getElementById('ot-search').value || '').toUpperCase();
-    var done = OT_LIST.filter(function (o) { return o.ot_verified; }).length;
-    var pend = OT_LIST.length - done;
+    var comp = OT_LIST.filter(function (o) { return o.is_complete; }).length;
+    var ver = OT_LIST.filter(function (o) { return o.ot_verified && !o.is_complete; }).length;
+    var pend = OT_LIST.length - comp - ver;
     var pc = document.getElementById('ot-c-pending'); if (pc) pc.innerText = pend;
-    var dc = document.getElementById('ot-c-done'); if (dc) dc.innerText = done;
+    var dc = document.getElementById('ot-c-done'); if (dc) dc.innerText = (ver + comp);
     var list = OT_LIST;
     if (q) list = list.filter(function (o) { return ((o.name || '') + ' ' + (o.employee_code || '')).toUpperCase().indexOf(q) > -1; });
     if (!list.length) { host.innerHTML = '<p class="text-slate-400 text-sm">Is date ke liye koi approved OT nahi.</p>'; return; }
     host.innerHTML = list.map(function (o) {
-      var v = o.ot_verified;
-      var bd = v ? '#10b981' : '#f59e0b';
-      var badge = v
-        ? '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:#10b981"><i class="fa-solid fa-circle-check"></i> VERIFIED</span>'
-        : '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:#f59e0b">TAP → VERIFY</span>';
-      return '<button class="text-left rounded-2xl border-2 bg-white p-4 ot-card-btn" style="border-color:' + bd + '33" data-otid="' + o.id + '">' +
+      var comp = o.is_complete, v = o.ot_verified;
+      var col = comp ? '#0284c7' : (v ? '#10b981' : '#f59e0b');
+      var badge = comp
+        ? '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:#0284c7"><i class="fa-solid fa-flag-checkered"></i> COMPLETE</span>'
+        : (v ? '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:#10b981"><i class="fa-solid fa-circle-check"></i> VERIFIED</span>'
+             : '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:#f59e0b">TAP → VERIFY</span>');
+      var expOut = o.expected_out || '—';
+      return '<button class="text-left rounded-2xl border-2 bg-white p-4 ot-card-btn" style="border-color:' + col + '33" data-otid="' + o.id + '">' +
         '<div class="flex justify-between items-center gap-2"><b class="text-slate-800" style="font-size:16px">' + esc(o.name) + '</b>' + badge + '</div>' +
-        '<div class="text-xs text-slate-500 mt-1">' + esc(o.employee_code) + (o.department ? ' · ' + esc(o.department) : '') + ' · <b>' + (o.hours || 0) + ' hrs</b>' + (o.reason ? ' · ' + esc(o.reason) : '') + '</div>' +
-        (v ? '<div class="text-[11px] text-emerald-600 mt-1">✓ ' + tfmt(o.verified_at) + ' — dobara tap karke hata sakte ho</div>' : '') +
+        '<div class="text-xs text-slate-500 mt-1">' + esc(o.employee_code) + (o.department ? ' · ' + esc(o.department) : '') + ' · OT <b>' + (o.hours || 0) + ' hrs</b>' + (o.reason ? ' · ' + esc(o.reason) : '') + '</div>' +
+        '<div class="text-sm mt-2 font-bold" style="color:' + (comp ? '#0284c7' : '#b45309') + '"><i class="fa-solid fa-clock mr-1"></i> Expected OUT: ' + expOut + '</div>' +
+        (comp
+          ? '<div class="text-[12px] text-sky-700 font-semibold mt-1">✅ Punch OUT ho gaya: ' + String(o.actual_out).slice(0, 5) + '</div>'
+          : (v ? '<div class="text-[11px] text-emerald-600 mt-1">✓ Verified — dobara tap karke hata sakte ho · punch-out ka intezaar</div>'
+               : '<div class="text-[11px] text-amber-600 mt-1">Tap karke verify karo</div>')) +
         '</button>';
     }).join('');
   }
-  var _otCamStream = null, _otCamId = null;
   function otVerify(id) {
     var o = null;
     for (var i = 0; i < OT_LIST.length; i++) if (OT_LIST[i].id === id) o = OT_LIST[i];
     if (!o) return;
     if (o.ot_verified) {
-      showMsg('Verify hata dein?', esc(o.name) + ' ka OT verify hataya jaye?', function () { otVerifyDo(id, null, true); }, 'warning');
+      showMsg('Verify hata dein?', esc(o.name) + ' ka OT verify hataya jaye?', function () { otVerifyDo(id, true); }, 'warning');
       return;
     }
-    otCamOpen(id, o.name);
-  }
-  async function otCamOpen(id, nm) {
-    _otCamId = id;
-    document.getElementById('ot-cam-name').innerText = nm + ' — photo lo, phir verify hoga';
-    document.getElementById('ot-cam').classList.remove('hidden');
-    try {
-      _otCamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 } }, audio: false });
-      document.getElementById('ot-cam-video').srcObject = _otCamStream;
-    } catch (e) {
-      otCamClose();
-      otVerifyDo(id, null, false);   // camera na khule to bina photo verify
-    }
-  }
-  function otCamClose() {
-    try { if (_otCamStream) _otCamStream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
-    _otCamStream = null;
-    document.getElementById('ot-cam').classList.add('hidden');
+    otVerifyDo(id, false);   // sirf tap — koi photo nahi
   }
   document.addEventListener('click', function (ev) {
     var cb = ev.target.closest ? ev.target.closest('.ot-card-btn') : null;
     if (cb) { otVerify(Number(cb.dataset.otid)); return; }
-    if (ev.target && ev.target.id === 'ot-cam-cancel') { otCamClose(); return; }
-    if (ev.target && ev.target.id === 'ot-cam-skip') { var sid = _otCamId; otCamClose(); otVerifyDo(sid, null, false); return; }
-    if (ev.target && ev.target.id === 'ot-cam-shoot') {
-      var v = document.getElementById('ot-cam-video'), c = document.getElementById('ot-cam-canvas'); var img = null;
-      try { c.width = v.videoWidth || 640; c.height = v.videoHeight || 480; c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); img = c.toDataURL('image/jpeg', 0.75); } catch (e) {}
-      var pid = _otCamId; otCamClose(); otVerifyDo(pid, img, false);
-    }
   });
-  async function otVerifyDo(id, imgData, unset) {
+  async function otVerifyDo(id, unset) {
     try {
       showLoader(unset ? 'Hata rahe hain…' : 'Verify…');
       var db2 = await hrConnect();
-      var photoUrl = '';
-      if (imgData && !unset) {
-        try {
-          var bin = atob(imgData.split(',')[1]), arr = new Uint8Array(bin.length);
-          for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-          var fn = 'ot_photos/OT' + id + '_' + Date.now() + '.jpg';
-          var up = await db2.storage.from('attendance-photos').upload(fn, new Blob([arr], { type: 'image/jpeg' }), { contentType: 'image/jpeg', cacheControl: '86400' });
-          if (!(up && up.error)) photoUrl = window.HR_URL + '/storage/v1/object/public/attendance-photos/' + fn;
-        } catch (e) {}
-      }
-      var r = await db2.rpc('ot_kiosk_verify', { p_id: id, p_photo: photoUrl, p_unset: !!unset });
+      var r = await db2.rpc('ot_kiosk_verify', { p_id: id, p_photo: '', p_unset: !!unset });
       hideLoader();
       if (r.error) throw r.error;
       if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
