@@ -358,6 +358,10 @@
       <div class="home-ring"><i class="fa-solid fa-clock text-amber-500"></i></div>
       <span class="home-label text-amber-600">Overtime</span>
     </div>
+    <div class="home-tile" data-action="open-fuel">
+      <div class="home-ring"><i class="fa-solid fa-gas-pump" style="color:#2563eb;"></i></div>
+      <span class="home-label" style="color:#2563eb;">Fuel / Meter</span>
+    </div>
   </div>
 
   <div class="text-slate-400 text-xs">Nexus · Visitor Management</div>
@@ -435,6 +439,51 @@
   </div>
   <div id="ot-cards" class="p-4 grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
     <p class="text-slate-400 text-sm">Loading…</p>
+  </div>
+</div>
+
+<!-- ================= FUEL / METER (security supervisor entry) ================= -->
+<div id="screen-fuel" class="screen hidden">
+  <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200">
+    <button class="btn-kiosk-ghost" data-action="go-back" style="padding:8px 14px"><i class="fa-solid fa-arrow-left mr-1"></i> Back</button>
+    <h2 class="text-base font-bold text-slate-800"><i class="fa-solid fa-gas-pump text-blue-600 mr-1"></i> Fuel / Meter</h2>
+    <button class="text-slate-500" data-action="fuel-refresh" title="Refresh"><i class="fa-solid fa-rotate text-lg"></i></button>
+  </div>
+  <div class="panel !max-w-xl" style="padding-top:14px">
+    <p class="text-xs text-slate-500 mb-3">Security supervisor employee ke vehicle ka meter reading daale. Distance = OUT − IN, Amount = distance × ₹/km. HR approve karega.</p>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="col-span-2">
+        <label class="text-label">Security Supervisor Code <span class="text-rose-500">*</span></label>
+        <input id="fuel-sup" class="kiosk-input" placeholder="Aapka apna code (ZM…)" style="text-transform:uppercase" autocomplete="off">
+      </div>
+      <div class="col-span-2">
+        <label class="text-label">Employee Code (jiska fuel) <span class="text-rose-500">*</span></label>
+        <input id="fuel-emp" class="kiosk-input" placeholder="ZM01xxx" style="text-transform:uppercase" autocomplete="off">
+      </div>
+      <div>
+        <label class="text-label">Date</label>
+        <input id="fuel-date" type="date" class="kiosk-input">
+      </div>
+      <div>
+        <label class="text-label">Rate (₹/km)</label>
+        <input id="fuel-rate" type="number" class="kiosk-input" value="4">
+      </div>
+      <div>
+        <label class="text-label">Meter IN (start)</label>
+        <input id="fuel-in" type="number" inputmode="numeric" class="kiosk-input" placeholder="12500">
+      </div>
+      <div>
+        <label class="text-label">Meter OUT (end)</label>
+        <input id="fuel-out" type="number" inputmode="numeric" class="kiosk-input" placeholder="12560">
+      </div>
+      <div class="col-span-2">
+        <label class="text-label">Note (optional)</label>
+        <input id="fuel-note" class="kiosk-input" placeholder="Reason / trip detail">
+      </div>
+    </div>
+    <div id="fuel-preview" class="text-sm mt-3 mb-1 p-3 rounded-xl" style="background:#eff6ff;color:#1e40af;display:none"></div>
+    <button class="rounded-2xl bg-blue-600 text-white font-extrabold w-full py-4 text-base mt-3" data-action="fuel-submit"><i class="fa-solid fa-paper-plane mr-1"></i> Submit Fuel Log</button>
+    <div id="fuel-list" class="mt-4 space-y-2"></div>
   </div>
 </div>
 
@@ -974,6 +1023,9 @@
       else if (a === 'work-pass') wpOpen();
       else if (a === 'open-ot') otOpen();
       else if (a === 'ot-refresh') otRefresh();
+      else if (a === 'open-fuel') fuelOpen();
+      else if (a === 'fuel-refresh') fuelRefresh();
+      else if (a === 'fuel-submit') fuelSubmit();
       else if (a === 'go-back') goBack();
       else if (a === 'switch-camera') {
         S.facingMode = S.facingMode === 'user' ? 'environment' : 'user';
@@ -1389,7 +1441,7 @@
 
   // ---------- navigation ----------
   function show(id) {
-    ['screen-login', 'screen-home', 'screen-action', 'screen-inside', 'screen-workpass', 'screen-visitor', 'screen-ot'].forEach(function (s) { var el = $(s); if (el) el.classList.add('hidden'); });
+    ['screen-login', 'screen-home', 'screen-action', 'screen-inside', 'screen-workpass', 'screen-visitor', 'screen-ot', 'screen-fuel'].forEach(function (s) { var el = $(s); if (el) el.classList.add('hidden'); });
     var t = $(id); if (t) t.classList.remove('hidden');
   }
   function hidePanels() {
@@ -2246,7 +2298,65 @@
   document.addEventListener('input', function (ev) {
     if (ev.target && ev.target.id === 'ot-search') otRender();
     if (ev.target && ev.target.id === 'ot-date') otRefresh();
+    if (ev.target && (ev.target.id === 'fuel-in' || ev.target.id === 'fuel-out' || ev.target.id === 'fuel-rate')) fuelCalc();
   });
+
+  // ===================== FUEL / METER (security supervisor entry) =====================
+  var FUEL_SUP = '';   // security supervisor code — session me yaad rahe
+  function fuelToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function fuelOpen() {
+    var d = $('fuel-date'); if (d && !d.value) d.value = fuelToday();
+    var r = $('fuel-rate'); if (r && !r.value) r.value = 4;
+    if (FUEL_SUP && $('fuel-sup') && !$('fuel-sup').value) $('fuel-sup').value = FUEL_SUP;
+    show('screen-fuel');
+    fuelCalc();
+    fuelRefresh();
+  }
+  function fuelCalc() {
+    var box = $('fuel-preview'); if (!box) return;
+    var inV = Number($('fuel-in').value) || 0, outV = Number($('fuel-out').value) || 0, rate = Number($('fuel-rate').value) || 4;
+    if (outV > inV) { var dist = outV - inV, amt = dist * rate; box.style.display = ''; box.innerHTML = 'Distance: <b>' + dist + ' km</b> × ₹' + rate + '/km = <b>₹' + amt.toLocaleString('en-IN') + '</b>'; }
+    else box.style.display = 'none';
+  }
+  async function fuelRefresh() {
+    var host = $('fuel-list'); if (!host) return;
+    var sup = ($('fuel-sup').value || '').trim().toUpperCase();
+    if (!sup) { host.innerHTML = ''; return; }
+    try {
+      var db2 = await hrConnect();
+      var r = await db2.rpc('ess_fuel_my', { p_code: sup, p_phone: '' });
+      if (r.error) throw r.error;
+      var list = r.data || [];
+      host.innerHTML = list.length
+        ? '<div class="text-xs font-semibold text-slate-500 mt-1 mb-1">Recent entries:</div>' + list.map(function (f) {
+            var col = f.status === 'APPROVED' ? '#10b981' : (f.status === 'REJECTED' ? '#ef4444' : '#f59e0b');
+            return '<div class="flex justify-between items-center gap-2 rounded-xl border-2 bg-white p-3" style="border-color:' + col + '33"><span class="text-sm text-slate-700">' + esc(f.employee_name || f.employee_code) + ' · ' + String(f.log_date) + ' · ' + f.distance + 'km · ₹' + f.amount + '</span><span class="rounded-full text-white text-xs font-bold px-3 py-1 whitespace-nowrap" style="background:' + col + '">' + esc(f.status) + '</span></div>' + (f.status === 'REJECTED' && f.reject_reason ? '<div class="text-[11px] text-rose-500 ml-1">' + esc(f.reject_reason) + '</div>' : '');
+          }).join('')
+        : '<p class="text-slate-400 text-sm">Is supervisor ki abhi tak koi entry nahi.</p>';
+    } catch (e) { host.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + (e.message || e) + '</p>'; }
+  }
+  async function fuelSubmit() {
+    var sup = ($('fuel-sup').value || '').trim().toUpperCase();
+    var emp = ($('fuel-emp').value || '').trim().toUpperCase();
+    var inV = Number($('fuel-in').value), outV = Number($('fuel-out').value), rate = Number($('fuel-rate').value) || 4;
+    if (!sup) return showMsg('Ruko', 'Security supervisor code daalo', null, 'warning');
+    if (!emp) return showMsg('Ruko', 'Employee code daalo (jiska fuel)', null, 'warning');
+    if (!inV || !outV) return showMsg('Ruko', 'Meter IN aur OUT dono daalo', null, 'warning');
+    if (outV < inV) return showMsg('Ruko', 'OUT reading IN se kam nahi ho sakti', null, 'warning');
+    try {
+      showLoader('Fuel log bhej rahe…');
+      var db2 = await hrConnect();
+      var r = await db2.rpc('ess_fuel_add', { p_code: sup, p_phone: '', p_emp: emp, p_date: $('fuel-date').value || null, p_in: inV, p_out: outV, p_rate: rate, p_in_photo: null, p_out_photo: null, p_note: ($('fuel-note').value || '').trim() || null });
+      hideLoader();
+      if (r.error) throw r.error;
+      if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
+      FUEL_SUP = sup;
+      showToast('✓ Fuel log bheja — ' + r.data.distance + 'km · ₹' + r.data.amount + ' (HR approve karega)', 'success', 2800);
+      $('fuel-emp').value = ''; $('fuel-in').value = ''; $('fuel-out').value = ''; $('fuel-note').value = '';
+      fuelCalc();
+      fuelRefresh();
+    } catch (e) { hideLoader(); showMsg('Error', e.message || String(e), null, 'error'); }
+  }
 
   function jsonp(params, cb) {
     var name = 'nxcb' + (++jsonpN);
