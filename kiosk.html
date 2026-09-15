@@ -223,13 +223,14 @@
     .btn-kiosk:active { transform: scale(0.985); }
     .btn-kiosk-ghost { background: #fff; color: #334155; border: 1px solid #e2e8f0; font-weight: 600; font-size: 0.9rem; padding: 0.7rem 1rem; border-radius: 0.6rem; cursor: pointer; }
 
-    .home-actions { display: flex; gap: clamp(24px,6vw,72px); }
+    .home-actions { display: grid; grid-template-columns: repeat(2, auto); justify-content: center; gap: clamp(20px,5vw,60px) clamp(24px,6vw,72px); }
     .home-tile { display: flex; flex-direction: column; align-items: center; gap: 16px; cursor: pointer; }
     .home-ring { width: clamp(140px,26vw,220px); height: clamp(140px,26vw,220px); border-radius: 50%; background: #fff; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; transition: border-color .2s, box-shadow .2s, transform .1s; box-shadow: 0 4px 16px rgba(15,30,50,.06); }
     .home-tile:active .home-ring { transform: scale(.96); }
     .home-tile[data-action="open-visitors"] .home-ring:hover { border-color: #0d5c75; box-shadow: 0 0 0 6px rgba(13,92,117,.08); }
     .home-tile[data-action="work-pass"] .home-ring:hover { border-color: #10b981; box-shadow: 0 0 0 6px rgba(16,185,129,.1); }
     .home-tile[data-action="open-ot"] .home-ring:hover { border-color: #f59e0b; box-shadow: 0 0 0 6px rgba(245,158,11,.1); }
+    .home-tile[data-action="open-fuel"] .home-ring:hover { border-color: #2563eb; box-shadow: 0 0 0 6px rgba(37,99,235,.1); }
     .home-ring i { font-size: clamp(38px,7vw,64px); }
     .home-label { font-size: clamp(18px,3vw,26px); font-weight: 700; }
 
@@ -437,7 +438,7 @@
       <span class="rounded-full bg-emerald-100 text-emerald-700 font-bold px-3 py-1">Verified: <span id="ot-c-done">0</span></span>
     </div>
   </div>
-  <div id="ot-cards" class="p-4 grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
+  <div id="ot-cards" class="p-4">
     <p class="text-slate-400 text-sm">Loading…</p>
   </div>
 </div>
@@ -450,15 +451,16 @@
     <button class="text-slate-500" data-action="fuel-refresh" title="Refresh"><i class="fa-solid fa-rotate text-lg"></i></button>
   </div>
   <div class="panel !max-w-xl" style="padding-top:14px">
-    <p class="text-xs text-slate-500 mb-3">Security supervisor employee ke vehicle ka meter reading daale. Distance = OUT − IN, Amount = distance × ₹/km. HR approve karega.</p>
+    <p class="text-xs text-slate-500 mb-3">Staff employee select karo jiska vehicle meter reading lena hai. Distance = OUT − IN, Amount = distance × ₹/km. HR approve karega.</p>
     <div class="grid grid-cols-2 gap-3">
       <div class="col-span-2">
-        <label class="text-label">Security Supervisor Code <span class="text-rose-500">*</span></label>
-        <input id="fuel-sup" class="kiosk-input" placeholder="Aapka apna code (ZM…)" style="text-transform:uppercase" autocomplete="off">
-      </div>
-      <div class="col-span-2">
-        <label class="text-label">Employee Code (jiska fuel) <span class="text-rose-500">*</span></label>
-        <input id="fuel-emp" class="kiosk-input" placeholder="ZM01xxx" style="text-transform:uppercase" autocomplete="off">
+        <label class="text-label">Employee (Staff) <span class="text-rose-500">*</span></label>
+        <div id="fuel-emp-sel" class="hidden items-center justify-between rounded-xl border-2 border-blue-500 bg-blue-50 px-3 py-2">
+          <span class="font-semibold text-slate-800" id="fuel-emp-name">—</span>
+          <button class="text-blue-600 text-sm font-bold" data-action="fuel-emp-change">Change</button>
+        </div>
+        <input id="fuel-emp-search" class="kiosk-input" placeholder="🔍 Staff naam ya code se dhoondo…" autocomplete="off">
+        <div id="fuel-emp-list" class="mt-1 max-h-56 overflow-y-auto rounded-xl border border-slate-200"></div>
       </div>
       <div>
         <label class="text-label">Date</label>
@@ -1026,6 +1028,8 @@
       else if (a === 'open-fuel') fuelOpen();
       else if (a === 'fuel-refresh') fuelRefresh();
       else if (a === 'fuel-submit') fuelSubmit();
+      else if (a === 'fuel-pick') fuelPickEmp(el.dataset.empcode);
+      else if (a === 'fuel-emp-change') fuelClearEmp();
       else if (a === 'go-back') goBack();
       else if (a === 'switch-camera') {
         S.facingMode = S.facingMode === 'user' ? 'environment' : 'user';
@@ -2250,24 +2254,25 @@
     var list = OT_LIST;
     if (q) list = list.filter(function (o) { return ((o.name || '') + ' ' + (o.employee_code || '')).toUpperCase().indexOf(q) > -1; });
     if (!list.length) { host.innerHTML = '<p class="text-slate-400 text-sm">Is date ke liye koi approved OT nahi.</p>'; return; }
-    host.innerHTML = list.map(function (o) {
+    var rows = list.map(function (o) {
       var comp = o.is_complete, v = o.ot_verified;
-      var col = comp ? '#0284c7' : (v ? '#10b981' : '#f59e0b');
       var badge = comp
-        ? '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:#0284c7"><i class="fa-solid fa-flag-checkered"></i> COMPLETE</span>'
-        : (v ? '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:#10b981"><i class="fa-solid fa-circle-check"></i> VERIFIED</span>'
-             : '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:#f59e0b">TAP → VERIFY</span>');
-      var expOut = o.expected_out || '—';
-      return '<button class="text-left rounded-2xl border-2 bg-white p-4 ot-card-btn" style="border-color:' + col + '33" data-otid="' + o.id + '">' +
-        '<div class="flex justify-between items-center gap-2"><b class="text-slate-800" style="font-size:16px">' + esc(o.name) + '</b>' + badge + '</div>' +
-        '<div class="text-xs text-slate-500 mt-1">' + esc(o.employee_code) + (o.department ? ' · ' + esc(o.department) : '') + ' · OT <b>' + (o.hours || 0) + ' hrs</b>' + (o.reason ? ' · ' + esc(o.reason) : '') + '</div>' +
-        '<div class="text-sm mt-2 font-bold" style="color:' + (comp ? '#0284c7' : '#b45309') + '"><i class="fa-solid fa-clock mr-1"></i> Expected OUT: ' + expOut + '</div>' +
-        (comp
-          ? '<div class="text-[12px] text-sky-700 font-semibold mt-1">✅ Punch OUT ho gaya: ' + String(o.actual_out).slice(0, 5) + '</div>'
-          : (v ? '<div class="text-[11px] text-emerald-600 mt-1">✓ Verified — dobara tap karke hata sakte ho · punch-out ka intezaar</div>'
-               : '<div class="text-[11px] text-amber-600 mt-1">Tap karke verify karo</div>')) +
-        '</button>';
+        ? '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#0284c7"><i class="fa-solid fa-flag-checkered"></i> COMPLETE</span>'
+        : (v ? '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#10b981"><i class="fa-solid fa-circle-check"></i> VERIFIED</span>'
+             : '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#f59e0b">TAP → VERIFY</span>');
+      return '<tr class="ot-card-btn" data-otid="' + o.id + '" style="cursor:pointer;border-top:1px solid #e2e8f0">' +
+        '<td class="px-3 py-2"><b class="text-slate-800">' + esc(o.name) + '</b><div class="text-[11px] text-slate-500">' + esc(o.employee_code) + (o.department ? ' · ' + esc(o.department) : '') + (o.reason ? ' · ' + esc(o.reason) : '') + '</div></td>' +
+        '<td class="px-3 py-2 text-center font-semibold">' + (o.hours || 0) + '</td>' +
+        '<td class="px-3 py-2 text-center" style="color:' + (comp ? '#0284c7' : '#b45309') + '">' + (o.expected_out || '—') + '</td>' +
+        '<td class="px-3 py-2 text-center font-semibold" style="color:#0284c7">' + (comp ? String(o.actual_out).slice(0, 5) : '—') + '</td>' +
+        '<td class="px-3 py-2 text-center">' + badge + '</td>' +
+        '</tr>';
     }).join('');
+    host.innerHTML = '<div style="overflow-x:auto"><table class="w-full text-sm bg-white rounded-xl overflow-hidden" style="border-collapse:collapse">' +
+      '<thead><tr class="text-[11px] uppercase text-slate-500" style="background:#f8fafc">' +
+      '<th class="px-3 py-2 text-left">Employee</th><th class="px-3 py-2">OT Hrs</th><th class="px-3 py-2">Expected OUT</th><th class="px-3 py-2">Actual OUT</th><th class="px-3 py-2">Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="text-[11px] text-slate-400 mt-2">Kisi bhi row par tap karke verify / un-verify karein.</p>';
   }
   function otVerify(id) {
     var o = null;
@@ -2299,18 +2304,60 @@
     if (ev.target && ev.target.id === 'ot-search') otRender();
     if (ev.target && ev.target.id === 'ot-date') otRefresh();
     if (ev.target && (ev.target.id === 'fuel-in' || ev.target.id === 'fuel-out' || ev.target.id === 'fuel-rate')) fuelCalc();
+    if (ev.target && ev.target.id === 'fuel-emp-search') fuelStaffRender(ev.target.value);
   });
 
-  // ===================== FUEL / METER (security supervisor entry) =====================
-  var FUEL_SUP = '';   // security supervisor code — session me yaad rahe
+  // ===================== FUEL / METER (staff select — security kiosk) =====================
+  var FUEL_STAFF = [];   // staff employees (cache)
+  var FUEL_EMP = null;   // selected {code, name, department}
   function fuelToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-  function fuelOpen() {
+  async function fuelOpen() {
     var d = $('fuel-date'); if (d && !d.value) d.value = fuelToday();
     var r = $('fuel-rate'); if (r && !r.value) r.value = 4;
-    if (FUEL_SUP && $('fuel-sup') && !$('fuel-sup').value) $('fuel-sup').value = FUEL_SUP;
+    fuelClearEmp();
     show('screen-fuel');
     fuelCalc();
+    fuelLoadStaff();
     fuelRefresh();
+  }
+  function fuelClearEmp() {
+    FUEL_EMP = null;
+    if ($('fuel-emp-sel')) { $('fuel-emp-sel').classList.add('hidden'); $('fuel-emp-sel').classList.remove('flex'); }
+    if ($('fuel-emp-search')) { $('fuel-emp-search').value = ''; $('fuel-emp-search').classList.remove('hidden'); }
+    if ($('fuel-emp-list')) $('fuel-emp-list').classList.remove('hidden');
+    fuelStaffRender('');
+  }
+  async function fuelLoadStaff() {
+    if (FUEL_STAFF.length) { fuelStaffRender(($('fuel-emp-search').value || '')); return; }
+    var host = $('fuel-emp-list'); if (host) host.innerHTML = '<p class="text-slate-400 text-sm p-2">Loading staff…</p>';
+    try {
+      var db2 = await hrConnect();
+      var r = await db2.rpc('fuel_kiosk_staff');
+      if (r.error) throw r.error;
+      FUEL_STAFF = r.data || [];
+      fuelStaffRender('');
+    } catch (e) { if (host) host.innerHTML = '<p class="text-rose-500 text-sm p-2">Staff load fail: ' + (e.message || e) + '</p>'; }
+  }
+  function fuelStaffRender(q) {
+    var host = $('fuel-emp-list'); if (!host) return;
+    q = String(q || '').trim().toUpperCase();
+    var list = FUEL_STAFF;
+    if (q) list = list.filter(function (s) { return ((s.name || '') + ' ' + (s.code || '')).toUpperCase().indexOf(q) > -1; });
+    list = list.slice(0, 60);
+    host.innerHTML = list.length ? list.map(function (s) {
+      return '<div class="px-3 py-2 border-b border-slate-100 cursor-pointer hover:bg-blue-50" data-action="fuel-pick" data-empcode="' + esc(s.code) + '">' +
+        '<div class="font-semibold text-slate-800 text-sm">' + esc(s.name) + '</div>' +
+        '<div class="text-[11px] text-slate-500">' + esc(s.code) + (s.department ? ' · ' + esc(s.department) : '') + '</div></div>';
+    }).join('') : '<p class="text-slate-400 text-sm p-2">Koi staff nahi mila.</p>';
+  }
+  function fuelPickEmp(code) {
+    var s = null; for (var i = 0; i < FUEL_STAFF.length; i++) if (String(FUEL_STAFF[i].code) === String(code)) s = FUEL_STAFF[i];
+    if (!s) return;
+    FUEL_EMP = s;
+    if ($('fuel-emp-name')) $('fuel-emp-name').textContent = s.name + ' · ' + s.code + (s.department ? ' · ' + s.department : '');
+    if ($('fuel-emp-sel')) { $('fuel-emp-sel').classList.remove('hidden'); $('fuel-emp-sel').classList.add('flex'); }
+    if ($('fuel-emp-search')) $('fuel-emp-search').classList.add('hidden');
+    if ($('fuel-emp-list')) $('fuel-emp-list').classList.add('hidden');
   }
   function fuelCalc() {
     var box = $('fuel-preview'); if (!box) return;
@@ -2320,11 +2367,9 @@
   }
   async function fuelRefresh() {
     var host = $('fuel-list'); if (!host) return;
-    var sup = ($('fuel-sup').value || '').trim().toUpperCase();
-    if (!sup) { host.innerHTML = ''; return; }
     try {
       var db2 = await hrConnect();
-      var r = await db2.rpc('ess_fuel_my', { p_code: sup, p_phone: '' });
+      var r = await db2.rpc('fuel_kiosk_recent');
       if (r.error) throw r.error;
       var list = r.data || [];
       host.innerHTML = list.length
@@ -2332,27 +2377,24 @@
             var col = f.status === 'APPROVED' ? '#10b981' : (f.status === 'REJECTED' ? '#ef4444' : '#f59e0b');
             return '<div class="flex justify-between items-center gap-2 rounded-xl border-2 bg-white p-3" style="border-color:' + col + '33"><span class="text-sm text-slate-700">' + esc(f.employee_name || f.employee_code) + ' · ' + String(f.log_date) + ' · ' + f.distance + 'km · ₹' + f.amount + '</span><span class="rounded-full text-white text-xs font-bold px-3 py-1 whitespace-nowrap" style="background:' + col + '">' + esc(f.status) + '</span></div>' + (f.status === 'REJECTED' && f.reject_reason ? '<div class="text-[11px] text-rose-500 ml-1">' + esc(f.reject_reason) + '</div>' : '');
           }).join('')
-        : '<p class="text-slate-400 text-sm">Is supervisor ki abhi tak koi entry nahi.</p>';
+        : '<p class="text-slate-400 text-sm">Abhi tak koi entry nahi.</p>';
     } catch (e) { host.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + (e.message || e) + '</p>'; }
   }
   async function fuelSubmit() {
-    var sup = ($('fuel-sup').value || '').trim().toUpperCase();
-    var emp = ($('fuel-emp').value || '').trim().toUpperCase();
+    if (!FUEL_EMP) return showMsg('Ruko', 'Pehle staff employee select karo', null, 'warning');
     var inV = Number($('fuel-in').value), outV = Number($('fuel-out').value), rate = Number($('fuel-rate').value) || 4;
-    if (!sup) return showMsg('Ruko', 'Security supervisor code daalo', null, 'warning');
-    if (!emp) return showMsg('Ruko', 'Employee code daalo (jiska fuel)', null, 'warning');
     if (!inV || !outV) return showMsg('Ruko', 'Meter IN aur OUT dono daalo', null, 'warning');
     if (outV < inV) return showMsg('Ruko', 'OUT reading IN se kam nahi ho sakti', null, 'warning');
     try {
       showLoader('Fuel log bhej rahe…');
       var db2 = await hrConnect();
-      var r = await db2.rpc('ess_fuel_add', { p_code: sup, p_phone: '', p_emp: emp, p_date: $('fuel-date').value || null, p_in: inV, p_out: outV, p_rate: rate, p_in_photo: null, p_out_photo: null, p_note: ($('fuel-note').value || '').trim() || null });
+      var r = await db2.rpc('fuel_kiosk_add', { p_emp: FUEL_EMP.code, p_date: $('fuel-date').value || null, p_in: inV, p_out: outV, p_rate: rate, p_note: ($('fuel-note').value || '').trim() || null });
       hideLoader();
       if (r.error) throw r.error;
       if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
-      FUEL_SUP = sup;
-      showToast('✓ Fuel log bheja — ' + r.data.distance + 'km · ₹' + r.data.amount + ' (HR approve karega)', 'success', 2800);
-      $('fuel-emp').value = ''; $('fuel-in').value = ''; $('fuel-out').value = ''; $('fuel-note').value = '';
+      showToast('✓ ' + FUEL_EMP.name + ' — ' + r.data.distance + 'km · ₹' + r.data.amount + ' (HR approve karega)', 'success', 2800);
+      $('fuel-in').value = ''; $('fuel-out').value = ''; $('fuel-note').value = '';
+      fuelClearEmp();
       fuelCalc();
       fuelRefresh();
     } catch (e) { hideLoader(); showMsg('Error', e.message || String(e), null, 'error'); }
