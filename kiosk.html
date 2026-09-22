@@ -400,7 +400,7 @@
     <span style="width:70px"></span>
   </div>
 
-  <div id="wp-tab-punch" class="p-4">
+  <div id="wp-tab-punch" class="p-4" style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch">
     <p class="text-xs text-slate-500 -mt-1 mb-2">Trial worker — apna naam tap karo. (Naya pass supervisor apne <b>ESS</b> se banata hai.)</p>
     <input id="wp-search" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-base mb-3" placeholder="🔍 Naam ya pass number search karo…">
     <div id="wp-cards" class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
@@ -436,6 +436,7 @@
     <div class="flex items-center gap-2 text-xs">
       <span class="rounded-full bg-amber-100 text-amber-700 font-bold px-3 py-1">Pending: <span id="ot-c-pending">0</span></span>
       <span class="rounded-full bg-emerald-100 text-emerald-700 font-bold px-3 py-1">Verified: <span id="ot-c-done">0</span></span>
+      <span class="rounded-full bg-rose-100 text-rose-700 font-bold px-3 py-1">Not found: <span id="ot-c-nf">0</span></span>
     </div>
   </div>
   <div id="ot-cards" class="p-4" style="flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch">
@@ -451,7 +452,7 @@
     <button class="text-slate-500" data-action="fuel-refresh" title="Refresh"><i class="fa-solid fa-rotate text-lg"></i></button>
   </div>
   <div class="panel !max-w-xl" style="padding-top:14px">
-    <p class="text-xs text-slate-500 mb-3">Staff employee select karo jiska vehicle meter reading lena hai. Subah sirf IN reading daal sakte ho — shaam ko wahi employee select karke OUT reading daalna. Distance = OUT − IN, Amount = distance × ₹/km. HR approve karega.</p>
+    <p class="text-xs text-slate-500 mb-3">Subah: staff select karo, vehicle chuno aur <b>Meter IN</b> daal do. Jab banda wapis aaye to neeche list mai uski entry par <b>OUT DAALEIN</b> dabao aur OUT reading daal do. Rate company setting se fix hai. HR approve karega.</p>
     <div class="grid grid-cols-2 gap-3">
       <div class="col-span-2">
         <label class="text-label">Employee (Staff) <span class="text-rose-500">*</span></label>
@@ -475,16 +476,8 @@
         <input id="fuel-date" type="date" class="kiosk-input">
       </div>
       <div>
-        <label class="text-label">Rate (₹/km)</label>
-        <input id="fuel-rate" type="number" class="kiosk-input" value="4">
-      </div>
-      <div>
         <label class="text-label">Meter IN (subah) <span class="text-rose-500">*</span></label>
         <input id="fuel-in" type="number" inputmode="numeric" class="kiosk-input" placeholder="12500">
-      </div>
-      <div>
-        <label class="text-label">Meter OUT (shaam — baad mai bhi)</label>
-        <input id="fuel-out" type="number" inputmode="numeric" class="kiosk-input" placeholder="12560">
       </div>
       <div class="col-span-2">
         <label class="text-label">Note (optional)</label>
@@ -492,8 +485,23 @@
       </div>
     </div>
     <div id="fuel-preview" class="text-sm mt-3 mb-1 p-3 rounded-xl" style="background:#eff6ff;color:#1e40af;display:none"></div>
-    <button class="rounded-2xl bg-blue-600 text-white font-extrabold w-full py-4 text-base mt-3" data-action="fuel-submit"><i class="fa-solid fa-paper-plane mr-1"></i> Submit Fuel Log</button>
+    <button class="rounded-2xl bg-blue-600 text-white font-extrabold w-full py-4 text-base mt-3" data-action="fuel-submit"><i class="fa-solid fa-paper-plane mr-1"></i> IN Reading Save Karo</button>
     <div id="fuel-list" class="mt-4 space-y-2"></div>
+  </div>
+</div>
+
+<!-- ================= FUEL: METER OUT MODAL ================= -->
+<div id="fuel-out-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(15,23,42,.65);align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:18px;max-width:420px;width:100%;padding:20px">
+    <h3 class="font-extrabold text-slate-800 text-lg mb-1"><i class="fa-solid fa-gas-pump text-blue-600 mr-1"></i> Meter OUT (wapsi)</h3>
+    <p id="fuel-out-who" class="text-sm text-slate-600 mb-3">&mdash;</p>
+    <label class="text-label">Meter OUT reading <span class="text-rose-500">*</span></label>
+    <input id="fuel-out-val" type="number" inputmode="numeric" class="kiosk-input" placeholder="12560">
+    <div id="fuel-out-prev" class="text-sm mt-3 p-3 rounded-xl" style="background:#eff6ff;color:#1e40af;display:none"></div>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 rounded-2xl bg-blue-600 text-white font-extrabold py-3" data-action="fuel-out-save"><i class="fa-solid fa-check mr-1"></i> Save</button>
+      <button class="rounded-2xl bg-slate-100 text-slate-600 font-bold px-5 py-3" data-action="fuel-out-cancel">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -1039,6 +1047,9 @@
       else if (a === 'fuel-pick') fuelPickEmp(el.dataset.empcode);
       else if (a === 'fuel-emp-change') fuelClearEmp();
       else if (a === 'fuel-veh') fuelVehSet(el.dataset.veh);
+      else if (a === 'fuel-out-open') fuelOutOpen(Number(el.dataset.fid));
+      else if (a === 'fuel-out-save') fuelOutSave();
+      else if (a === 'fuel-out-cancel') fuelOutClose();
       else if (a === 'go-back') goBack();
       else if (a === 'switch-camera') {
         S.facingMode = S.facingMode === 'user' ? 'environment' : 'user';
@@ -2230,10 +2241,13 @@
 
   // ===================== OVERTIME (approved OT verify) =====================
   var OT_LIST = [];
+  var OT_GROUP = null;   // konsa section khula hai (null = cards view)
   function otToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   function otOpen() {
     var di = document.getElementById('ot-date');
     if (di && !di.value) di.value = otToday();
+    OT_GROUP = null;
+    var sb = document.getElementById('ot-search'); if (sb) sb.value = '';
     show('screen-ot');
     otRefresh();
   }
@@ -2251,52 +2265,91 @@
       if (host) host.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + (e.message || e) + '</p>';
     }
   }
+  function otKeyOf(o) { return (String(o.section || '').trim() || String(o.department || '').trim() || 'NO SECTION').toUpperCase(); }
+  function otRowHtml(o) {
+    var comp = o.is_complete, v = o.ot_verified, nf = o.not_found;
+    var badge = comp
+      ? '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#0284c7"><i class="fa-solid fa-flag-checkered"></i> COMPLETE</span>'
+      : (nf ? '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#ef4444"><i class="fa-solid fa-user-slash"></i> NOT FOUND</span>'
+      : (v ? '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#10b981"><i class="fa-solid fa-circle-check"></i> VERIFIED</span>'
+           : '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#f59e0b">TAP \u2192 VERIFY</span>'));
+    var nfBtn = '<button class="ot-nf-btn rounded-lg text-[11px] font-extrabold px-2.5 py-1.5 whitespace-nowrap" data-otid="' + o.id + '" style="border:1.5px solid ' + (nf ? '#ef4444' : '#fecaca') + ';background:' + (nf ? '#ef4444' : '#fff') + ';color:' + (nf ? '#fff' : '#b91c1c') + '">' +
+      (nf ? '\u2715 Wapis' : 'Nahi mila') + '</button>';
+    return '<tr class="ot-card-btn" data-otid="' + o.id + '" style="cursor:pointer;border-top:1px solid #e2e8f0' + (nf ? ';background:#fef2f2' : '') + '">' +
+      '<td class="px-3 py-2"><b class="text-slate-800">' + esc(o.name) + '</b><div class="text-[11px] text-slate-500">' + esc(o.employee_code) + (o.designation ? ' \u00b7 ' + esc(o.designation) : '') + (o.reason ? ' \u00b7 ' + esc(o.reason) : '') + '</div></td>' +
+      '<td class="px-3 py-2 text-center font-semibold">' + (o.hours || 0) + '</td>' +
+      '<td class="px-3 py-2 text-center" style="color:' + (comp ? '#0284c7' : '#b45309') + '">' + (o.expected_out || '\u2014') + '</td>' +
+      '<td class="px-3 py-2 text-center font-semibold" style="color:#0284c7">' + (comp ? String(o.actual_out).slice(0, 5) : '\u2014') + '</td>' +
+      '<td class="px-3 py-2 text-center">' + badge + '</td>' +
+      '<td class="px-3 py-2 text-center">' + nfBtn + '</td>' +
+      '</tr>';
+  }
+  function otTableHtml(list) {
+    return '<div style="overflow-x:auto"><table class="w-full text-sm bg-white rounded-xl overflow-hidden" style="border-collapse:collapse">' +
+      '<thead><tr class="text-[11px] uppercase text-slate-500" style="background:#f8fafc">' +
+      '<th class="px-3 py-2 text-left">Employee</th><th class="px-3 py-2">OT Hrs</th><th class="px-3 py-2">Expected OUT</th><th class="px-3 py-2">Actual OUT</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Nahi mila</th>' +
+      '</tr></thead><tbody>' + list.map(otRowHtml).join('') + '</tbody></table></div>' +
+      '<p class="text-[11px] text-slate-400 mt-2">Row par tap = verify / un-verify. Banda na mile to <b>Nahi mila</b> dabayein \u2014 uska OT paid nahi hoga.</p>';
+  }
   function otRender() {
     var host = document.getElementById('ot-cards');
     if (!host) return;
     var q = (document.getElementById('ot-search').value || '').toUpperCase();
     var comp = OT_LIST.filter(function (o) { return o.is_complete; }).length;
     var ver = OT_LIST.filter(function (o) { return o.ot_verified && !o.is_complete; }).length;
-    var pend = OT_LIST.length - comp - ver;
+    var nfC = OT_LIST.filter(function (o) { return o.not_found && !o.is_complete && !o.ot_verified; }).length;
+    var pend = OT_LIST.length - comp - ver - nfC;
     var pc = document.getElementById('ot-c-pending'); if (pc) pc.innerText = pend;
     var dc = document.getElementById('ot-c-done'); if (dc) dc.innerText = (ver + comp);
-    var list = OT_LIST;
-    if (q) list = list.filter(function (o) { return ((o.name || '') + ' ' + (o.employee_code || '') + ' ' + (o.section || '') + ' ' + (o.department || '')).toUpperCase().indexOf(q) > -1; });
-    if (!list.length) { host.innerHTML = '<p class="text-slate-400 text-sm">Is date ke liye koi approved OT nahi.</p>'; return; }
-    var rowFn = function (o) {
-      var comp = o.is_complete, v = o.ot_verified;
-      var badge = comp
-        ? '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#0284c7"><i class="fa-solid fa-flag-checkered"></i> COMPLETE</span>'
-        : (v ? '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#10b981"><i class="fa-solid fa-circle-check"></i> VERIFIED</span>'
-             : '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#f59e0b">TAP → VERIFY</span>');
-      return '<tr class="ot-card-btn" data-otid="' + o.id + '" style="cursor:pointer;border-top:1px solid #e2e8f0">' +
-        '<td class="px-3 py-2"><b class="text-slate-800">' + esc(o.name) + '</b><div class="text-[11px] text-slate-500">' + esc(o.employee_code) + (o.department ? ' · ' + esc(o.department) : '') + (o.reason ? ' · ' + esc(o.reason) : '') + '</div></td>' +
-        '<td class="px-3 py-2 text-center font-semibold">' + (o.hours || 0) + '</td>' +
-        '<td class="px-3 py-2 text-center" style="color:' + (comp ? '#0284c7' : '#b45309') + '">' + (o.expected_out || '—') + '</td>' +
-        '<td class="px-3 py-2 text-center font-semibold" style="color:#0284c7">' + (comp ? String(o.actual_out).slice(0, 5) : '—') + '</td>' +
-        '<td class="px-3 py-2 text-center">' + badge + '</td>' +
-        '</tr>';
-    };
-    // section-wise grouping — easy verification
-    var groups = {}, order = [];
-    list.forEach(function (o) {
-      var g = (String(o.section || '').trim() || String(o.department || '').trim() || 'NO SECTION').toUpperCase();
-      if (!groups[g]) { groups[g] = []; order.push(g); }
-      groups[g].push(o);
-    });
-    order.sort();
-    var rows = order.map(function (g) {
-      var pendG = groups[g].filter(function (o) { return !o.is_complete && !o.ot_verified; }).length;
-      return '<tr><td colspan="5" class="px-3 py-2" style="background:#e0f2fe;color:#075985;font-weight:800;font-size:12px;border-top:2px solid #bae6fd">' +
-        '<i class="fa-solid fa-layer-group mr-1"></i>' + esc(g) +
-        ' <span style="font-weight:600;color:#0369a1">(' + groups[g].length + (pendG ? ' · ' + pendG + ' pending' : ' · sab done') + ')</span></td></tr>' +
-        groups[g].map(rowFn).join('');
-    }).join('');
-    host.innerHTML = '<div style="overflow-x:auto"><table class="w-full text-sm bg-white rounded-xl overflow-hidden" style="border-collapse:collapse">' +
-      '<thead><tr class="text-[11px] uppercase text-slate-500" style="background:#f8fafc">' +
-      '<th class="px-3 py-2 text-left">Employee</th><th class="px-3 py-2">OT Hrs</th><th class="px-3 py-2">Expected OUT</th><th class="px-3 py-2">Actual OUT</th><th class="px-3 py-2">Status</th>' +
-      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '<p class="text-[11px] text-slate-400 mt-2">Kisi bhi row par tap karke verify / un-verify karein.</p>';
+    var nc = document.getElementById('ot-c-nf'); if (nc) nc.innerText = nfC;
+    if (!OT_LIST.length) { host.innerHTML = '<p class="text-slate-400 text-sm">Is date ke liye koi approved OT nahi.</p>'; return; }
+
+    // search chal raha hai -> sidha flat table (sab sections ka)
+    if (q) {
+      var found = OT_LIST.filter(function (o) {
+        return ((o.name || '') + ' ' + (o.employee_code || '') + ' ' + (o.section || '') + ' ' + (o.department || '')).toUpperCase().indexOf(q) > -1;
+      });
+      host.innerHTML = found.length
+        ? '<p class="text-xs text-slate-500 mb-2">Search: <b>' + esc(q) + '</b> \u2014 ' + found.length + ' result</p>' + otTableHtml(found)
+        : '<p class="text-slate-400 text-sm">Koi match nahi mila.</p>';
+      return;
+    }
+
+    // group by section
+    var groups = {};
+    OT_LIST.forEach(function (o) { var g = otKeyOf(o); (groups[g] = groups[g] || []).push(o); });
+    var names = Object.keys(groups).sort();
+    if (OT_GROUP && !groups[OT_GROUP]) OT_GROUP = null;
+
+    if (!OT_GROUP) {
+      host.innerHTML = '<p class="text-xs text-slate-500 mb-2">Section par tap karo \u2014 uske logon ki list khulegi.</p>' +
+        '<div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">' +
+        names.map(function (g) {
+          var l = groups[g];
+          var gComp = l.filter(function (o) { return o.is_complete; }).length;
+          var gVer = l.filter(function (o) { return o.ot_verified && !o.is_complete; }).length;
+          var gNf = l.filter(function (o) { return o.not_found && !o.is_complete && !o.ot_verified; }).length;
+          var gPend = l.length - gComp - gVer - gNf;
+          var col = gPend ? '#f59e0b' : '#10b981';
+          return '<button class="ot-grp-btn text-left rounded-2xl border-2 bg-white p-4" data-otgrp="' + esc(g) + '" style="border-color:' + col + '55">' +
+            '<div class="font-extrabold text-slate-800 text-sm leading-tight">' + esc(g) + '</div>' +
+            '<div class="mt-2 flex items-end gap-1"><span style="font-size:28px;line-height:1;font-weight:800;color:' + col + '">' + gPend + '</span>' +
+            '<span class="text-[11px] text-slate-500 mb-0.5">pending</span></div>' +
+            '<div class="text-[11px] text-slate-500 mt-1">Total ' + l.length + ' \u00b7 Done ' + (gVer + gComp) + (gNf ? ' \u00b7 <span style="color:#ef4444;font-weight:700">Not found ' + gNf + '</span>' : '') + '</div>' +
+            '</button>';
+        }).join('') + '</div>';
+      return;
+    }
+
+    var list = groups[OT_GROUP];
+    var lComp = list.filter(function (o) { return o.is_complete; }).length;
+    var lVer = list.filter(function (o) { return o.ot_verified && !o.is_complete; }).length;
+    var lNf = list.filter(function (o) { return o.not_found && !o.is_complete && !o.ot_verified; }).length;
+    host.innerHTML = '<div class="flex items-center justify-between gap-2 mb-3">' +
+      '<button class="ot-back-btn rounded-xl bg-slate-100 text-slate-700 font-bold px-3 py-2 text-sm"><i class="fa-solid fa-arrow-left mr-1"></i> Sections</button>' +
+      '<div class="text-right"><div class="font-extrabold text-slate-800 text-sm">' + esc(OT_GROUP) + '</div>' +
+      '<div class="text-[11px] text-slate-500">Total ' + list.length + ' \u00b7 Pending ' + (list.length - lComp - lVer - lNf) + ' \u00b7 Done ' + (lVer + lComp) + (lNf ? ' \u00b7 Not found ' + lNf : '') + '</div></div></div>' +
+      otTableHtml(list);
   }
   function otVerify(id) {
     var o = null;
@@ -2309,9 +2362,35 @@
     otVerifyDo(id, false);   // sirf tap — koi photo nahi
   }
   document.addEventListener('click', function (ev) {
-    var cb = ev.target.closest ? ev.target.closest('.ot-card-btn') : null;
+    if (!ev.target.closest) return;
+    var nf = ev.target.closest('.ot-nf-btn');
+    if (nf) { ev.stopPropagation(); otNotFound(Number(nf.dataset.otid)); return; }
+    var gb = ev.target.closest('.ot-grp-btn');
+    if (gb) { OT_GROUP = gb.dataset.otgrp; otRender(); return; }
+    var bb = ev.target.closest('.ot-back-btn');
+    if (bb) { OT_GROUP = null; otRender(); return; }
+    var cb = ev.target.closest('.ot-card-btn');
     if (cb) { otVerify(Number(cb.dataset.otid)); return; }
   });
+  function otNotFound(id) {
+    var o = null;
+    for (var i = 0; i < OT_LIST.length; i++) if (OT_LIST[i].id === id) o = OT_LIST[i];
+    if (!o) return;
+    if (o.not_found) { otNotFoundDo(id, true); return; }
+    showMsg('Banda nahi mila?', esc(o.name) + ' ko "NOT FOUND" mark kiya jaye? Uska OT verify hat jayega aur OT paid nahi hoga.', function () { otNotFoundDo(id, false); }, 'warning');
+  }
+  async function otNotFoundDo(id, unset) {
+    try {
+      showLoader(unset ? 'Hata rahe hain\u2026' : 'Mark kar rahe hain\u2026');
+      var db2 = await hrConnect();
+      var r = await db2.rpc('ot_kiosk_notfound', { p_id: id, p_unset: !!unset });
+      hideLoader();
+      if (r.error) throw r.error;
+      if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
+      showToast(unset ? 'Not-found hata diya' : 'NOT FOUND mark ho gaya', unset ? 'info' : 'warning', 1800);
+      otRefresh();
+    } catch (e) { hideLoader(); showMsg('Error', e.message || String(e), null, 'error'); }
+  }
   async function otVerifyDo(id, unset) {
     try {
       showLoader(unset ? 'Hata rahe hain…' : 'Verify…');
@@ -2327,7 +2406,8 @@
   document.addEventListener('input', function (ev) {
     if (ev.target && ev.target.id === 'ot-search') otRender();
     if (ev.target && ev.target.id === 'ot-date') otRefresh();
-    if (ev.target && (ev.target.id === 'fuel-in' || ev.target.id === 'fuel-out' || ev.target.id === 'fuel-rate')) fuelCalc();
+    if (ev.target && ev.target.id === 'fuel-in') fuelCalc();
+    if (ev.target && ev.target.id === 'fuel-out-val') fuelOutCalc();
     if (ev.target && ev.target.id === 'fuel-emp-search') fuelStaffRender(ev.target.value);
   });
 
@@ -2336,6 +2416,14 @@
   var FUEL_EMP = null;   // selected {code, name, department}
   var FUEL_VEH = '';     // 'BIKE' | 'CAR'
   var FUEL_RECENT = [];  // last entries (open entry detect karne ke liye)
+  var FUEL_OUT_ROW = null; // jis entry ka OUT daal rahe hain
+  function fuelOpenOf(code) {
+    for (var i = 0; i < FUEL_RECENT.length; i++) {
+      var f = FUEL_RECENT[i];
+      if (String(f.employee_code) === String(code) && String(f.status) === 'OPEN' && f.meter_out == null) return f;
+    }
+    return null;
+  }
   function fuelVehSet(v) {
     FUEL_VEH = String(v || '').toUpperCase();
     if (FUEL_VEH !== 'BIKE' && FUEL_VEH !== 'CAR') FUEL_VEH = '';
@@ -2346,7 +2434,6 @@
   function fuelToday() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
   async function fuelOpen() {
     var d = $('fuel-date'); if (d && !d.value) d.value = fuelToday();
-    var r = $('fuel-rate'); if (r && !r.value) r.value = 4;
     fuelVehSet('');
     fuelClearEmp();
     show('screen-fuel');
@@ -2394,30 +2481,70 @@
     if ($('fuel-emp-sel')) { $('fuel-emp-sel').classList.remove('hidden'); $('fuel-emp-sel').classList.add('flex'); }
     if ($('fuel-emp-search')) $('fuel-emp-search').classList.add('hidden');
     if ($('fuel-emp-list')) $('fuel-emp-list').classList.add('hidden');
-    // Subah ki OPEN entry hai? — to IN prefill karo, sirf OUT lena hai
-    var open = null;
-    for (var j = 0; j < FUEL_RECENT.length; j++) {
-      var f = FUEL_RECENT[j];
-      if (String(f.employee_code) === String(s.code) && String(f.status) === 'OPEN' && f.meter_out == null) { open = f; break; }
-    }
+    // Subah ki OPEN entry hai? — to sirf OUT lena hai
+    var open = fuelOpenOf(s.code);
     var note = $('fuel-open-note');
     if (open) {
-      if ($('fuel-date')) $('fuel-date').value = String(open.log_date).slice(0, 10);
       if ($('fuel-in')) { $('fuel-in').value = open.meter_in; $('fuel-in').readOnly = true; }
       fuelVehSet(open.vehicle_type || FUEL_VEH);
-      if (note) { note.style.display = ''; note.innerHTML = 'Subah ki IN reading (<b>' + esc(open.meter_in) + '</b>) pehle se hai — ab sirf <b>Meter OUT</b> daalo, entry complete ho jayegi.'; }
-      if ($('fuel-out')) $('fuel-out').focus();
+      if (note) {
+        note.style.display = '';
+        note.innerHTML = 'Subah ki IN reading (<b>' + esc(open.meter_in) + '</b>) pehle se hai \u2014 ab OUT daalna hai. ' +
+          '<button class="rounded-lg bg-orange-500 text-white font-extrabold px-3 py-1.5 ml-1" data-action="fuel-out-open" data-fid="' + open.id + '">OUT DAALEIN</button>';
+      }
     } else {
-      if ($('fuel-in')) $('fuel-in').readOnly = false;
+      if ($('fuel-in')) { $('fuel-in').value = ''; $('fuel-in').readOnly = false; }
       if (note) note.style.display = 'none';
     }
     fuelCalc();
   }
   function fuelCalc() {
     var box = $('fuel-preview'); if (!box) return;
-    var inV = Number($('fuel-in').value) || 0, outV = Number($('fuel-out').value) || 0, rate = Number($('fuel-rate').value) || 4;
-    if (outV > inV) { var dist = outV - inV, amt = dist * rate; box.style.display = ''; box.innerHTML = 'Distance: <b>' + dist + ' km</b> × ₹' + rate + '/km = <b>₹' + amt.toLocaleString('en-IN') + '</b>'; }
-    else box.style.display = 'none';
+    var el = $('fuel-in'); var inV = el ? (Number(el.value) || 0) : 0;
+    if (inV && !fuelOpenOf(FUEL_EMP ? FUEL_EMP.code : '')) {
+      box.style.display = '';
+      box.innerHTML = 'IN reading <b>' + inV + '</b> save hogi. Wapsi par is entry par <b>OUT DAALEIN</b> dabakar OUT reading daalna.';
+    } else box.style.display = 'none';
+  }
+  function fuelOutOpen(fid) {
+    var row = null;
+    for (var i = 0; i < FUEL_RECENT.length; i++) if (Number(FUEL_RECENT[i].id) === Number(fid)) row = FUEL_RECENT[i];
+    if (!row) return showMsg('Ruko', 'Entry nahi mili \u2014 refresh karke dobara try karein', null, 'warning');
+    FUEL_OUT_ROW = row;
+    var veh = row.vehicle_type ? (String(row.vehicle_type).toUpperCase() === 'CAR' ? '\ud83d\ude97 Car' : '\ud83c\udfcd\ufe0f Bike') : '\u2014';
+    if ($('fuel-out-who')) $('fuel-out-who').innerHTML = '<b>' + esc(row.employee_name || row.employee_code) + '</b> \u00b7 ' + String(row.log_date) + '<br>' + veh + ' \u00b7 IN reading: <b>' + esc(row.meter_in) + '</b>';
+    if ($('fuel-out-val')) $('fuel-out-val').value = '';
+    if ($('fuel-out-prev')) $('fuel-out-prev').style.display = 'none';
+    var m = $('fuel-out-modal'); if (m) m.style.display = 'flex';
+    setTimeout(function () { if ($('fuel-out-val')) $('fuel-out-val').focus(); }, 100);
+  }
+  function fuelOutClose() { var m = $('fuel-out-modal'); if (m) m.style.display = 'none'; FUEL_OUT_ROW = null; }
+  function fuelOutCalc() {
+    var box = $('fuel-out-prev'); if (!box || !FUEL_OUT_ROW) return;
+    var outV = Number(($('fuel-out-val') || {}).value) || 0, inV = Number(FUEL_OUT_ROW.meter_in) || 0;
+    if (outV > inV) {
+      var dist = outV - inV;
+      box.style.display = '';
+      box.innerHTML = 'Distance: <b>' + dist + ' km</b> (rate company setting se lagega)';
+    } else box.style.display = 'none';
+  }
+  async function fuelOutSave() {
+    if (!FUEL_OUT_ROW) return fuelOutClose();
+    var row = FUEL_OUT_ROW;
+    var outV = Number(($('fuel-out-val') || {}).value);
+    if (!outV) return showMsg('Ruko', 'Meter OUT reading daalo', null, 'warning');
+    if (outV < Number(row.meter_in)) return showMsg('Ruko', 'OUT reading IN (' + row.meter_in + ') se kam nahi ho sakti', null, 'warning');
+    try {
+      showLoader('OUT reading save\u2026');
+      var db2 = await hrConnect();
+      var r = await db2.rpc('fuel_kiosk_add', { p_emp: row.employee_code, p_date: String(row.log_date).slice(0, 10), p_in: null, p_out: outV, p_rate: null, p_note: null, p_vehicle: null });
+      hideLoader();
+      if (r.error) throw r.error;
+      if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
+      fuelOutClose();
+      showToast('\u2713 ' + (row.employee_name || row.employee_code) + ' \u2014 ' + r.data.distance + 'km \u00b7 \u20b9' + r.data.amount + ' (HR approve karega)', 'success', 2800);
+      fuelRefresh();
+    } catch (e) { hideLoader(); showMsg('Error', e.message || String(e), null, 'error'); }
   }
   async function fuelRefresh() {
     var host = $('fuel-list'); if (!host) return;
@@ -2427,14 +2554,17 @@
       if (r.error) throw r.error;
       var list = r.data || [];
       FUEL_RECENT = list;
+      list = list.slice().sort(function (a, b) { return (String(b.status) === 'OPEN' ? 1 : 0) - (String(a.status) === 'OPEN' ? 1 : 0); });
       host.innerHTML = list.length
         ? '<div class="text-xs font-semibold text-slate-500 mt-1 mb-1">Recent entries:</div>' + list.map(function (f) {
             var isOpen = String(f.status) === 'OPEN';
             var col = f.status === 'APPROVED' ? '#10b981' : (f.status === 'REJECTED' ? '#ef4444' : (isOpen ? '#f97316' : '#f59e0b'));
             var veh = f.vehicle_type ? (String(f.vehicle_type).toUpperCase() === 'CAR' ? '🚗 ' : '🏍️ ') : '';
             var mid = isOpen ? ('IN ' + f.meter_in + ' · OUT baki') : (f.distance + 'km · ₹' + f.amount);
-            var badge = isOpen ? 'OUT BAKI' : f.status;
-            return '<div class="flex justify-between items-center gap-2 rounded-xl border-2 bg-white p-3" style="border-color:' + col + '33"><span class="text-sm text-slate-700">' + veh + esc(f.employee_name || f.employee_code) + ' · ' + String(f.log_date) + ' · ' + mid + '</span><span class="rounded-full text-white text-xs font-bold px-3 py-1 whitespace-nowrap" style="background:' + col + '">' + esc(badge) + '</span></div>' + (f.status === 'REJECTED' && f.reject_reason ? '<div class="text-[11px] text-rose-500 ml-1">' + esc(f.reject_reason) + '</div>' : '');
+            var right = isOpen
+              ? '<button class="rounded-xl bg-orange-500 text-white text-xs font-extrabold px-3 py-2 whitespace-nowrap" data-action="fuel-out-open" data-fid="' + f.id + '"><i class="fa-solid fa-right-to-bracket mr-1"></i> OUT DAALEIN</button>'
+              : '<span class="rounded-full text-white text-xs font-bold px-3 py-1 whitespace-nowrap" style="background:' + col + '">' + esc(f.status) + '</span>';
+            return '<div class="flex justify-between items-center gap-2 rounded-xl border-2 bg-white p-3" style="border-color:' + col + '33"><span class="text-sm text-slate-700">' + veh + esc(f.employee_name || f.employee_code) + ' · ' + String(f.log_date) + ' · ' + mid + '</span>' + right + '</div>' + (f.status === 'REJECTED' && f.reject_reason ? '<div class="text-[11px] text-rose-500 ml-1">' + esc(f.reject_reason) + '</div>' : '');
           }).join('')
         : '<p class="text-slate-400 text-sm">Abhi tak koi entry nahi.</p>';
     } catch (e) { host.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + (e.message || e) + '</p>'; }
@@ -2442,20 +2572,21 @@
   async function fuelSubmit() {
     if (!FUEL_EMP) return showMsg('Ruko', 'Pehle staff employee select karo', null, 'warning');
     if (!FUEL_VEH) return showMsg('Ruko', 'Vehicle select karo — Bike ya Car', null, 'warning');
-    var inV = Number($('fuel-in').value), outV = Number($('fuel-out').value), rate = Number($('fuel-rate').value) || 4;
+    var inV = Number($('fuel-in').value);
     if (!inV) return showMsg('Ruko', 'Meter IN (subah) reading daalo', null, 'warning');
-    if (outV && outV < inV) return showMsg('Ruko', 'OUT reading IN se kam nahi ho sakti', null, 'warning');
+    var already = fuelOpenOf(FUEL_EMP.code);
+    if (already) { return showMsg('Pehle se IN hai', 'Is employee ki IN reading (' + already.meter_in + ') already save hai. Wapsi par uski entry par OUT DAALEIN dabakar OUT reading daalein.', null, 'warning'); }
     var name = FUEL_EMP.name;
     try {
       showLoader('Fuel log bhej rahe…');
       var db2 = await hrConnect();
-      var r = await db2.rpc('fuel_kiosk_add', { p_emp: FUEL_EMP.code, p_date: $('fuel-date').value || null, p_in: inV, p_out: outV || null, p_rate: rate, p_note: ($('fuel-note').value || '').trim() || null, p_vehicle: FUEL_VEH });
+      var r = await db2.rpc('fuel_kiosk_add', { p_emp: FUEL_EMP.code, p_date: $('fuel-date').value || null, p_in: inV, p_out: null, p_rate: null, p_note: ($('fuel-note').value || '').trim() || null, p_vehicle: FUEL_VEH });
       hideLoader();
       if (r.error) throw r.error;
       if (r.data && r.data.error) return showMsg('Ruko', r.data.error, null, 'error');
-      if (r.data && r.data.opened) showToast('✓ ' + name + ' — IN reading save. Shaam ko isi employee ko select karke OUT reading daalna.', 'success', 3500);
+      if (r.data && r.data.opened) showToast('✓ ' + name + ' — IN reading save. Wapsi par neeche list mai OUT DAALEIN dabana.', 'success', 3500);
       else showToast('✓ ' + name + ' — ' + r.data.distance + 'km · ₹' + r.data.amount + ' (HR approve karega)', 'success', 2800);
-      $('fuel-in').value = ''; $('fuel-out').value = ''; $('fuel-note').value = '';
+      $('fuel-in').value = ''; $('fuel-note').value = '';
       fuelVehSet('');
       fuelClearEmp();
       fuelCalc();
