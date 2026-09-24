@@ -691,12 +691,13 @@
   document.addEventListener('DOMContentLoaded', function () {
     bindEvents();
     showLoader('Connecting...');
-    jsonp({ action: 'getPublicConfig' }, async function (res) {
+    nxConfig(async function (res) {
       hideLoader();
-      if (!res.success) {
-        showToast(res.error || 'Config load failed. Check MAIL_API_URL/KEY in this file.', 'error', 6000);
+      if (!res || !res.url || !res.key) {
+        showToast(res && res.error || 'Config load failed — Nexus config endpoint check karein.', 'error', 6000);
         return;
       }
+      window.NX_URL = res.url;
       db = supabase.createClient(res.url, res.key);
       var sess = (await db.auth.getSession()).data.session;
       if (sess) await enterApp(sess.user);
@@ -1886,6 +1887,20 @@
 
   async function audit(action, details) {
     try { await db.from('audit_log').insert({ actor: S.user.host_name, action: action, details: details || {} }); } catch (e) {}
+  }
+
+
+  // ============ Nexus_Payroll Supabase config (ab ViziTrack ka data bhi yahin hai) ============
+  var NX_CONFIG_URL = 'https://script.google.com/macros/s/AKfycbyLyxuzYzGZ1odibF_-ORvn314hFY_zKg4595HpDZrhMObhqbcAh_LIw60sTc4b_dPI/exec';
+  function nxConfig(cb) {
+    var name = 'nxcfg' + Date.now();
+    var done = false;
+    var s = document.createElement('script');
+    window[name] = function (r) { done = true; try { delete window[name]; s.remove(); } catch (e) {} cb(r || {}); };
+    s.onerror = function () { if (!done) { try { delete window[name]; s.remove(); } catch (e) {} cb({ error: 'Network error' }); } };
+    s.src = NX_CONFIG_URL + '?callback=' + name + '&t=' + Date.now();
+    document.body.appendChild(s);
+    setTimeout(function () { if (!done && window[name]) { try { delete window[name]; s.remove(); } catch (e) {} cb({ error: 'Config timed out' }); } }, 15000);
   }
 
   var jsonpN = 0;

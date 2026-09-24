@@ -888,14 +888,15 @@
     setOnline(navigator.onLine);
     showLoader('Connecting...');
     var cfgT0 = (performance && performance.now) ? performance.now() : Date.now();
-    jsonp({ action: 'getPublicConfig' }, async function (res) {
+    nxConfig(async function (res) {
       hideLoader();
       var cfgMs = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - cfgT0);
       diagSet('d-config', cfgMs, 3000);
-      if (!res.success) {
-        showMsg('Setup error', res.error || 'Config load failed. Check MAIL_API_URL/KEY in this file.', null, 'error');
+      if (!res || !res.url || !res.key) {
+        showMsg('Setup error', (res && res.error) || 'Config load failed — Nexus config endpoint check karein.', null, 'error');
         return;
       }
+      window.HR_URL = res.url;
       db = supabase.createClient(res.url, res.key);
       var sess = (await db.auth.getSession()).data.session;
       if (!sess) { show('screen-login'); return; }
@@ -2109,13 +2110,28 @@
   }
 
   // ---------- jsonp ----------
+
+  // ============ Nexus_Payroll Supabase config (ab ViziTrack ka data bhi yahin hai) ============
+  var NX_CONFIG_URL = 'https://script.google.com/macros/s/AKfycbyLyxuzYzGZ1odibF_-ORvn314hFY_zKg4595HpDZrhMObhqbcAh_LIw60sTc4b_dPI/exec';
+  function nxConfig(cb) {
+    var name = 'nxcfg' + Date.now();
+    var done = false;
+    var s = document.createElement('script');
+    window[name] = function (r) { done = true; try { delete window[name]; s.remove(); } catch (e) {} cb(r || {}); };
+    s.onerror = function () { if (!done) { try { delete window[name]; s.remove(); } catch (e) {} cb({ error: 'Network error' }); } };
+    s.src = NX_CONFIG_URL + '?callback=' + name + '&t=' + Date.now();
+    document.body.appendChild(s);
+    setTimeout(function () { if (!done && window[name]) { try { delete window[name]; s.remove(); } catch (e) {} cb({ error: 'Config timed out' }); } }, 15000);
+  }
+
   var jsonpN = 0;
-  // ============ WORK PASS (Trial Workers) — HR Supabase se ============
+  // ============ WORK PASS (Trial Workers) — ab wahi Nexus DB ============
   var hrdb = null;
   var HR_CONFIG_URL = 'https://script.google.com/macros/s/AKfycbyLyxuzYzGZ1odibF_-ORvn314hFY_zKg4595HpDZrhMObhqbcAh_LIw60sTc4b_dPI/exec';
   function hrConnect() {
     return new Promise(function (res, rej) {
       if (hrdb) return res(hrdb);
+      if (db) { hrdb = db; return res(hrdb); }   // ek hi database — alag client ki zaroorat nahi
       var cb = 'hrcfg_' + Date.now();
       var t = setTimeout(function () { rej(new Error('HR config timeout')); }, 8000);
       window[cb] = function (r) {
