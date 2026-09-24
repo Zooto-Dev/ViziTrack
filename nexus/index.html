@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexus 2.0</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="login" class="hidden">
+  <form id="loginForm" class="login-box" autocomplete="on">
+    <div class="brand">Nexus <b>2.0</b></div>
+    <label>Email<input name="email" type="email" required autofocus></label>
+    <label><span id="pinLabel">PIN</span><input name="pin" type="password" required></label>
+    <button class="btn primary" type="submit">Sign in</button>
+    <div id="loginMsg" class="muted small"></div>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <aside id="nav"></aside>
+  <div class="main-wrap">
+    <header id="top">
+      <button id="navToggle" class="btn ghost only-mobile" data-act="toggle-nav">Menu</button>
+      <input id="gsearch" placeholder="Search order no / customer  ( / )" autocomplete="off">
+      <span class="grow"></span>
+      <span id="syncState" class="muted small"></span>
+      <span id="who" class="small"></span>
+      <button class="btn ghost" data-act="logout">Sign out</button>
+    </header>
+    <div id="flash" class="hidden"></div>
+    <main id="main"></main>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="engine.js"></script>
+<script src="core.js"></script>
+<script src="seed.js"></script>
+<script src="ops.js"></script>
+<script src="fms.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
