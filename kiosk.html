@@ -266,7 +266,6 @@
 
     .panel { flex: 1; overflow-y: auto; padding: 22px 18px 40px; max-width: 520px; width: 100%; margin: 0 auto; }
     .otp-box { letter-spacing: 12px; text-align: center; font-size: 1.9rem; font-weight: 700; }
-    #capture-video { width: 100%; border-radius: 12px; background: #0f172a; transform: scaleX(-1); aspect-ratio: 4/3; object-fit: cover; }
 
     /* ===== VISITOR LIST (today's invitations) ===== */
     .vl-tab { flex: none; font-size: 0.78rem; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid #e2e8f0; background: #fff; color: #475569; cursor: pointer; white-space: nowrap; }
@@ -303,10 +302,9 @@
     <div class="diag-row"><span>Faces load</span><b id="d-faces">—</b></div>
     <hr>
     <div class="diag-title">Last check-in steps</div>
-    <div class="diag-row"><span>Face descriptor</span><b id="d-desc">—</b></div>
     <div class="diag-row"><span>Find open log</span><b id="d-findlog">—</b></div>
     <div class="diag-row"><span>Invitation lookup</span><b id="d-invlookup">—</b></div>
-    <div class="diag-row"><span>DB insert + photo</span><b id="d-insert">—</b></div>
+    <div class="diag-row"><span>DB insert</span><b id="d-insert">—</b></div>
     <div class="diag-row total"><span>TOTAL</span><b id="d-total">—</b></div>
     <hr>
     <button id="diag-pingtest" class="diag-btn"><i class="fa-solid fa-stopwatch"></i> Run 5× ping test</button>
@@ -609,7 +607,7 @@
     <div class="mb-3"><label class="text-label">Address</label><input id="f-address" class="kiosk-input" readonly /></div>
     <div class="mb-3"><label class="text-label">Purpose</label><input id="f-purpose" class="kiosk-input" readonly /></div>
     <div class="mb-4"><label class="text-label">Host</label><input id="f-host" class="kiosk-input" readonly /></div>
-    <button class="btn-kiosk" data-action="open-photo" id="capture-btn"><i class="fa-solid fa-camera"></i> Capture photo &amp; check in</button>
+    <button class="btn-kiosk" data-action="do-check" id="capture-btn"><i class="fa-solid fa-right-to-bracket"></i> Check in</button>
   </div>
 
 
@@ -644,19 +642,6 @@
     </div>
     <div class="mb-4"><label class="text-label">Host name *</label><input id="r-host" list="host-list" class="kiosk-input" placeholder="Whom are you visiting?" /><datalist id="host-list"></datalist></div>
     <button class="btn-kiosk" data-action="submit-request"><i class="fa-solid fa-paper-plane"></i> Submit request</button>
-  </div>
-</div>
-
-<!-- ================= PHOTO MODAL ================= -->
-<div id="photo-modal" class="modal">
-  <div class="modal-content !max-w-md">
-    <h3 class="text-base font-bold text-slate-800 mb-3"><i class="fa-solid fa-camera mr-2" style="color:#0d5c75;"></i>Look at the camera</h3>
-    <video id="capture-video" autoplay muted playsinline></video>
-    <canvas id="capture-canvas" class="hidden"></canvas>
-    <div class="flex gap-3 mt-4">
-      <button class="btn-kiosk-ghost flex-1" data-action="cancel-photo">Cancel</button>
-      <button class="btn-kiosk flex-1" data-action="take-photo"><i class="fa-solid fa-camera"></i> Capture</button>
-    </div>
   </div>
 </div>
 
@@ -869,11 +854,10 @@
   }
 
   function renderCheckinDiag() {
-    diagSet('d-desc', S.diag.descriptor, 1500);
     diagSet('d-findlog', S.diag.findlog, 2000);
     diagSet('d-invlookup', S.diag.invlookup, 2000);
     diagSet('d-insert', S.diag.insert, 3000);
-    var total = (S.diag.descriptor || 0) + (S.diag.findlog || 0) + (S.diag.invlookup || 0) + (S.diag.insert || 0);
+    var total = (S.diag.findlog || 0) + (S.diag.invlookup || 0) + (S.diag.insert || 0);
     diagSet('d-total', total, 5000);
   }
 
@@ -1065,9 +1049,7 @@
       else if (a === 'back-to-otp-request') { hidePanels(); $('otp-request-form').classList.remove('hidden'); }
       else if (a === 'try-email') { tryEmailInstead(); }
       else if (a === 'switch-to-qr') { switchMode('qr'); }
-      else if (a === 'open-photo') openPhoto();
-      else if (a === 'take-photo') takePhoto();
-      else if (a === 'cancel-photo') closePhoto();
+      else if (a === 'do-check') doCheck();
       else if (a === 'submit-request') submitRequest();
       else if (a === 'close-msg') closeMsg();
       else if (a === 'show-inside') openInside();
@@ -1116,7 +1098,7 @@
     box.innerHTML = '<div class="text-center text-slate-400 py-10"><div class="spinner mx-auto"></div><p class="mt-3 text-sm">Loading…</p></div>';
     try {
       var start = new Date(); start.setHours(0, 0, 0, 0);
-      // photo_in base64 heavy hai — list mein photo nahi laate, sirf initials.
+      // list mein sirf initials — gate par visitor ka photo ab liya hi nahi jaata.
       // Isse query fast rehti hai aur timeout nahi hota.
       var res = await withTimeout(
         db.from('visitor_logs')
@@ -1368,7 +1350,7 @@
     S.invitation = e.inv;
     S.visitor = { name: e.name, mobile: e.mobile, email: e.email, address: e.address };
     S.openLog = null;
-    openPhoto();
+    doCheck();
   }
 
   function visitorCardCheckOut(logId) {
@@ -1379,7 +1361,7 @@
     S.openLog = e.log;
     S.visitor = { name: e.name, mobile: e.mobile, email: e.email, address: e.address };
     S.invitation = { purpose: e.purpose, host_name: e.host };
-    openPhoto();
+    doCheck();
   }
 
   // ---------- device login ----------
@@ -1964,58 +1946,20 @@
     $('f-purpose').value = (S.invitation && S.invitation.purpose) || '';
     $('f-host').value = (S.invitation && S.invitation.host_name) || '';
     $('capture-btn').innerHTML = S.checkType === 'Check-out'
-      ? '<i class="fa-solid fa-camera"></i> Capture photo &amp; check out'
-      : '<i class="fa-solid fa-camera"></i> Capture photo &amp; check in';
+      ? '<i class="fa-solid fa-right-from-bracket"></i> Check out'
+      : '<i class="fa-solid fa-right-to-bracket"></i> Check in';
   }
 
-  // ---------- photo + submit ----------
-  var captureStream = null;
-
-  function openPhoto() {
-    $('photo-modal').classList.add('show');
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
-      .then(function (st) { captureStream = st; $('capture-video').srcObject = st; })
-      .catch(function () { $('photo-modal').classList.remove('show'); showMsg('Camera error', 'Camera access failed.', null, 'error'); });
-  }
-
-  function closePhoto() {
-    if (captureStream) { captureStream.getTracks().forEach(function (t) { t.stop(); }); captureStream = null; }
-    $('photo-modal').classList.remove('show');
-  }
-
-  async function takePhoto() {
+  // ---------- submit ----------
+  // Photo nahi liya jaata — visitor QR / OTP / Face se pehle hi pehchana ja chuka hai.
+  // Isi wajah se check-in ek hi tap ka hai: na camera khulta hai, na base64 photo upload hoti hai.
+  async function doCheck() {
     if (S.busy) return;
     S.busy = true;
     showLoader('Processing...');
     try {
-      var v = $('capture-video'), c = $('capture-canvas');
-      c.width = 320; c.height = 240;
-      var ctx = c.getContext('2d');
-      ctx.translate(320, 0); ctx.scale(-1, 1);
-      ctx.drawImage(v, 0, 0, 320, 240);
-      var blob = await new Promise(function (r) { c.toBlob(r, 'image/jpeg', 0.6); });
-      closePhoto();
-
-      var descriptor = null;
-      if (S.checkType === 'Check-in' && S.faceReady) {
-        var dt0 = (performance && performance.now) ? performance.now() : Date.now();
-        try {
-          var det = await faceapi.detectSingleFace(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 }))
-            .withFaceLandmarks().withFaceDescriptor();
-          if (det) descriptor = Array.from(det.descriptor);
-        } catch (e) { console.warn('Face descriptor skip:', e); }
-        S.diag.descriptor = Math.round(((performance && performance.now) ? performance.now() : Date.now()) - dt0);
-      }
-
-      var photoB64 = await new Promise(function (res, rej) {
-        var fr = new FileReader();
-        fr.onload = function () { res(fr.result); };
-        fr.onerror = rej;
-        fr.readAsDataURL(blob);
-      });
-
-      if (S.checkType === 'Check-out') await doCheckOut(photoB64);
-      else await doCheckIn(photoB64, descriptor);
+      if (S.checkType === 'Check-out') await doCheckOut();
+      else await doCheckIn();
     } catch (e) {
       hideLoader();
       showMsg('Error', e.message || String(e), null, 'error');
@@ -2024,40 +1968,25 @@
     }
   }
 
-  async function doCheckIn(photoB64, descriptor) {
+  async function doCheckIn() {
     var row = {
       invitation_id: (S.invitation && S.invitation.id) || null,
       visitor_name: S.visitor.name, mobile: S.visitor.mobile, email: S.visitor.email,
       address: S.visitor.address, purpose: S.invitation && S.invitation.purpose,
-      host_name: S.invitation && S.invitation.host_name,
-      photo_in: photoB64
+      host_name: S.invitation && S.invitation.host_name
     };
-    var faceRow = (descriptor && descriptor.length === 128 && S.visitor.email) ? {
-      email: S.visitor.email, visitor_name: S.visitor.name,
-      mobile: S.visitor.mobile, address: S.visitor.address, descriptor: descriptor
-    } : null;
 
     try {
       var ins = await time('insert', withTimeout(db.from('visitor_logs').insert(row), NET_TIMEOUT, 'insert'));
       if (ins.error) throw new Error(ins.error.message);
       renderCheckinDiag();
-
-      if (faceRow) {
-        try {
-          var ex = await withTimeout(db.from('face_data').select('id').ilike('email', S.visitor.email).limit(1), NET_TIMEOUT, 'face-chk');
-          if (!ex.data || !ex.data.length) {
-            await withTimeout(db.from('face_data').insert(faceRow), NET_TIMEOUT, 'face-ins');
-            loadDescriptors(true);
-          }
-        } catch (e) { /* face save best-effort */ }
-      }
       hideLoader();
       refreshInsideCount();
       showMsg('Checked in', 'Welcome, ' + (S.visitor.name || 'visitor') + '! Your host has been notified.', afterCheckDone, 'success');
     } catch (e) {
       // Network fail/timeout — queue kar do, visitor turant nikal jaaye
       renderCheckinDiag();
-      await queueEntry('checkin', { row: row, face: faceRow });
+      await queueEntry('checkin', { row: row, face: null });
       hideLoader();
       showMsg('Checked in (offline)',
         (S.visitor.name || 'Visitor') + ' ki entry save ho gayi. Network aane par apne aap sync ho jayegi.',
@@ -2065,9 +1994,9 @@
     }
   }
 
-  async function doCheckOut(photoB64) {
+  async function doCheckOut() {
     if (!S.openLog) throw new Error('No open check-in found');
-    var patch = { check_out_time: new Date().toISOString(), photo_out: photoB64 };
+    var patch = { check_out_time: new Date().toISOString() };
     try {
       var up = await time('insert', withTimeout(db.from('visitor_logs')
         .update(patch).eq('id', S.openLog.id).is('check_out_time', null), NET_TIMEOUT, 'insert'));
@@ -2078,7 +2007,7 @@
       showMsg('Checked out', 'Thank you for visiting, ' + (S.visitor.name || 'visitor') + '!', afterCheckDone, 'success');
     } catch (e) {
       renderCheckinDiag();
-      await queueEntry('checkout', { id: S.openLog.id, patch: { check_out_time: patch.check_out_time, photo_out: photoB64 } });
+      await queueEntry('checkout', { id: S.openLog.id, patch: { check_out_time: patch.check_out_time } });
       hideLoader();
       showMsg('Checked out (offline)',
         'Out-time save ho gaya. Network aane par sync ho jayega.',
