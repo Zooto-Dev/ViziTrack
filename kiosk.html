@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Nexus · Gate Kiosk</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d5c75'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@latest/dist/face-api.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
     // ============ CONFIG — sirf yeh 2 values bharo ============
@@ -663,7 +663,7 @@
 
   var CFG = window.VZT_CONFIG;
   var db = null; // Supabase client — remote config aane ke baad banta hai
-  var MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+  var MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model/';
   var $ = function (id) { return document.getElementById(id); };
 
   var S = {
@@ -1712,13 +1712,10 @@
       onIdentified(key, val);
       return;
     }
-    try {
-      var j = JSON.parse(text);
-      var email = j.email || j['e-Mail'] || j['Visitor e-Mail'];
-      if (email) { onIdentified('email', String(email).toLowerCase()); return; }
-    } catch (e) {}
+    // Sirf VZT:<uuid> badge maana jaata hai. Pehle yahan ek JSON {"email": ...} QR bhi
+    // chal jaata tha — usse koi bhi kisi ka bhi email print karke uske naam se check-in kar sakta tha.
     frameState('err');
-    showMsg('Invalid QR', 'Ye QR Nexus badge nahi hai.', function () { switchMode('qr'); }, 'error');
+    showMsg('Invalid QR', 'Ye QR Nexus badge nahi hai. OTP ya Face se try karo.', function () { switchMode('qr'); }, 'error');
   }
 
   // ---------- otp flow ----------
@@ -2092,7 +2089,7 @@
       wpRenderPunch();
     } catch (e) {
       var h = document.getElementById('wp-cards');
-      if (h) h.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + (e.message || e) + '</p>';
+      if (h) h.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + esc(e.message || e) + '</p>';
     }
   }
   function wpRenderPunch() {
@@ -2106,10 +2103,10 @@
       var next = (!w.today_in) ? 'IN' : (!w.today_out ? 'OUT' : 'DONE');
       var color = next === 'IN' ? '#0d9488' : next === 'OUT' ? '#d97706' : '#94a3b8';
       var sub = (w.today_in ? 'IN ' + String(w.today_in).slice(0, 5) : '') + (w.today_out ? ' · OUT ' + String(w.today_out).slice(0, 5) : '');
-      return '<button class="text-left rounded-2xl border-2 bg-white p-4 wp-punch-btn" style="border-color:' + color + '33" data-wpid="' + w.id + '"' + (next === 'DONE' ? ' disabled' : '') + '>' +
-        '<div class="flex justify-between items-center"><b class="text-slate-800" style="font-size:16px">' + w.name + '</b>' +
+      return '<button class="text-left rounded-2xl border-2 bg-white p-4 wp-punch-btn" style="border-color:' + color + '33" data-wpid="' + esc(w.id) + '"' + (next === 'DONE' ? ' disabled' : '') + '>' +
+        '<div class="flex justify-between items-center"><b class="text-slate-800" style="font-size:16px">' + esc(w.name) + '</b>' +
         '<span class="rounded-full text-white text-xs font-extrabold px-3 py-1.5" style="background:' + color + '">' + (next === 'DONE' ? '✓ ' + sub : 'TAP → ' + next) + '</span></div>' +
-        '<div class="text-xs text-slate-500 mt-1">' + w.pass_no + ' · Day ' + w.day_no + '/3' + (w.department ? ' · ' + w.department : '') + (sub && next !== 'DONE' ? ' · ' + sub : '') + '</div></button>';
+        '<div class="text-xs text-slate-500 mt-1">' + esc(w.pass_no) + ' · Day ' + esc(w.day_no) + '/3' + (w.department ? ' · ' + esc(w.department) : '') + (sub && next !== 'DONE' ? ' · ' + sub : '') + '</div></button>';
     }).join('');
   }
   var _wpCamStream = null, _wpCamId = null;
@@ -2207,7 +2204,7 @@
       OT_LIST = r.data || [];
       otRender();
     } catch (e) {
-      if (host) host.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + (e.message || e) + '</p>';
+      if (host) host.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + esc(e.message || e) + '</p>';
     }
   }
   function otKeyOf(o) { return (String(o.section || '').trim() || String(o.department || '').trim() || 'NO SECTION').toUpperCase(); }
@@ -2218,9 +2215,9 @@
       : (nf ? '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#ef4444"><i class="fa-solid fa-user-slash"></i> NOT FOUND</span>'
       : (v ? '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#10b981"><i class="fa-solid fa-circle-check"></i> VERIFIED</span>'
            : '<span class="rounded-full text-white text-[11px] font-extrabold px-2.5 py-1 whitespace-nowrap" style="background:#f59e0b">TAP \u2192 VERIFY</span>'));
-    var nfBtn = '<button class="ot-nf-btn rounded-lg text-[11px] font-extrabold px-2.5 py-1.5 whitespace-nowrap" data-otid="' + o.id + '" style="border:1.5px solid ' + (nf ? '#ef4444' : '#fecaca') + ';background:' + (nf ? '#ef4444' : '#fff') + ';color:' + (nf ? '#fff' : '#b91c1c') + '">' +
+    var nfBtn = '<button class="ot-nf-btn rounded-lg text-[11px] font-extrabold px-2.5 py-1.5 whitespace-nowrap" data-otid="' + esc(o.id) + '" style="border:1.5px solid ' + (nf ? '#ef4444' : '#fecaca') + ';background:' + (nf ? '#ef4444' : '#fff') + ';color:' + (nf ? '#fff' : '#b91c1c') + '">' +
       (nf ? '\u2715 Wapis' : 'Nahi mila') + '</button>';
-    return '<tr class="ot-card-btn" data-otid="' + o.id + '" style="cursor:pointer;border-top:1px solid #e2e8f0' + (nf ? ';background:#fef2f2' : '') + '">' +
+    return '<tr class="ot-card-btn" data-otid="' + esc(o.id) + '" style="cursor:pointer;border-top:1px solid #e2e8f0' + (nf ? ';background:#fef2f2' : '') + '">' +
       '<td class="px-3 py-2"><b class="text-slate-800">' + esc(o.name) + '</b><div class="text-[11px] text-slate-500">' + esc(o.employee_code) + (o.designation ? ' \u00b7 ' + esc(o.designation) : '') + (o.reason ? ' \u00b7 ' + esc(o.reason) : '') + '</div></td>' +
       '<td class="px-3 py-2 text-center font-semibold">' + (o.hours || 0) + '</td>' +
       '<td class="px-3 py-2 text-center" style="color:' + (comp ? '#0284c7' : '#b45309') + '">' + (o.expected_out || '\u2014') + '</td>' +
@@ -2404,7 +2401,7 @@
       if (r.error) throw r.error;
       FUEL_STAFF = r.data || [];
       fuelStaffRender('');
-    } catch (e) { if (host) host.innerHTML = '<p class="text-rose-500 text-sm p-2">Staff load fail: ' + (e.message || e) + '</p>'; }
+    } catch (e) { if (host) host.innerHTML = '<p class="text-rose-500 text-sm p-2">Staff load fail: ' + esc(e.message || e) + '</p>'; }
   }
   function fuelStaffRender(q) {
     var host = $('fuel-emp-list'); if (!host) return;
@@ -2457,7 +2454,7 @@
     if (!row) return showMsg('Ruko', 'Entry nahi mili \u2014 refresh karke dobara try karein', null, 'warning');
     FUEL_OUT_ROW = row;
     var veh = row.vehicle_type ? (String(row.vehicle_type).toUpperCase() === 'CAR' ? '\ud83d\ude97 Car' : '\ud83c\udfcd\ufe0f Bike') : '\u2014';
-    if ($('fuel-out-who')) $('fuel-out-who').innerHTML = '<b>' + esc(row.employee_name || row.employee_code) + '</b> \u00b7 ' + String(row.log_date) + '<br>' + veh + ' \u00b7 IN reading: <b>' + esc(row.meter_in) + '</b>';
+    if ($('fuel-out-who')) $('fuel-out-who').innerHTML = '<b>' + esc(row.employee_name || row.employee_code) + '</b> \u00b7 ' + esc(row.log_date) + '<br>' + esc(veh) + ' \u00b7 IN reading: <b>' + esc(row.meter_in) + '</b>';
     if ($('fuel-out-val')) $('fuel-out-val').value = '';
     if ($('fuel-out-prev')) $('fuel-out-prev').style.display = 'none';
     var m = $('fuel-out-modal'); if (m) m.style.display = 'flex';
@@ -2512,7 +2509,7 @@
             return '<div class="flex justify-between items-center gap-2 rounded-xl border-2 bg-white p-3" style="border-color:' + col + '33"><span class="text-sm text-slate-700">' + veh + esc(f.employee_name || f.employee_code) + ' · ' + String(f.log_date) + ' · ' + mid + '</span>' + right + '</div>' + (f.status === 'REJECTED' && f.reject_reason ? '<div class="text-[11px] text-rose-500 ml-1">' + esc(f.reject_reason) + '</div>' : '');
           }).join('')
         : '<p class="text-slate-400 text-sm">Abhi tak koi entry nahi.</p>';
-    } catch (e) { host.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + (e.message || e) + '</p>'; }
+    } catch (e) { host.innerHTML = '<p class="text-rose-500 text-sm">Error: ' + esc(e.message || e) + '</p>'; }
   }
   async function fuelSubmit() {
     if (!FUEL_EMP) return showMsg('Ruko', 'Pehle staff employee select karo', null, 'warning');
