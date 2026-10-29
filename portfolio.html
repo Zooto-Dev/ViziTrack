@@ -141,6 +141,27 @@
       .proj .desc, .proj .stack { grid-column: 2; }
     }
 
+    /* screenshots strip inside a project row */
+    .shots { grid-column: 1 / -1; margin-top: 6px; padding-top: 16px; border-top: 1px solid var(--rule-soft); min-width: 0; }
+    .shots .note { font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-2); margin: 0 0 10px; letter-spacing: .02em; }
+    .strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+    .strip figure { margin: 0; flex: 0 0 auto; scroll-snap-align: start; }
+    .strip button { display: block; padding: 0; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: var(--paper); cursor: zoom-in; }
+    .strip button:hover { border-color: var(--brand); }
+    .strip img { display: block; height: 190px; width: auto; max-width: none; }
+    .strip figcaption { font-size: 12px; color: var(--ink-2); margin-top: 6px; text-align: center; }
+    .shots.single .strip img { height: auto; width: auto; max-width: 100%; max-height: 440px; }
+    .shots.single .strip figure { flex: 1 1 auto; min-width: 0; }
+    .shots.single .strip img.phone { width: auto; height: 320px; }
+
+    /* lightbox */
+    .lb { position: fixed; inset: 0; z-index: 50; background: rgba(8, 18, 22, .88); display: flex; align-items: center; justify-content: center;
+          padding: max(16px, env(safe-area-inset-left, 0px)); padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+    .lb[hidden] { display: none !important; }
+    .lb img { max-width: 100%; max-height: 82vh; border-radius: 10px; box-shadow: 0 30px 80px rgba(0,0,0,.5); background: #fff; }
+    .lb .cap { position: absolute; left: 0; right: 0; bottom: max(14px, env(safe-area-inset-bottom, 0px)); text-align: center; color: #e6eef1; font-size: 13px; padding: 0 16px; }
+    .lb .x { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); background: #fff; color: #0f1f26; border: 0; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; }
+
     /* skills */
     .skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
     .skill { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; padding: 20px; min-width: 0; }
@@ -249,6 +270,17 @@
             <div class="stack">
               <span class="chip">Supabase</span><span class="chip">Tailwind</span><span class="chip">html5-qrcode</span><span class="chip">face-api</span><span class="chip">Apps Script mail</span>
             </div>
+            <div class="shots">
+              <p class="note">Screens from the live kiosk build, loaded with demo data. No real names or numbers.</p>
+              <div class="strip">
+              <figure><button type="button" data-full="assets/portfolio/k-home.jpg" data-cap="Home · four tiles"><img class="" src="assets/portfolio/k-home.jpg" alt="Home · four tiles" loading="lazy" /></button><figcaption>Home · four tiles</figcaption></figure>
+              <figure><button type="button" data-full="assets/portfolio/k-visitors.jpg" data-cap="Today's visitors · check in / out"><img class="" src="assets/portfolio/k-visitors.jpg" alt="Today's visitors · check in / out" loading="lazy" /></button><figcaption>Today's visitors · check in / out</figcaption></figure>
+              <figure><button type="button" data-full="assets/portfolio/k-ot.jpg" data-cap="Overtime · section cards"><img class="" src="assets/portfolio/k-ot.jpg" alt="Overtime · section cards" loading="lazy" /></button><figcaption>Overtime · section cards</figcaption></figure>
+              <figure><button type="button" data-full="assets/portfolio/k-ot-table.jpg" data-cap="Overtime · verify by tap"><img class="" src="assets/portfolio/k-ot-table.jpg" alt="Overtime · verify by tap" loading="lazy" /></button><figcaption>Overtime · verify by tap</figcaption></figure>
+              <figure><button type="button" data-full="assets/portfolio/k-workpass.jpg" data-cap="Work pass · trial workers"><img class="" src="assets/portfolio/k-workpass.jpg" alt="Work pass · trial workers" loading="lazy" /></button><figcaption>Work pass · trial workers</figcaption></figure>
+              <figure><button type="button" data-full="assets/portfolio/k-fuel.jpg" data-cap="Fuel / meter entry"><img class="" src="assets/portfolio/k-fuel.jpg" alt="Fuel / meter entry" loading="lazy" /></button><figcaption>Fuel / meter entry</figcaption></figure>
+              </div>
+            </div>
           </article>
 
           <article class="proj">
@@ -268,6 +300,12 @@
             </div>
             <div class="stack">
               <span class="chip">Supabase</span><span class="chip">Vanilla JS</span><span class="chip">GitHub Pages</span>
+            </div>
+            <div class="shots single">
+              <p class="note">Representative view, demo data.</p>
+              <div class="strip">
+              <figure><button type="button" data-full="assets/portfolio/m-ess.jpg" data-cap="Employee home · requests and status"><img class="phone" src="assets/portfolio/m-ess.jpg" alt="Employee home · requests and status" loading="lazy" /></button><figcaption>Employee home · requests and status</figcaption></figure>
+              </div>
             </div>
           </article>
 
@@ -307,6 +345,12 @@
             <div class="stack">
               <span class="chip">Google Apps Script</span><span class="chip">Google Sheets</span><span class="chip">HTML service</span>
             </div>
+            <div class="shots single">
+              <p class="note">Representative view, demo data.</p>
+              <div class="strip">
+              <figure><button type="button" data-full="assets/portfolio/m-erp.jpg" data-cap="Goods receipt register with QC status"><img class="" src="assets/portfolio/m-erp.jpg" alt="Goods receipt register with QC status" loading="lazy" /></button><figcaption>Goods receipt register with QC status</figcaption></figure>
+              </div>
+            </div>
           </article>
 
           <article class="proj">
@@ -325,6 +369,12 @@
             </div>
             <div class="stack">
               <span class="chip">Sheets + GAS</span><span class="chip">Supabase</span><span class="chip">Process design</span>
+            </div>
+            <div class="shots single">
+              <p class="note">Representative view, demo data.</p>
+              <div class="strip">
+              <figure><button type="button" data-full="assets/portfolio/m-flow.jpg" data-cap="One order, twelve steps, planned vs actual"><img class="" src="assets/portfolio/m-flow.jpg" alt="One order, twelve steps, planned vs actual" loading="lazy" /></button><figcaption>One order, twelve steps, planned vs actual</figcaption></figure>
+              </div>
             </div>
           </article>
         </div>
@@ -409,6 +459,12 @@
     </div>
   </footer>
 
+  <div class="lb" id="lightbox" hidden role="dialog" aria-label="Screenshot">
+    <button class="x" type="button" id="lb-close" aria-label="Close">×</button>
+    <img id="lb-img" src="" alt="" />
+    <div class="cap" id="lb-cap"></div>
+  </div>
+
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
     document.querySelectorAll('.copy').forEach(function (btn) {
@@ -427,6 +483,18 @@
         } else { fallback(); }
       });
     });
+    (function () {
+      var lb = document.getElementById('lightbox'), im = document.getElementById('lb-img'), cap = document.getElementById('lb-cap');
+      function close() { lb.hidden = true; im.src = ''; }
+      document.querySelectorAll('.strip button[data-full]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          im.src = b.getAttribute('data-full'); im.alt = b.getAttribute('data-cap'); cap.textContent = b.getAttribute('data-cap'); lb.hidden = false;
+        });
+      });
+      document.getElementById('lb-close').addEventListener('click', close);
+      lb.addEventListener('click', function (e) { if (e.target === lb) close(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !lb.hidden) close(); });
+    })();
   </script>
 </body>
 </html>
