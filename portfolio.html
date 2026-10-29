@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="claude:viewport-fit-sides" content="cover" />
+  <title>Pankaj Shukdiyal</title>
+  <meta name="description" content="Portfolio of Pankaj Shukdiyal, MIS Executive at Zooto Fashion. Builds the Nexus factory systems: gate kiosk, payroll, employee portal, ERP." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d5c75'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* Layout concept: a factory MIS register. A hairline grid like a ruled ledger sheet,
+       teal from the Nexus brand as the only accent, mono type for every figure. */
+    :root {
+      --bg: #f4f7f8;
+      --paper: #ffffff;
+      --ink: #0f1f26;
+      --ink-2: #4b5d66;
+      --rule: #d6e0e4;
+      --rule-soft: #e7eef1;
+      --brand: #0d5c75;
+      --brand-ink: #ffffff;
+      --brand-tint: #e3f0f4;
+      --ok: #1f8a5b;
+      --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+      --font-body: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+      --measure: 64ch;
+      --shadow: 0 12px 36px rgba(15, 31, 38, .08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0b1418; --paper: #111d23; --ink: #e6eef1; --ink-2: #94a9b2;
+        --rule: #243640; --rule-soft: #1a2a32; --brand: #3fb6d8; --brand-ink: #06181f;
+        --brand-tint: #11303b; --ok: #4cc68f; --shadow: 0 12px 36px rgba(0,0,0,.4);
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0b1418; --paper: #111d23; --ink: #e6eef1; --ink-2: #94a9b2;
+      --rule: #243640; --rule-soft: #1a2a32; --brand: #3fb6d8; --brand-ink: #06181f;
+      --brand-tint: #11303b; --ok: #4cc68f; --shadow: 0 12px 36px rgba(0,0,0,.4);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: var(--font-body); font-size: 16px; line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      background-image:
+        linear-gradient(var(--rule-soft) 1px, transparent 1px),
+        linear-gradient(90deg, var(--rule-soft) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    a { color: var(--brand); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+    h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .eyebrow {
+      font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--brand); font-weight: 500;
+    }
+
+    .wrap {
+      max-width: 1080px; margin: 0 auto;
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+    }
+
+    /* ---- top bar ---- */
+    header.top {
+      position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+      background: var(--paper); border-bottom: 1px solid var(--rule);
+    }
+    body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+    .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--ink); text-decoration: none; }
+    .brand .mark { width: 28px; height: 28px; border-radius: 7px; background: var(--brand); color: var(--brand-ink); display: grid; place-items: center; font-size: 15px; }
+    nav { display: flex; gap: 20px; }
+    nav a { font-size: 14px; color: var(--ink-2); text-decoration: none; font-weight: 500; }
+    nav a:hover { color: var(--brand); }
+    @media (max-width: 560px) { nav { display: none; } }
+
+    /* ---- hero ---- */
+    .hero { padding-block: clamp(48px, 9vw, 96px) clamp(36px, 6vw, 64px); }
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 40px; align-items: end; }
+    @media (max-width: 820px) { .hero-grid { grid-template-columns: 1fr; } }
+    .hero h1 { font-size: clamp(40px, 7vw, 76px); font-weight: 800; letter-spacing: -.02em; margin-top: 14px; }
+    .hero h1 em { font-style: normal; color: var(--brand); }
+    .hero p.lede { max-width: var(--measure); font-size: 18px; color: var(--ink-2); margin: 20px 0 0; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px;
+      font-weight: 600; font-size: 15px; text-decoration: none; border: 1px solid var(--brand);
+      cursor: pointer; font-family: var(--font-body); line-height: 1;
+    }
+    .btn.primary { background: var(--brand); color: var(--brand-ink); }
+    .btn.ghost { background: transparent; color: var(--brand); }
+    .btn:hover { filter: brightness(1.08); }
+
+    /* status card: reads like a live gate-register row */
+    .status {
+      background: var(--paper); border: 1px solid var(--rule); border-radius: 12px;
+      box-shadow: var(--shadow); padding: 18px 20px; min-width: 0;
+    }
+    .status .row { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--rule-soft); font-size: 14px; }
+    .status .row:first-of-type { border-top: 0; }
+    .status .k { color: var(--ink-2); }
+    .status .v { font-family: var(--font-mono); text-align: right; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 7px; vertical-align: 1px; }
+
+    /* ---- sections ---- */
+    section { padding-block: clamp(40px, 6vw, 72px); border-top: 1px solid var(--rule); }
+    .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+    .sec-head h2 { font-size: clamp(26px, 4vw, 38px); font-weight: 700; letter-spacing: -.01em; }
+    .sec-head .count { font-family: var(--font-mono); color: var(--ink-2); font-size: 13px; }
+
+    /* projects: ledger table on desktop, cards on phone */
+    .ledger { display: grid; gap: 14px; }
+    .proj {
+      display: grid; grid-template-columns: 56px minmax(0, 1.1fr) minmax(0, 1.6fr) minmax(0, .8fr);
+      gap: 20px; padding: 22px 22px; background: var(--paper);
+      border: 1px solid var(--rule); border-radius: 12px; min-width: 0;
+    }
+    .proj:hover { border-color: var(--brand); }
+    .proj .idx { font-family: var(--font-mono); color: var(--brand); font-size: 13px; padding-top: 4px; }
+    .proj h3 { font-size: 20px; font-weight: 700; }
+    .proj .sub { color: var(--ink-2); font-size: 14px; margin-top: 6px; }
+    .proj .desc { font-size: 15px; color: var(--ink); margin: 0; min-width: 0; }
+    .proj .desc ul { margin: 10px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 14px; }
+    .proj .desc li + li { margin-top: 4px; }
+    .proj .stack { display: flex; flex-wrap: wrap; gap: 6px; align-content: start; }
+    .chip { font-family: var(--font-mono); font-size: 11.5px; padding: 4px 8px; border-radius: 6px; background: var(--brand-tint); color: var(--brand); white-space: nowrap; }
+    .proj .link { margin-top: 10px; font-size: 14px; display: inline-block; }
+    @media (max-width: 820px) {
+      .proj { grid-template-columns: 40px minmax(0, 1fr); }
+      .proj .desc, .proj .stack { grid-column: 2; }
+    }
+
+    /* skills */
+    .skills { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+    .skill { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; padding: 20px; min-width: 0; }
+    .skill h3 { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+    .skill ul { list-style: none; margin: 0; padding: 0; font-size: 14.5px; color: var(--ink-2); }
+    .skill li { padding: 6px 0; border-top: 1px solid var(--rule-soft); }
+    .skill li:first-child { border-top: 0; }
+
+    /* how I work */
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+    .step { padding: 20px; border-left: 3px solid var(--brand); background: var(--paper); border-radius: 0 10px 10px 0; min-width: 0; }
+    .step .n { font-family: var(--font-mono); color: var(--brand); font-size: 12px; }
+    .step h3 { font-size: 17px; margin: 6px 0 8px; }
+    .step p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
+
+    /* contact */
+    .contact { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+    @media (max-width: 720px) { .contact { grid-template-columns: 1fr; } }
+    .contact p { max-width: var(--measure); color: var(--ink-2); margin: 12px 0 0; }
+    .lines { display: grid; gap: 10px; }
+    .line { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+    .line .lab { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .08em; }
+    .line .val { font-size: 15px; min-width: 0; overflow-wrap: anywhere; }
+    .copy { font: 500 12px var(--font-mono); background: transparent; border: 1px solid var(--rule); color: var(--brand); border-radius: 6px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+    .copy:hover { border-color: var(--brand); }
+
+    footer { border-top: 1px solid var(--rule); padding-block: 24px; color: var(--ink-2); font-size: 13px; }
+    footer .wrap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .hero h1, .hero .lede, .hero-actions, .status { animation: rise .6s ease both; }
+      .hero .lede { animation-delay: .08s; } .hero-actions { animation-delay: .16s; } .status { animation-delay: .24s; }
+      @keyframes rise { from { opacity: .001; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="#top"><span class="mark">P</span> Pankaj Shukdiyal</a>
+      <nav aria-label="Sections">
+        <a href="#work">Work</a>
+        <a href="#skills">Skills</a>
+        <a href="#process">Process</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <div class="hero wrap">
+      <div class="hero-grid">
+        <div>
+          <div class="eyebrow">MIS Executive · Zooto Fashion · Delhi NCR</div>
+          <h1>I build the systems a <em>garment factory</em> runs on.</h1>
+          <p class="lede">
+            Attendance, payroll, gate security, overtime, visitors, purchase and production tracking.
+            I turn the paper registers and WhatsApp follow-ups of a factory floor into one connected
+            web system that staff actually use every day.
+          </p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#work">See the work</a>
+            <a class="btn ghost" href="#contact">Get in touch</a>
+          </div>
+        </div>
+
+        <aside class="status" aria-label="At a glance">
+          <div class="eyebrow" style="margin-bottom:8px">At a glance</div>
+          <div class="row"><span class="k">Status</span><span class="v"><span class="dot"></span>Open to projects</span></div>
+          <div class="row"><span class="k">Role</span><span class="v">MIS Executive</span></div>
+          <div class="row"><span class="k">Company</span><span class="v">Zooto Fashion</span></div>
+          <div class="row"><span class="k">Domain</span><span class="v">Apparel manufacturing</span></div>
+          <div class="row"><span class="k">Core stack</span><span class="v">HTML · JS · Supabase · GAS</span></div>
+          <div class="row"><span class="k">Product</span><span class="v">Nexus</span></div>
+        </aside>
+      </div>
+    </div>
+
+    <section id="work">
+      <div class="wrap">
+        <div class="sec-head">
+          <div>
+            <div class="eyebrow">Selected work</div>
+            <h2>The Nexus suite</h2>
+          </div>
+          <div class="count">5 modules · one database</div>
+        </div>
+
+        <div class="ledger">
+          <article class="proj">
+            <div class="idx">N-01</div>
+            <div>
+              <h3>Gate Kiosk</h3>
+              <div class="sub">Tablet app for the security desk</div>
+              <a class="link" href="https://zooto-dev.github.io/ViziTrack/kiosk.html" target="_blank" rel="noopener">Open kiosk ↗</a>
+            </div>
+            <div class="desc">
+              One touch-screen at the factory gate that replaces four registers.
+              <ul>
+                <li>Visitor check-in and check-out with QR badge or OTP, invitation verified live.</li>
+                <li>Overtime verification: guard taps the approved OT request, expected OUT time shows, record auto-completes.</li>
+                <li>Fuel and meter-reading entry for company bikes and cars, picked from the staff list.</li>
+                <li>Work-pass attendance for contract workers and face-match support for employees.</li>
+              </ul>
+            </div>
+            <div class="stack">
+              <span class="chip">Supabase</span><span class="chip">Tailwind</span><span class="chip">html5-qrcode</span><span class="chip">face-api</span><span class="chip">Apps Script mail</span>
+            </div>
+          </article>
+
+          <article class="proj">
+            <div class="idx">N-02</div>
+            <div>
+              <h3>Employee Portal (ESS)</h3>
+              <div class="sub">Self-service for every staff member</div>
+              <a class="link" href="https://zooto-dev.github.io/Payroll/Inzo_ESS.html" target="_blank" rel="noopener">Open portal ↗</a>
+            </div>
+            <div class="desc">
+              Leave, overtime, visitor invites and other requests from one login, on the phone.
+              <ul>
+                <li>Staff raise a request; HR approves from an admin overview; the gate sees it the same minute.</li>
+                <li>Visitor requests show the live "arrived / left" state from the kiosk.</li>
+                <li>Retired a separate host panel by folding it into this portal.</li>
+              </ul>
+            </div>
+            <div class="stack">
+              <span class="chip">Supabase</span><span class="chip">Vanilla JS</span><span class="chip">GitHub Pages</span>
+            </div>
+          </article>
+
+          <article class="proj">
+            <div class="idx">N-03</div>
+            <div>
+              <h3>Payroll &amp; HR Admin</h3>
+              <div class="sub">Attendance to salary, one database</div>
+            </div>
+            <div class="desc">
+              The Nexus_Payroll database every other module reads from and writes to.
+              <ul>
+                <li>Attendance, OT, leave and gate activity feed the monthly payroll run.</li>
+                <li>HR Admin overview for approvals, visitors and gate logs.</li>
+                <li>Shared Supabase project keeps the kiosk, portal and payroll in sync.</li>
+              </ul>
+            </div>
+            <div class="stack">
+              <span class="chip">Postgres</span><span class="chip">Supabase</span><span class="chip">Row-level security</span>
+            </div>
+          </article>
+
+          <article class="proj">
+            <div class="idx">N-04</div>
+            <div>
+              <h3>Inventory &amp; Purchase ERP</h3>
+              <div class="sub">Store, GRN, issuance, job cards</div>
+            </div>
+            <div class="desc">
+              Zero-hosting-cost ERP on Google Sheets with a single-file web front end.
+              <ul>
+                <li>Purchase orders, goods receipt, material issue to production, vendor master.</li>
+                <li>BOM and job cards tie fabric and trims to each style.</li>
+                <li>Multi-user roles with the sheet as the system of record.</li>
+              </ul>
+            </div>
+            <div class="stack">
+              <span class="chip">Google Apps Script</span><span class="chip">Google Sheets</span><span class="chip">HTML service</span>
+            </div>
+          </article>
+
+          <article class="proj">
+            <div class="idx">N-05</div>
+            <div>
+              <h3>Order-to-Dispatch Flow Tracker</h3>
+              <div class="sub">Planned vs actual, step by step</div>
+            </div>
+            <div class="desc">
+              Every order broken into steps with an owner, a trigger and a TAT in working days.
+              <ul>
+                <li>Due dates computed forward from the order or backward from the dispatch date.</li>
+                <li>Conditions by category, brand, priority, urgent or on-hold.</li>
+                <li>Planned, actual, status and delay visible per step, so follow-up is a glance, not a call.</li>
+              </ul>
+            </div>
+            <div class="stack">
+              <span class="chip">Sheets + GAS</span><span class="chip">Supabase</span><span class="chip">Process design</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="skills">
+      <div class="wrap">
+        <div class="sec-head">
+          <div>
+            <div class="eyebrow">Toolbox</div>
+            <h2>What I work with</h2>
+          </div>
+        </div>
+        <div class="skills">
+          <div class="skill">
+            <h3>Front end</h3>
+            <ul><li>HTML, CSS, JavaScript</li><li>Tailwind CSS</li><li>Single-file apps that run on GitHub Pages</li><li>Camera, QR and face-detection in the browser</li></ul>
+          </div>
+          <div class="skill">
+            <h3>Data &amp; backend</h3>
+            <ul><li>Supabase (Postgres, auth, RLS)</li><li>Google Apps Script web apps</li><li>Google Sheets as a database</li><li>SQL and reporting queries</li></ul>
+          </div>
+          <div class="skill">
+            <h3>MIS &amp; reporting</h3>
+            <ul><li>Advanced Excel and Google Sheets</li><li>Daily production, attendance and OT MIS</li><li>Dashboards for management</li><li>Data cleanup and automation</li></ul>
+          </div>
+          <div class="skill">
+            <h3>Process</h3>
+            <ul><li>SOP and policy documents</li><li>Flow management (TAT, planned vs actual)</li><li>Rollout and training on the factory floor</li><li>Hindi and English, written and spoken</li></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="process">
+      <div class="wrap">
+        <div class="sec-head">
+          <div>
+            <div class="eyebrow">How I work</div>
+            <h2>From register to system</h2>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step"><div class="n">Step 1</div><h3>Sit at the desk</h3><p>I start where the register sits: the gate, the store, the HR cabin. The form fields come from what people already write by hand.</p></div>
+          <div class="step"><div class="n">Step 2</div><h3>One database</h3><p>Every module reads the same tables. A visitor approved in the portal is already on the guard's screen.</p></div>
+          <div class="step"><div class="n">Step 3</div><h3>One tap, no training</h3><p>Big tiles, Hindi labels where needed, no photo uploads or typing that slows a guard down at 9 am.</p></div>
+          <div class="step"><div class="n">Step 4</div><h3>Ship and iterate</h3><p>Deploy on GitHub Pages the same day, watch it in use, and fix what the floor tells me in the next commit.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="wrap">
+        <div class="contact">
+          <div>
+            <div class="eyebrow">Contact</div>
+            <h2>Have a factory process that still runs on paper?</h2>
+            <p>I am happy to talk about MIS, ERP and automation work for manufacturing and trading businesses. Email is the fastest way to reach me.</p>
+          </div>
+          <div class="lines">
+            <div class="line">
+              <div><div class="lab">Email</div><div class="val" id="email-val">misexecutive3@zootofashion.com</div></div>
+              <button class="copy" type="button" data-copy="misexecutive3@zootofashion.com">Copy</button>
+            </div>
+            <div class="line">
+              <div><div class="lab">GitHub</div><div class="val"><a href="https://github.com/Zooto-Dev" target="_blank" rel="noopener">github.com/Zooto-Dev</a></div></div>
+            </div>
+            <div class="line">
+              <div><div class="lab">Location</div><div class="val">Delhi NCR, India</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© <span id="year">2026</span> Pankaj Shukdiyal</span>
+      <span class="mono">Built as one HTML file, no framework.</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('.copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var text = btn.getAttribute('data-copy');
+        var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1500); };
+        var fallback = function () {
+          var el = document.getElementById('email-val');
+          if (el && window.getSelection) {
+            var r = document.createRange(); r.selectNodeContents(el);
+            var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+          }
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(fallback);
+        } else { fallback(); }
+      });
+    });
+  </script>
+</body>
+</html>
