@@ -361,6 +361,10 @@
       <div class="home-ring"><i class="fa-solid fa-gas-pump" style="color:#2563eb;"></i></div>
       <span class="home-label" style="color:#2563eb;">Fuel / Meter</span>
     </div>
+    <div class="home-tile" data-action="open-blacklist">
+      <div class="home-ring"><i class="fa-solid fa-ban" style="color:#dc2626;"></i></div>
+      <span class="home-label" style="color:#dc2626;">Blacklist</span>
+    </div>
   </div>
 
   <div class="text-slate-400 text-xs">Nexus · Visitor Management</div>
@@ -443,6 +447,25 @@
 </div>
 
 <!-- ================= FUEL / METER (security supervisor entry) ================= -->
+<!-- ================= BLACKLIST (security ko chehra dikhane ke liye) ================= -->
+<div id="screen-blacklist" class="screen hidden">
+  <div class="kiosk-topbar">
+    <button class="text-sm font-semibold flex items-center gap-2" style="color:#dc2626;" data-action="go-back"><i class="fa-solid fa-arrow-left"></i> Back</button>
+    <h2 class="text-base font-bold text-slate-800"><i class="fa-solid fa-ban text-red-600 mr-1"></i> Blacklist — andar nahi aa sakte</h2>
+    <button class="text-slate-500" data-action="bl-refresh" title="Refresh"><i class="fa-solid fa-rotate text-lg"></i></button>
+  </div>
+  <div style="background:#7f1d1d;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:22px;line-height:1">&#9940;</span>
+    <span style="font-weight:700;font-size:14px">Ye log dikhein to turant sampark karein</span>
+    <a href="tel:8938953093" style="margin-left:auto;color:#fff;font-weight:800;font-size:20px;letter-spacing:.03em;text-decoration:none">8938953093</a>
+  </div>
+  <div style="padding:10px 16px">
+    <input id="bl-q" class="kiosk-input" type="text" placeholder="Naam ya code se dhoondhein&hellip;" autocomplete="off">
+  </div>
+  <div id="bl-list" style="flex:1;overflow:auto;padding:0 16px 16px"></div>
+  <div id="bl-foot" style="padding:8px 16px;font-size:11px;color:#94a3b8;text-align:center"></div>
+</div>
+
 <div id="screen-fuel" class="screen hidden">
   <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200">
     <button class="btn-kiosk-ghost" data-action="go-back" style="padding:8px 14px"><i class="fa-solid fa-arrow-left mr-1"></i> Back</button>
@@ -1027,6 +1050,8 @@
       else if (a === 'open-ot') otOpen();
       else if (a === 'ot-refresh') otRefresh();
       else if (a === 'open-fuel') fuelOpen();
+      else if (a === 'open-blacklist') blOpen();
+      else if (a === 'bl-refresh') blLoad(true);
       else if (a === 'fuel-refresh') fuelRefresh();
       else if (a === 'fuel-submit') fuelSubmit();
       else if (a === 'fuel-pick') fuelPickEmp(el.dataset.empcode);
@@ -1448,7 +1473,7 @@
 
   // ---------- navigation ----------
   function show(id) {
-    ['screen-login', 'screen-home', 'screen-action', 'screen-inside', 'screen-workpass', 'screen-visitor', 'screen-ot', 'screen-fuel'].forEach(function (s) { var el = $(s); if (el) el.classList.add('hidden'); });
+    ['screen-login', 'screen-home', 'screen-action', 'screen-inside', 'screen-workpass', 'screen-visitor', 'screen-ot', 'screen-fuel', 'screen-blacklist'].forEach(function (s) { var el = $(s); if (el) el.classList.add('hidden'); });
     var t = $(id); if (t) t.classList.remove('hidden');
   }
   function hidePanels() {
@@ -2078,6 +2103,67 @@
       document.body.appendChild(sc);
     });
   }
+  /* ===================== BLACKLIST =====================
+     Jo log blacklist me hain unka chehra guard ko dikhta hai, taaki wo dekh kar
+     pehchan sake. Data HR database se aata hai (nx_blacklist_public) — usme sirf
+     naam, code, wajah aur photo hoti hai, salary/roll type kuch nahi.
+     Net na ho to pichhli list dikhti rehti hai — khali screen se behtar. */
+  var BL_LIST = [];
+  function blOpen() {
+    show('screen-blacklist');
+    try { var q = $('bl-q'); if (q) q.value = ''; } catch (e) {}
+    blLoad(false);
+  }
+  function blRender() {
+    var host = $('bl-list'); if (!host) return;
+    var q = String(($('bl-q') || {}).value || '').trim().toLowerCase();
+    var rows = !q ? BL_LIST : BL_LIST.filter(function (r) {
+      return String(r.name || '').toLowerCase().indexOf(q) > -1
+          || String(r.code || '').toLowerCase().indexOf(q) > -1;
+    });
+    if (!BL_LIST.length) {
+      host.innerHTML = '<div style="text-align:center;color:#64748b;padding:40px 10px">Koi blacklist me nahi hai.</div>';
+      return;
+    }
+    if (!rows.length) {
+      host.innerHTML = '<div style="text-align:center;color:#64748b;padding:40px 10px">Is naam/code ka koi blacklist me nahi hai.</div>';
+      return;
+    }
+    host.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">'
+      + rows.map(function (r) {
+        return '<div style="background:#fff;border:2px solid #fca5a5;border-radius:14px;padding:12px;display:flex;gap:12px;align-items:flex-start">'
+          + (r.photo
+              ? '<img src="' + esc(r.photo) + '" alt="" loading="lazy" style="width:96px;height:96px;flex:none;border-radius:10px;object-fit:cover;border:2px solid #ef4444">'
+              : '<div style="width:96px;height:96px;flex:none;border-radius:10px;border:2px solid #ef4444;background:#fee2e2;color:#b91c1c;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;text-align:center">PHOTO<br>NAHI</div>')
+          + '<div style="flex:1;min-width:0">'
+          +   '<div style="font-size:18px;font-weight:800;color:#7f1d1d;line-height:1.2">' + esc(r.name || r.code) + '</div>'
+          +   '<div style="font-size:11px;color:#64748b;margin:2px 0 7px">' + esc(r.code || '') + (r.dept ? ' &middot; ' + esc(r.dept) : '') + '</div>'
+          +   '<div style="font-size:13px;font-weight:600;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:6px 9px;color:#111">' + esc(r.reason || 'Blacklisted') + '</div>'
+          +   '<div style="font-size:10px;color:#94a3b8;margin-top:6px">Blacklist: ' + esc(r.since || '') + '</div>'
+          + '</div></div>';
+      }).join('') + '</div>';
+  }
+  async function blLoad(manual) {
+    var host = $('bl-list'), foot = $('bl-foot');
+    if (host && !BL_LIST.length) host.innerHTML = '<div style="text-align:center;color:#64748b;padding:30px">Loading\u2026</div>';
+    try {
+      var cx = await hrConnect();
+      var out = await cx.rpc('nx_blacklist_public');
+      if (out.error) throw out.error;
+      BL_LIST = Array.isArray(out.data) ? out.data : [];
+      try { localStorage.setItem('nx_bl_cache', JSON.stringify(BL_LIST)); } catch (e) {}
+      if (foot) foot.innerText = BL_LIST.length + ' vyakti \u00B7 taaza: ' + new Date().toLocaleTimeString('en-IN');
+      if (manual) showToast('Blacklist refresh ho gayi', 'success');
+    } catch (err) {
+      try { var c = localStorage.getItem('nx_bl_cache'); if (c) BL_LIST = JSON.parse(c); } catch (e2) {}
+      if (foot) foot.innerText = 'Internet nahi mila \u2014 purani list dikh rahi hai';
+    }
+    blRender();
+  }
+  document.addEventListener('input', function (e) {
+    if (e.target && e.target.id === 'bl-q') blRender();
+  });
+
   var WP_LIST = [];
   async function wpOpen() {
     show('screen-workpass');
