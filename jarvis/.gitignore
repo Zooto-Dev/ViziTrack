@@ -1,0 +1,19 @@
+# Python
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+
+# Runtime data (settings, API keys, memory DB) — never commit
+backend/data/
+backend/.env
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
