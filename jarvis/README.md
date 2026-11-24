@@ -67,6 +67,10 @@ Mic ke liye internet chahiye (awaaz Microsoft/Google pehchante hain, free). Awaa
 | `yaad rakhna meri meeting 5 baje hai` / `remember my car number is DL8C1234` | Long-term memory me save |
 | `what do you remember about me?` | Memory se recall (AI ke through) |
 | `add task send GST report` / `mere pending tasks` | Task manager |
+| `meri latest excel file kholo` / `last pdf kholo` / `latest excel gst report kholo` | Sabse nayi file dhoondh kar Excel/PDF viewer me kholta hai (turant, bina AI) |
+| `GST wali excel file dhundo` | Desktop, Documents, Downloads, OneDrive aur D:/E: drive me dhoondhta hai |
+| `is file ka summary do` / `sales.xlsx me November ka total kya hai` | Excel, PDF, Word, text file padh kar jawab deta hai |
+| `ek python script likho jo folder ki saari files ka naam list kare` | Code likh kar `Documents\Jarvis` me save karta hai aur VS Code/Notepad me kholta hai |
 | `stop` / `ruko` / `chup` | Jo chal raha hai use rokta hai |
 | Koi bhi sawaal, Hindi/English/Hinglish me | AI provider se jawab (streaming) |
 
@@ -108,7 +112,9 @@ API keys sirf backend me store hoti hain (`backend/data/settings.json`, git me n
 - [ ] Offline voice (faster-whisper + Piper) taaki mic bina internet ke chale
 - [ ] Phase 4 — Wake word "Hey Jarvis" (hamesha sunta rahe), bolte-bolte interrupt
 - [ ] Phase 5 — Smarter memory (auto-extract facts, semantic recall)
-- [ ] Phase 6 — Desktop control: file search, document summarise, screenshots, volume, window control
+- [x] Phase 6 (pehla hissa) — Files: dhoondhna, kholna, latest file kholna, Excel/PDF/Word padhna, code/letter likh kar save karna
+  - Safety: programs (.exe, .bat…) kabhi nahi chalata; code files editor me khulti hain, chalti nahi; Jarvis folder ke bahar likhna ya purani file badalna ho toh pehle poochta hai
+- [ ] Phase 6 (baaki) — screenshots, volume, window control
 - [ ] Phase 7 — Automation workflows, web search + summarise, integrations
 - [ ] Phase 8 — Packaging (Tauri installer), performance & security hardening
 

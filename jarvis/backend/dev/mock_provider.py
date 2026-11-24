@@ -58,8 +58,12 @@ def decide(messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None) -
     if ("remember" in low or "memory" in low) and "remember" in names:
         text = user.split(":", 1)[1].strip() if ":" in user else user
         return {"tool": "remember", "args": {"text": text}}
+    if "write code" in low and "write_file" in names:
+        return {"tool": "write_file", "args": {"filename": "hello.py", "content": "print('hello')\n", "open_after": False}}
     if "fail" in low and "open_app" in names:
         return {"tool": "open_app", "args": {"name": "definitely-not-an-app-xyz"}}
+    if "show code" in low:
+        return {"text": "Here is the script.\n```python\nfor i in range(3):\n    print(i)\n```\nRun it with Python."}
     if "slow" in low:
         return {"text": f"Mock reply to: {user}. Second sentence here!", "delay": 3.0}
     return {"text": f"Mock reply to: {user}"}

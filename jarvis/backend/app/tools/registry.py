@@ -42,8 +42,9 @@ class Tool:
     handler: Handler
     risk: Risk = "safe"
     category: str = "general"
-    # Short template used when the fast router runs the tool with no LLM.
     system_action: bool = False  # touches the OS (apps, files, settings)
+    # Per-call check: return a reason to ask the user first, or None to run.
+    confirm_if: Callable[[dict[str, Any]], str | None] | None = None
 
     def openai_schema(self) -> dict[str, Any]:
         return {
@@ -73,6 +74,7 @@ class ToolRegistry:
         risk: Risk = "safe",
         category: str = "general",
         system_action: bool = False,
+        confirm_if: Callable[[dict[str, Any]], str | None] | None = None,
     ) -> Callable[[Handler], Handler]:
         def deco(fn: Handler) -> Handler:
             self.register(
@@ -84,6 +86,7 @@ class ToolRegistry:
                     risk=risk,
                     category=category,
                     system_action=system_action,
+                    confirm_if=confirm_if,
                 )
             )
             return fn

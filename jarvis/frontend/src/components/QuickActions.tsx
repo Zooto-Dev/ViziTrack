@@ -7,7 +7,7 @@ const ACTIONS: { label: string; icon: string; text: string }[] = [
   { label: 'Pending tasks', icon: '☰', text: 'mere pending tasks' },
   { label: 'Time & date', icon: '◷', text: 'what time is it' },
   { label: 'Open YouTube', icon: '▶', text: 'open youtube' },
-  { label: 'Open Chrome', icon: '◍', text: 'open chrome' },
+  { label: 'Latest Excel', icon: '▦', text: 'meri latest excel file kholo' },
   { label: 'What I told you', icon: '◈', text: 'what do you remember about me?' },
 ]
 

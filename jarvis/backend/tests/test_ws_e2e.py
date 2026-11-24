@@ -198,3 +198,20 @@ def test_suggest_model_prefers_chat_models():
     ids = ["whisper-large-v3", "meta-llama/llama-guard-4-12b", "llama-3.1-8b-instant", "openai/gpt-oss-120b"]
     assert suggest_model("groq", ids) == "openai/gpt-oss-120b"
     assert suggest_model("groq", ["whisper-large-v3"]) is None
+
+
+def test_llm_writes_code_file_then_asks_before_overwrite(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("JARVIS_WORKSPACE", str(tmp_path / "Jarvis"))
+    with client.websocket_connect("/ws") as ws:
+        json.loads(ws.receive_text())
+        ws.send_text(json.dumps({"type": "chat", "text": "please write code that says hello"}))
+        msgs = _collect(ws, "assistant.end")
+        end = next(m for m in msgs if m["type"] == "tool.end")
+        assert end["name"] == "write_file" and end["ok"]
+        assert (tmp_path / "Jarvis" / "hello.py").read_text() == "print('hello')\n"
+        # Second time the file exists: Jarvis must ask first.
+        ws.send_text(json.dumps({"type": "chat", "text": "please write code that says hello again"}))
+        req = _collect(ws, "confirm.request")[-1]
+        assert req["tool"] == "write_file" and "already exists" in req["reason"]
+        ws.send_text(json.dumps({"type": "confirm", "request_id": req["request_id"], "approved": False}))
+        _collect(ws, "assistant.end")

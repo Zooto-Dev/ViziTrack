@@ -48,9 +48,16 @@ class Agent:
             res = ToolResult(False, f"unknown tool '{name}'")
             await emit({"type": "tool.end", "id": call_id, "name": name, "ok": False, "result": res.message})
             return res
-        needs_confirm = tool.risk == "confirm" or (settings.confirm_all_system_actions and tool.system_action)
-        if needs_confirm:
-            approved = await confirm(call_id, name, args, f"{tool.description}")
+        reason = tool.description if tool.risk == "confirm" else None
+        if reason is None and tool.confirm_if:
+            try:
+                reason = tool.confirm_if(args)
+            except Exception:  # noqa: BLE001 - a broken check must fail safe
+                reason = "Please confirm this action."
+        if reason is None and settings.confirm_all_system_actions and tool.system_action:
+            reason = tool.description
+        if reason is not None:
+            approved = await confirm(call_id, name, args, reason)
             if not approved:
                 res = ToolResult(False, "the user declined this action")
                 await emit({"type": "tool.end", "id": call_id, "name": name, "ok": False, "result": res.message})

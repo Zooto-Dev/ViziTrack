@@ -859,3 +859,17 @@ textarea {
   padding: 0;
   accent-color: var(--cyan);
 }
+
+pre.code {
+  margin: 6px 0;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  overflow-x: auto;
+  max-height: 320px;
+}

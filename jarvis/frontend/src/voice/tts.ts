@@ -95,11 +95,7 @@ class Speaker {
       this.buf = ''
     }
     this.buf += text
-    let m: RegExpMatchArray | null
-    while ((m = this.buf.match(SENTENCE))) {
-      this.buf = this.buf.slice(m[0].length)
-      this.say(m[0])
-    }
+    this.drain(false)
   }
 
   /** Message finished: speak whatever is left. */
@@ -109,9 +105,41 @@ class Speaker {
       this.msgId = id
       this.buf = fullText
     }
-    const rest = this.buf
-    this.buf = ''
-    this.say(rest)
+    this.drain(true)
+  }
+
+  private drain(final: boolean) {
+    for (;;) {
+      const fence = this.buf.indexOf('```')
+      const head = fence === -1 ? this.buf : this.buf.slice(0, fence)
+      let m: RegExpMatchArray | null
+      let consumed = 0
+      while ((m = head.slice(consumed).match(SENTENCE))) {
+        this.say(m[0])
+        consumed += m[0].length
+      }
+      if (fence === -1) {
+        this.buf = this.buf.slice(consumed)
+        if (final) {
+          this.say(this.buf)
+          this.buf = ''
+        }
+        return
+      }
+      // Text before the code block is spoken; the code itself is not.
+      this.say(head.slice(consumed))
+      const close = this.buf.indexOf('```', fence + 3)
+      if (close === -1) {
+        this.buf = this.buf.slice(fence) // wait for the rest of the block
+        if (final) {
+          this.say('Code screen par hai.')
+          this.buf = ''
+        }
+        return
+      }
+      this.say('Code screen par hai.')
+      this.buf = this.buf.slice(close + 3)
+    }
   }
 
   /** Speak a one-off phrase (settings preview). */
@@ -147,9 +175,30 @@ class Speaker {
       if (this.pending.size === 0) useStore.getState().setSpeaking(false)
     }
     u.onend = done
-    u.onerror = done
+    u.onerror = (e) => {
+      done()
+      // Online "Natural" voices fail without internet: retry once with a local voice.
+      const err = (e as SpeechSynthesisErrorEvent).error
+      if (err !== 'interrupted' && err !== 'canceled' && v && !v.localService) {
+        const local = voices.find((x) => x.localService && x.lang.slice(0, 2) === v.lang.slice(0, 2))
+        if (local) {
+          const r = new SpeechSynthesisUtterance(text)
+          r.voice = local
+          r.lang = local.lang
+          r.rate = this.rate
+          r.onend = r.onerror = () => {
+            this.pending.delete(r)
+            if (this.pending.size === 0) useStore.getState().setSpeaking(false)
+          }
+          this.pending.add(r)
+          synth.speak(r)
+        }
+      }
+    }
     this.pending.add(u)
     useStore.getState().setSpeaking(true)
+    // Chrome/Edge sometimes stay "paused" after cancel(); resume before speaking.
+    if (synth.paused) synth.resume()
     synth.speak(u)
   }
 

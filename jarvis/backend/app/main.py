@@ -37,6 +37,7 @@ from .config import PROVIDER_PRESETS, Settings, load_settings, public_settings, 
 from .memory.store import MemoryStore
 from .monitor import SystemMonitor
 from .tools import builtin  # noqa: F401  (registers tools)
+from .tools import files  # noqa: F401  (registers file tools)
 from .tools.registry import registry
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")

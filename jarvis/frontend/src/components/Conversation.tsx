@@ -2,6 +2,25 @@ import { memo, useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import type { Message } from '../types'
 
+/** Plain text with ```fenced``` code blocks shown as code. */
+function RichText({ text }: { text: string }) {
+  if (!text.includes('```')) return <>{text}</>
+  const parts = text.split('```')
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <pre key={i} className="code">
+            {part.replace(/^[\w+-]*\n/, '')}
+          </pre>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  )
+}
+
 const Bubble = memo(function Bubble({ m }: { m: Message }) {
   if (m.role === 'tool') {
     return (
@@ -18,7 +37,9 @@ const Bubble = memo(function Bubble({ m }: { m: Message }) {
   }
   return (
     <div className={`bubble ${m.role}`}>
-      <div className="bubble-text">{m.text}</div>
+      <div className="bubble-text">
+        <RichText text={m.text} />
+      </div>
       {m.role === 'assistant' && (m.via || m.interrupted) && (
         <div className="bubble-meta mono">
           {m.interrupted ? 'interrupted · ' : ''}
@@ -66,7 +87,7 @@ function Streaming() {
   return (
     <div className="bubble assistant streaming">
       <div className="bubble-text">
-        {streaming.text}
+        <RichText text={streaming.text} />
         <span className="caret" />
       </div>
     </div>
@@ -92,7 +113,7 @@ export function Conversation() {
       <div className="conversation-scroll">
         {messages.length === 0 && (
           <div className="empty">
-            <p>Mic dabaiye aur boliye: “chrome kholo”, “youtube kholo”, “time kya hua”, “yaad rakhna meri meeting 5 baje hai”, “mere pending tasks”.</p>
+            <p>Mic dabaiye aur boliye: “chrome kholo”, “youtube kholo”, “time kya hua”, “meri latest excel file kholo”, “mere pending tasks”, “ek python script likho jo…”.</p>
             <p className="dim">General questions go to your configured AI provider.</p>
           </div>
         )}

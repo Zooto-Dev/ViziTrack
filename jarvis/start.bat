@@ -18,11 +18,13 @@ if errorlevel 1 goto :fail
 :have_venv
 set "PY=%~dp0backend\.venv\Scripts\python.exe"
 
-"%PY%" -c "import fastapi, uvicorn, psutil, httpx, pydantic" >nul 2>nul
+REM Reinstall packages whenever requirements.txt changes (new features need new packages).
+fc /b "backend\requirements.txt" "backend\.venv\requirements.stamp" >nul 2>nul
 if not errorlevel 1 goto :deps_ok
 echo [1/3] Packages install ho rahe hain, 2-3 minute lagenge. Window me click mat karna...
 "%PY%" -m pip install --disable-pip-version-check -r backend\requirements.txt
 if errorlevel 1 goto :fail
+copy /y "backend\requirements.txt" "backend\.venv\requirements.stamp" >nul
 :deps_ok
 
 if exist "frontend\dist\index.html" goto :ui_ok

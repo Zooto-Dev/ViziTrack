@@ -132,6 +132,25 @@ _DEVANAGARI_ALIASES = {
 }
 
 
+_KIND_WORDS = {
+    "excel": "excel", "xlsx": "excel", "sheet": "excel", "spreadsheet": "excel", "एक्सेल": "excel",
+    "pdf": "pdf", "पीडीएफ": "pdf",
+    "word": "word", "docx": "word", "document": "word", "वर्ड": "word",
+    "ppt": "powerpoint", "powerpoint": "powerpoint", "presentation": "powerpoint",
+    "photo": "image", "image": "image", "picture": "image", "फोटो": "image",
+    "video": "video", "वीडियो": "video",
+}
+LATEST_FILE_RE = re.compile(
+    r"^\s*(?:" + POLITE + r"\s*)*(?:open\s+)?(?:my\s+|meri\s+|mera\s+|मेरी\s+)?"
+    r"(?:latest|last|recent|newest|nayi|naya|nai|aakhri|akhri|sabse nayi|sabse naya|आखिरी|नई|लेटेस्ट)\s+"
+    r"(?P<kind>excel|xlsx|sheet|spreadsheet|pdf|word|docx|document|ppt|powerpoint|presentation|photo|image|picture|video|एक्सेल|पीडीएफ|वर्ड|फोटो|वीडियो)"
+    r"(?:\s+(?P<query>[\w\- ]{1,40}?))??"
+    r"(?:\s+(?:file|files|sheet|report|फाइल|फ़ाइल))?"
+    r"(?:\s+(?:open|kholo|khol|khol do|kholo na|dikhao|open karo|open kar do|खोलो|खोल दो|दिखाओ))?" + OPEN_TAIL + r"\s*[.!]*\s*$",
+    re.IGNORECASE,
+)
+
+
 def _clean_target(t: str) -> str:
     t = re.sub(r"^(?:the|a|an|mera|meri|mere|my)\s+", "", t.strip(), flags=re.IGNORECASE)
     t = re.sub(r"\s+(?:app|application|website|site|web|page|browser me|browser mein|me|mein)$", "", t, flags=re.IGNORECASE)
@@ -167,6 +186,16 @@ def route(text: str) -> RouteMatch | None:
     m = ADD_TASK_RE.match(text)
     if m:
         return RouteMatch("tool", "add_task", {"title": m.group("text").strip(" .!")}, lang)
+
+    m = LATEST_FILE_RE.match(text)
+    if m and re.search(r"open|khol|dikhao|खोल|दिखा", text, re.IGNORECASE):
+        kind = _KIND_WORDS.get(m.group("kind").lower(), "excel")
+        query = (m.group("query") or "").strip()
+        query = re.sub(r"\b(?:file|files|wali|wala|ki|ka)\b", "", query, flags=re.IGNORECASE).strip()
+        args: dict[str, Any] = {"kind": kind}
+        if query:
+            args["query"] = query
+        return RouteMatch("tool", "open_latest_file", args, lang)
 
     if len(text) <= 60:
         if TIME_RE.search(text):
@@ -220,6 +249,10 @@ def phrase_result(tool: str, ok: bool, message: str, data: dict[str, Any], lang:
         return {"hindi": f"{app} खोल रहा हूँ।", "hinglish": f"{app} khol diya.", "english": f"Launching {app}."}[lang]
     if tool == "remember":
         return {"hindi": "ठीक है, याद रख लिया।", "hinglish": "Theek hai, yaad rakh liya.", "english": "Noted. I'll remember that."}[lang]
+    if tool == "open_latest_file":
+        f = data.get("file", {})
+        name = f.get("name", "file")
+        return {"hindi": f"{name} खोल दी।", "hinglish": f"{name} khol di.", "english": f"Opening {name}."}[lang]
     if tool == "add_task":
         return {"hindi": "टास्क जोड़ दिया।", "hinglish": "Task add kar diya.", "english": "Task added."}[lang]
     if tool == "list_tasks":
