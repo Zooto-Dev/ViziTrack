@@ -1,58 +1,67 @@
 @echo off
 setlocal
 REM ============================================================
-REM  J.A.R.V.I.S. one-click start (Windows)
-REM  First run: creates a Python venv, installs packages, builds UI.
-REM  Later runs: just starts the backend and opens the app window.
+REM  JARVIS one-click start for Windows.
+REM  No brackets in echo lines on purpose: cmd breaks on them.
+REM  Every failure stops with a pause so the error stays visible.
 REM ============================================================
 cd /d "%~dp0"
+title JARVIS
 
-where python >nul 2>nul || (
-  echo [X] Python nahi mila. https://www.python.org/downloads/ se install karo
-  echo     aur install ke time "Add python.exe to PATH" tick karna mat bhoolna.
-  pause & exit /b 1
-)
+where python >nul 2>nul
+if errorlevel 1 goto :no_python
 
-if not exist backend\.venv (
-  echo [1/3] Python environment bana raha hoon...
-  python -m venv backend\.venv || (echo venv fail & pause & exit /b 1)
-  call backend\.venv\Scripts\activate.bat
-  python -m pip install --upgrade pip >nul
-  pip install -r backend\requirements.txt || (echo pip install fail & pause & exit /b 1)
-) else (
-  call backend\.venv\Scripts\activate.bat
-)
+if exist "backend\.venv\Scripts\python.exe" goto :have_venv
+echo [1/3] Python environment bana raha hoon...
+python -m venv backend\.venv
+if errorlevel 1 goto :fail
+:have_venv
+set "PY=%~dp0backend\.venv\Scripts\python.exe"
 
-if not exist frontend\dist\index.html (
-  where node >nul 2>nul || (
-    echo [X] Node.js nahi mila. https://nodejs.org/ se LTS install karo, phir start.bat dobara chalao.
-    pause & exit /b 1
-  )
-  echo [2/3] UI build kar raha hoon (sirf pehli baar)...
-  pushd frontend
-  call npm install --no-audit --no-fund || (popd & pause & exit /b 1)
-  call npm run build || (popd & pause & exit /b 1)
-  popd
-)
+"%PY%" -c "import fastapi, uvicorn, psutil, httpx, pydantic" >nul 2>nul
+if not errorlevel 1 goto :deps_ok
+echo [1/3] Packages install ho rahe hain, 2-3 minute lagenge. Window me click mat karna...
+"%PY%" -m pip install --disable-pip-version-check -r backend\requirements.txt
+if errorlevel 1 goto :fail
+:deps_ok
 
-echo [3/3] Jarvis start ho raha hai...  http://127.0.0.1:8765
-cd backend
-start "" /b python run.py
-cd ..
+if exist "frontend\dist\index.html" goto :ui_ok
+where node >nul 2>nul
+if errorlevel 1 goto :no_node
+echo [2/3] UI build kar raha hoon...
+pushd frontend
+call npm install --no-audit --no-fund
+if errorlevel 1 goto :fail_pop
+call npm run build
+if errorlevel 1 goto :fail_pop
+popd
+:ui_ok
 
-REM Wait for the backend, then open as a chromeless app window if Chrome/Edge exists.
-set URL=http://127.0.0.1:8765
-powershell -NoProfile -Command "$ok=$false; for($i=0;$i -lt 40 -and -not $ok;$i++){ try { Invoke-WebRequest -UseBasicParsing %URL%/api/health -TimeoutSec 1 | Out-Null; $ok=$true } catch { Start-Sleep -Milliseconds 300 } }"
-set CHROME=
-for %%P in ("%ProgramFiles%\Google\Chrome\Application\chrome.exe" "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" "%LocalAppData%\Google\Chrome\Application\chrome.exe" "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe") do (
-  if not defined CHROME if exist %%P set CHROME=%%P
-)
-if defined CHROME (
-  start "" "%CHROME%" --app=%URL% --window-size=1440,900
-) else (
-  start "" %URL%
-)
+echo [3/3] Jarvis start ho raha hai: http://127.0.0.1:8765
+echo Ye window band mat karna. Jarvis band karna ho tab ise band karo.
 echo.
-echo Jarvis chal raha hai. Is window ko band karne se Jarvis band ho jayega.
-echo Ctrl+C dabao band karne ke liye.
-pause >nul
+start "" /b powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0open-ui.ps1"
+cd backend
+"%PY%" run.py
+echo.
+echo Jarvis band ho gaya. Upar koi error dikhe toh uska screenshot bhejo.
+pause
+exit /b 0
+
+:no_python
+echo [X] Python nahi mila. python.org se install karo aur Add python.exe to PATH tick karna.
+pause
+exit /b 1
+
+:no_node
+echo [X] UI files nahi mili aur Node.js bhi nahi mila. Naya ZIP download karo.
+pause
+exit /b 1
+
+:fail_pop
+popd
+:fail
+echo.
+echo [X] Kuch gadbad hui. Upar ka error screenshot karke bhejo.
+pause
+exit /b 1

@@ -52,7 +52,9 @@ class AnthropicProvider(LLMProvider):
         try:
             import anthropic
         except ImportError as e:  # pragma: no cover
-            raise ProviderError("The 'anthropic' package is not installed (pip install anthropic).") from e
+            raise ProviderError(
+                "Claude ke liye 'anthropic' package chahiye. backend folder me chalao: .venv\\Scripts\\pip install anthropic"
+            ) from e
         if not self.api_key:
             raise ProviderError("No Anthropic API key set. Add it in Settings or ANTHROPIC_API_KEY.")
         return anthropic.AsyncAnthropic(api_key=self.api_key, timeout=self.timeout_s)
@@ -71,9 +73,9 @@ class AnthropicProvider(LLMProvider):
     async def stream(
         self, messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None, *, system: str | None = None
     ) -> AsyncIterator[StreamEvent]:
+        client = self._client()  # raises a friendly ProviderError if the package is missing
         import anthropic
 
-        client = self._client()
         kwargs: dict[str, Any] = {
             "model": self.model,
             "max_tokens": self.max_tokens,

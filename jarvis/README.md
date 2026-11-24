@@ -14,8 +14,8 @@ Teen cheezein install karni hain. Sab free hain.
 1. https://www.python.org/downloads/ se latest Python 3 download karo.
 2. Installer me **"Add python.exe to PATH"** ka checkbox zaroor tick karo, phir Install Now.
 
-### Step 2 — Node.js (sirf UI build ke liye, ek baar)
-1. https://nodejs.org/ se **LTS** version download karke install karo (sab default rakho).
+### Step 2 — Node.js (optional)
+UI pehle se build hokar aata hai (`frontend/dist`), isliye Node.js ki zaroorat sirf tab hai jab aap UI ka code badalna chaho.
 
 ### Step 3 — Ollama (free AI brain)
 1. https://ollama.com/download se Ollama install karo.
@@ -32,7 +32,7 @@ Teen cheezein install karni hain. Sab free hain.
 
 ### Step 4 — Jarvis start
 1. Is `jarvis` folder me `start.bat` par double-click karo.
-2. Pehli baar 2–5 minute lagenge (packages install + UI build). Phir se chalane par turant khulega.
+2. Pehli baar 2–3 minute lagenge (packages install). Is dauran kali window ke andar click mat karna, warna Windows use pause kar deta hai. Phir se chalane par turant khulega.
 3. Jarvis ki window khul jayegi (Chrome/Edge app mode me). Agar nahi khule toh browser me `http://127.0.0.1:8765` kholo.
 4. Settings (⚙) → **Test connection** dabao. Green "Ollama ready" dikhna chahiye.
 
@@ -74,7 +74,7 @@ Destructive actions (delete, forget) hamesha pehle **confirm** maangte hain. Set
 | Google Gemini | Free tier | Haan (free, aistudio.google.com) | Internet chahiye. |
 | OpenRouter | Free models available | Haan (openrouter.ai) | Model name `:free` wale choose karo. |
 | OpenAI-compatible | — | Optional | LM Studio, vLLM, etc. |
-| Anthropic Claude | Paid | Haan | Best quality; `claude-opus-5-5` default. |
+| Anthropic Claude | Paid | Haan | Best quality; `claude-opus-5-5` default. Pehle `backend\.venv\Scripts\pip install anthropic` chalao. |
 
 API keys sirf backend me store hoti hain (`backend/data/settings.json`, git me nahi jaata). UI ko kabhi real key nahi bheji jaati.
 
