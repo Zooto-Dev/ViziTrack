@@ -42,6 +42,29 @@ def to_openai_messages(messages: list[dict[str, Any]], system: str | None) -> li
     return out
 
 
+# Providers retire models often. When the saved model disappears, pick the
+# first available match from this list (best chat + tool-calling first).
+PREFERRED_MODELS: dict[str, list[str]] = {
+    "groq": [
+        "llama-3.3-70b", "gpt-oss-120b", "llama-4-maverick", "kimi-k2", "qwen3-32b",
+        "llama-4-scout", "gpt-oss-20b", "llama-3.1-8b",
+    ],
+    "gemini": ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash", "flash"],
+    "openrouter": [":free"],
+}
+# Models that are not for chat.
+NOT_CHAT = ("whisper", "tts", "guard", "embed", "orpheus", "playai", "distil", "compound", "vision", "audio", "image")
+
+
+def suggest_model(provider: str, available: list[str]) -> str | None:
+    chat = [m for m in available if not any(x in m.lower() for x in NOT_CHAT)]
+    for pattern in PREFERRED_MODELS.get(provider, []):
+        for m in chat:
+            if pattern in m.lower():
+                return m
+    return chat[0] if chat else None
+
+
 class OpenAICompatProvider(LLMProvider):
     def __init__(
         self,
@@ -80,8 +103,18 @@ class OpenAICompatProvider(LLMProvider):
                 return {"ok": False, "detail": "API key rejected (401). Check the key."}
             if r.status_code >= 400:
                 return {"ok": False, "detail": f"HTTP {r.status_code} from {self.base_url}/models"}
-            ids = [m.get("id") for m in r.json().get("data", []) if isinstance(m, dict)]
-            return {"ok": True, "detail": f"Connected to {self.name}. {len(ids)} models available.", "models": ids[:200]}
+            data = [m for m in r.json().get("data", []) if isinstance(m, dict) and m.get("active", True) is not False]
+            ids = [str(m.get("id")) for m in data if m.get("id")]
+            # Gemini lists ids as "models/gemini-..."; chat uses the bare name.
+            ids = [i.removeprefix("models/") for i in ids]
+            if ids and self.model not in ids:
+                return {
+                    "ok": False,
+                    "detail": f"Model '{self.model}' is not available on {self.name}.",
+                    "models": ids[:200],
+                    "suggested": suggest_model(self.name, ids),
+                }
+            return {"ok": True, "detail": f"Connected to {self.name} with {self.model}.", "models": ids[:200]}
         except httpx.HTTPError as e:
             return {"ok": False, "detail": f"Cannot reach {self.base_url}: {e.__class__.__name__}"}
 
@@ -111,6 +144,11 @@ class OpenAICompatProvider(LLMProvider):
                         text = (await resp.aread()).decode("utf-8", "replace")[:400]
                         if resp.status_code == 401:
                             raise ProviderError("API key rejected by the provider (401).")
+                        if resp.status_code == 404 or "model_not_found" in text:
+                            raise ProviderError(
+                                f"Model '{self.model}' {self.name} par ab available nahi hai. Settings kholo aur "
+                                "Test connection dabao, Jarvis sahi model khud chun lega."
+                            )
                         if resp.status_code == 429:
                             raise ProviderError("Rate limit reached on the free tier (429). Try again in a moment.")
                         raise ProviderError(f"Provider error {resp.status_code}: {text}")

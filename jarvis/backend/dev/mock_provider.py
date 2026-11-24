@@ -91,7 +91,14 @@ async def _openai_stream(decision: dict[str, Any]) -> AsyncIterator[bytes]:
 
 @app.get("/v1/models")
 async def models() -> dict[str, Any]:
-    return {"object": "list", "data": [{"id": MODEL, "object": "model"}]}
+    return {
+        "object": "list",
+        "data": [
+            {"id": "whisper-large-v3", "object": "model", "active": True},
+            {"id": "old-retired-model", "object": "model", "active": False},
+            {"id": MODEL, "object": "model", "active": True},
+        ],
+    }
 
 
 @app.post("/v1/chat/completions", response_model=None)
@@ -99,6 +106,11 @@ async def chat_completions(req: Request) -> StreamingResponse | JSONResponse:
     body = await req.json()
     if req.headers.get("authorization", "") == "Bearer bad-key":
         return JSONResponse({"error": {"message": "invalid api key"}}, status_code=401)
+    if body.get("model") != MODEL:
+        return JSONResponse(
+            {"error": {"message": f"The model `{body.get('model')}` does not exist", "code": "model_not_found"}},
+            status_code=404,
+        )
     decision = decide(body.get("messages", []), body.get("tools"))
     if not body.get("stream"):
         return JSONResponse({"choices": [{"message": {"role": "assistant", "content": decision.get("text", "")}}]})

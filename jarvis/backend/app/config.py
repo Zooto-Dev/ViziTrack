@@ -35,7 +35,7 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
     "groq": {
         "label": "Groq (free tier, needs free key)",
         "base_url": "https://api.groq.com/openai/v1",
-        "model": "llama-3.3-70b-versatile",
+        "model": "openai/gpt-oss-120b",
         "needs_key": True,
         "kind": "openai_compat",
     },

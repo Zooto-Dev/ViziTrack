@@ -245,6 +245,15 @@ async def test_provider() -> dict[str, Any]:
     try:
         provider = build_provider(s)
         result = await provider.check()
+        suggested = result.get("suggested")
+        if not result.get("ok") and suggested and suggested != s.provider.model:
+            # The saved model was retired: switch to a working one and say so.
+            old_model = s.provider.model
+            s = update_settings({"provider": {"model": suggested}})
+            await app.state.hub.broadcast({"type": "settings", "settings": public_settings(s)})
+            result = await build_provider(s).check()
+            if result.get("ok"):
+                result["detail"] = f"'{old_model}' ab available nahi tha, isliye model badal kar '{suggested}' kar diya. Ready."
     except Exception as e:  # noqa: BLE001
         result = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
     result.update({"provider": s.provider.name, "model": s.provider.model})

@@ -177,3 +177,24 @@ def test_warmup_caches_the_same_prefix_as_chat(client):
     assert w["tools"] == c["tools"]
     assert w["options"]["num_ctx"] == c["options"]["num_ctx"]
     assert w["keep_alive"] == c["keep_alive"]
+
+
+def test_retired_cloud_model_is_replaced_automatically(client):
+    client.post("/api/settings", json={"patch": {"provider": {"name": "groq", "base_url": "http://mock/v1", "model": "old-retired-model", "api_key": "k"}}})
+    with client.websocket_connect("/ws") as ws:
+        json.loads(ws.receive_text())
+        ws.send_text(json.dumps({"type": "chat", "text": "hello there friend"}))
+        err = _collect(ws, "error")[-1]["message"]
+        assert "Test connection" in err
+    r = client.get("/api/providers/test").json()
+    assert r["ok"] is True and r["model"] == "mock-model" and "badal kar" in r["detail"]
+    assert config.load_settings().provider.model == "mock-model"
+    client.post("/api/settings", json={"patch": {"provider": {"name": "ollama", "base_url": "http://mock", "model": "mock-model", "api_key": ""}}})
+
+
+def test_suggest_model_prefers_chat_models():
+    from app.brain.providers.openai_compat import suggest_model
+
+    ids = ["whisper-large-v3", "meta-llama/llama-guard-4-12b", "llama-3.1-8b-instant", "openai/gpt-oss-120b"]
+    assert suggest_model("groq", ids) == "openai/gpt-oss-120b"
+    assert suggest_model("groq", ["whisper-large-v3"]) is None
