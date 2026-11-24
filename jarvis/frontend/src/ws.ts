@@ -1,5 +1,6 @@
 import { live, useStore } from './store'
-import type { Message } from './types'
+import type { Message, Settings } from './types'
+import { speaker } from './voice/tts'
 
 type Outgoing =
   | { type: 'chat'; text: string }
@@ -51,16 +52,23 @@ export function send(msg: Outgoing): void {
 }
 
 // ---- convenience API used by components --------------------------------
+function applyVoice(s: Settings | null | undefined) {
+  if (!s?.voice) return
+  speaker.configure({ enabled: s.voice.speak_replies, voiceName: s.voice.tts_voice, rate: s.voice.tts_rate })
+}
+
 export const api = {
   chat(text: string) {
     const t = text.trim()
     if (!t) return
+    speaker.stop() // a new command always interrupts Jarvis
     const st = useStore.getState()
     if (st.streaming) st.endStream(st.streaming.id, st.streaming.text, st.streaming.via, true)
     st.addMessage({ id: `u${Date.now()}`, role: 'user', text: t, ts: Date.now() })
     send({ type: 'chat', text: t })
   },
   stop() {
+    speaker.stop()
     send({ type: 'stop' })
   },
   confirm(request_id: string, approved: boolean) {
@@ -96,6 +104,15 @@ function handle(msg: Record<string, any>): void {
     case 'hello':
       st.setHello({ settings: msg.settings, tools: msg.tools, history: msg.history as Message[], version: msg.version })
       if (msg.monitor) st.setMonitor(msg.monitor)
+      if (msg.warm) st.setWarm(msg.warm)
+      applyVoice(msg.settings)
+      break
+    case 'provider.warm':
+      st.setWarm(msg as never)
+      break
+    case 'stopped':
+      speaker.stop()
+      st.setState('idle')
       break
     case 'monitor':
       st.setMonitor(msg as never)
@@ -109,10 +126,12 @@ function handle(msg: Record<string, any>): void {
       break
     case 'assistant.delta':
       st.appendStream(msg.id, msg.text)
+      speaker.feed(msg.id, msg.text)
       live.bump(0.25)
       break
     case 'assistant.end':
       st.endStream(msg.id, msg.text, msg.via, msg.interrupted)
+      if (!msg.interrupted) speaker.end(msg.id, msg.text)
       break
     case 'tool.start':
       st.setState('executing')
@@ -133,6 +152,7 @@ function handle(msg: Record<string, any>): void {
       break
     case 'settings':
       st.setSettings(msg.settings)
+      applyVoice(msg.settings)
       break
     case 'history':
       st.setMessages(msg.messages ?? [])

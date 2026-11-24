@@ -57,14 +57,15 @@ STOP_RE = re.compile(
 TIME_RE = re.compile(
     r"(?:what(?:'s| is)? the time|what time is it|time (?:kya|kitna) (?:hua|hai|ho raha)|samay (?:kya|kitna)|"
     r"kitne baje|kya baj|current time|time batao|time bata|date (?:kya|batao|bata)|what(?:'s| is) (?:the|today's) date|"
-    r"aaj (?:ki )?date|aaj kya (?:din|tareekh|date)|समय क्या|कितने बजे|कितना समय|आज की तारीख|क्या समय)",
+    r"aaj (?:ki )?date|aaj kya (?:din|tareekh|date)|समय क्या|कितने बजे|कितना समय|आज की तारीख|क्या समय|टाइम क्या|टाइम बताओ|"
+    r"क्या टाइम|टाइम कितना)",
     re.IGNORECASE,
 )
 
 STATUS_RE = re.compile(
     r"(?:system status|system ka status|system kaisa|pc status|computer status|cpu (?:usage|kitna|status|kaisa)|"
     r"ram (?:usage|kitni|kitna|status)|memory usage|performance (?:check|kaisa|dikhao)|how(?:'s| is) (?:my|the) (?:system|pc|computer)|"
-    r"सिस्टम स्टेटस|सीपीयू)",
+    r"सिस्टम स्टेटस|सिस्टम का स्टेटस|सीपीयू)",
     re.IGNORECASE,
 )
 
@@ -72,7 +73,7 @@ TASKS_RE = re.compile(
     r"(?:(?:my|mere|meri|pending|aaj ke|today'?s|baki|baaki|remaining)\s+(?:tasks?|kaam|todo|to-do|to do)|"
     r"(?:tasks?|kaam|todo)\s+(?:list|dikhao|batao|bata|kya hai|kya hain|pending|baki|baaki)|"
     r"what (?:tasks|do i have) (?:do i have )?(?:pending|left|today)?|kya kaam (?:baki|baaki|pending|hai)|"
-    r"show (?:my )?tasks|list (?:my )?tasks|मेरे काम|काम क्या|टास्क)",
+    r"show (?:my )?tasks|list (?:my )?tasks|मेरे काम|काम क्या|मेरे टास्क|टास्क क्या|पेंडिंग टास्क|टास्क दिखाओ|टास्क बताओ)",
     re.IGNORECASE,
 )
 

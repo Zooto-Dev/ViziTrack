@@ -81,10 +81,11 @@ class ProviderSettings(BaseModel):
 
 
 class VoiceSettings(BaseModel):
-    enabled: bool = False
+    speak_replies: bool = True
+    tts_voice: str = ""  # browser voice name; empty = pick the best automatically
+    tts_rate: float = 1.05
+    stt_lang: str = "en-IN"  # en-IN understands English + Hinglish; hi-IN for pure Hindi
     wake_word: str = "hey jarvis"
-    tts_voice: str = "en-IN-PrabhatNeural"
-    stt_model: str = "small"
 
 
 class Settings(BaseModel):

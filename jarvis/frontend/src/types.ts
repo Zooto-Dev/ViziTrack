@@ -33,7 +33,7 @@ export interface Settings {
     max_tokens: number
     timeout_s: number
   }
-  voice: { enabled: boolean; wake_word: string; tts_voice: string; stt_model: string }
+  voice: { speak_replies: boolean; tts_voice: string; tts_rate: number; stt_lang: string; wake_word: string }
   confirm_all_system_actions: boolean
   history_limit: number
   provider_presets: Record<string, ProviderPreset>
@@ -73,4 +73,10 @@ export interface ProviderStatus {
   provider: string
   model: string
   models?: string[]
+}
+
+export interface WarmState {
+  state: 'idle' | 'loading' | 'ready' | 'failed'
+  model?: string
+  ms?: number
 }

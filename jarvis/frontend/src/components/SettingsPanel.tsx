@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { api } from '../ws'
+import { listVoices, speaker, ttsSupported } from '../voice/tts'
 
 export default function SettingsPanel({ onClose }: { onClose: () => void }) {
   const settings = useStore((s) => s.settings)
@@ -10,6 +11,14 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [key, setKey] = useState('')
   const [testing, setTesting] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => listVoices())
+
+  useEffect(() => {
+    if (!ttsSupported) return
+    const refresh = () => setVoices(listVoices())
+    window.speechSynthesis.addEventListener('voiceschanged', refresh)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', refresh)
+  }, [])
 
   useEffect(() => {
     if (settings) setDraft(settings)
@@ -30,6 +39,12 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
       assistant_name: draft.assistant_name,
       reply_language: draft.reply_language,
       confirm_all_system_actions: draft.confirm_all_system_actions,
+      voice: {
+        speak_replies: draft.voice.speak_replies,
+        tts_voice: draft.voice.tts_voice,
+        tts_rate: draft.voice.tts_rate,
+        stt_lang: draft.voice.stt_lang,
+      },
       provider: {
         name: draft.provider.name,
         base_url: draft.provider.base_url,
@@ -123,6 +138,74 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
           {draft.provider.name === 'groq' && <p className="hint">Free key at console.groq.com. Very fast; generous free limits.</p>}
           {draft.provider.name === 'gemini' && <p className="hint">Free key at aistudio.google.com.</p>}
           {draft.provider.name === 'openrouter' && <p className="hint">Key at openrouter.ai. Models ending in “:free” cost nothing.</p>}
+        </section>
+
+        <section>
+          <h3>VOICE</h3>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={draft.voice.speak_replies}
+              onChange={(e) => setDraft({ ...draft, voice: { ...draft.voice, speak_replies: e.target.checked } })}
+            />
+            Jarvis jawab bol kar sunaye
+          </label>
+          <div className="grid2">
+            <label>
+              Jarvis ki awaaz
+              <select
+                value={draft.voice.tts_voice}
+                onChange={(e) => setDraft({ ...draft, voice: { ...draft.voice, tts_voice: e.target.value } })}
+              >
+                <option value="">Auto (best available)</option>
+                {voices.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name} · {v.lang}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Aap kis bhasha me bologe
+              <select
+                value={draft.voice.stt_lang}
+                onChange={(e) => setDraft({ ...draft, voice: { ...draft.voice, stt_lang: e.target.value } })}
+              >
+                <option value="en-IN">English / Hinglish</option>
+                <option value="hi-IN">Hindi</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Bolne ki speed: {draft.voice.tts_rate.toFixed(2)}×
+            <input
+              type="range"
+              min={0.8}
+              max={1.4}
+              step={0.05}
+              value={draft.voice.tts_rate}
+              onChange={(e) => setDraft({ ...draft, voice: { ...draft.voice, tts_rate: Number(e.target.value) } })}
+            />
+          </label>
+          <div className="row">
+            <button
+              className="btn"
+              disabled={!ttsSupported}
+              onClick={() =>
+                speaker.preview(
+                  `Hello ${draft.user_name}. Main ${draft.assistant_name} hoon. Sab systems online hain.`,
+                  draft.voice.tts_voice,
+                  draft.voice.tts_rate,
+                )
+              }
+            >
+              ▶ Awaaz test karo
+            </button>
+            {!ttsSupported && <span className="status bad">Is browser me awaaz support nahi hai.</span>}
+          </div>
+          <p className="hint">
+            Sabse natural awaaz Microsoft Edge me milti hai (“Online (Natural)” wali). Mic ke liye internet chahiye. Shortcut: Ctrl+Space.
+          </p>
         </section>
 
         <section>

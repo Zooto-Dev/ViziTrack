@@ -4,12 +4,13 @@ for ($i = 0; $i -lt 120; $i++) {
   try { Invoke-WebRequest -UseBasicParsing "$url/api/health" -TimeoutSec 1 | Out-Null; break }
   catch { Start-Sleep -Milliseconds 500 }
 }
+# Edge first: it has the most natural free voices ("Online (Natural)").
 $candidates = @(
+  "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+  "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
   "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
   "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
-  "$env:LocalAppData\Google\Chrome\Application\chrome.exe",
-  "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
-  "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
+  "$env:LocalAppData\Google\Chrome\Application\chrome.exe"
 )
 $browser = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 if ($browser) {

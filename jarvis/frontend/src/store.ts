@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ConfirmRequest, JarvisState, Message, Monitor, ProviderStatus, Settings, ToolInfo } from './types'
+import type { ConfirmRequest, JarvisState, Message, Monitor, ProviderStatus, Settings, ToolInfo, WarmState } from './types'
 
 /**
  * Mutable, non-reactive signal for the reactor animation. Audio code (phase 3)
@@ -26,6 +26,10 @@ interface Store {
   settingsOpen: boolean
   providerStatus: ProviderStatus | null
   version: string
+  speaking: boolean
+  listening: boolean
+  warm: WarmState
+  thinkingSince: number
 
   setConnected(v: boolean): void
   setState(s: JarvisState): void
@@ -42,6 +46,17 @@ interface Store {
   clearToast(): void
   setSettingsOpen(v: boolean): void
   setProviderStatus(s: ProviderStatus | null): void
+  setSpeaking(v: boolean): void
+  setListening(v: boolean): void
+  setWarm(w: WarmState): void
+}
+
+/** What the HUD shows: local voice activity wins over the backend state. */
+export function uiState(s: { state: JarvisState; speaking: boolean; listening: boolean }): JarvisState {
+  if (s.listening) return 'listening'
+  if (s.state === 'thinking' || s.state === 'executing' || s.state === 'waiting') return s.state
+  if (s.speaking) return 'speaking'
+  return s.state
 }
 
 let toastSeq = 0
@@ -59,9 +74,14 @@ export const useStore = create<Store>((set, get) => ({
   settingsOpen: false,
   providerStatus: null,
   version: '',
+  speaking: false,
+  listening: false,
+  warm: { state: 'idle' },
+  thinkingSince: 0,
 
   setConnected: (connected) => set({ connected }),
-  setState: (state) => set({ state }),
+  setState: (state) =>
+    set({ state, thinkingSince: state === 'thinking' ? get().thinkingSince || Date.now() : state === 'idle' ? 0 : get().thinkingSince }),
   setMonitor: (monitor) => set({ monitor }),
   setSettings: (settings) => set({ settings }),
   setHello: ({ settings, tools, history, version }) =>
@@ -99,4 +119,9 @@ export const useStore = create<Store>((set, get) => ({
   clearToast: () => set({ toast: null }),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
   setProviderStatus: (providerStatus) => set({ providerStatus }),
+  setSpeaking: (speaking) => {
+    if (get().speaking !== speaking) set({ speaking })
+  },
+  setListening: (listening) => set({ listening }),
+  setWarm: (warm) => set({ warm }),
 }))

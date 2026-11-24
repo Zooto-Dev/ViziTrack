@@ -27,6 +27,9 @@ from fastapi.responses import JSONResponse, StreamingResponse
 app = FastAPI(title="mock-llm")
 
 MODEL = "mock-model"
+# Recorded request bodies, for tests.
+WARMUPS: list[dict[str, Any]] = []
+CHATS: list[dict[str, Any]] = []
 
 
 def _last_user(messages: list[dict[str, Any]]) -> str:
@@ -57,6 +60,8 @@ def decide(messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None) -
         return {"tool": "remember", "args": {"text": text}}
     if "fail" in low and "open_app" in names:
         return {"tool": "open_app", "args": {"name": "definitely-not-an-app-xyz"}}
+    if "slow" in low:
+        return {"text": f"Mock reply to: {user}. Second sentence here!", "delay": 3.0}
     return {"text": f"Mock reply to: {user}"}
 
 
@@ -102,6 +107,7 @@ async def chat_completions(req: Request) -> StreamingResponse | JSONResponse:
 
 # ----------------------------------------------------------- Ollama style --
 async def _ollama_stream(decision: dict[str, Any]) -> AsyncIterator[bytes]:
+    await asyncio.sleep(decision.get("delay", 0))
     if "tool" in decision:
         msg = {"role": "assistant", "content": "", "tool_calls": [{"function": {"name": decision["tool"], "arguments": decision["args"]}}]}
         yield (json.dumps({"model": MODEL, "message": msg, "done": False}) + "\n").encode()
@@ -123,6 +129,10 @@ async def ollama_chat(req: Request) -> StreamingResponse | JSONResponse:
     if body.get("model") != MODEL:
         return JSONResponse({"error": f"model '{body.get('model')}' not found"}, status_code=404)
     decision = decide(body.get("messages", []), body.get("tools"))
+    if body.get("stream") is False:
+        WARMUPS.append(body)
+        return JSONResponse({"model": MODEL, "message": {"role": "assistant", "content": "ok"}, "done": True})
+    CHATS.append(body)
     return StreamingResponse(_ollama_stream(decision), media_type="application/x-ndjson")
 
 

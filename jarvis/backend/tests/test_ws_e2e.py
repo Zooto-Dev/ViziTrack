@@ -14,7 +14,7 @@ def _collect(ws, until_type: str, limit: int = 200) -> list[dict]:
     out = []
     for _ in range(limit):
         msg = json.loads(ws.receive_text())
-        if msg["type"] == "monitor":
+        if msg["type"] == "monitor" or (msg["type"] == "provider.warm" and until_type != "provider.warm"):
             continue
         out.append(msg)
         if msg["type"] == until_type:
@@ -146,3 +146,34 @@ def test_openai_compat_provider_streams(client):
         msgs = _collect(ws, "error")
         assert "401" in msgs[-1]["message"]
     client.post("/api/settings", json={"patch": {"provider": {"name": "ollama", "base_url": "http://mock", "model": "mock-model", "api_key": ""}}})
+
+
+def test_stop_command_interrupts_without_llm(client):
+    with client.websocket_connect("/ws") as ws:
+        json.loads(ws.receive_text())
+        ws.send_text(json.dumps({"type": "chat", "text": "ruko"}))
+        msgs = _collect(ws, "stopped")
+        assert not any(m["type"].startswith("assistant") for m in msgs)
+
+
+def test_warmup_caches_the_same_prefix_as_chat(client):
+    from dev import mock_provider
+
+    mock_provider.WARMUPS.clear()
+    mock_provider.CHATS.clear()
+    with client.websocket_connect("/ws") as ws:
+        json.loads(ws.receive_text())
+        # Changing the provider schedules a warmup, reported loading -> ready.
+        ws.send_text(json.dumps({"type": "settings.set", "patch": {"provider": {"name": "ollama", "base_url": "http://mock", "model": "mock-model"}}}))
+        states = []
+        while "ready" not in states and "failed" not in states:
+            states.append(_collect(ws, "provider.warm")[-1]["state"])
+        assert states[-1] == "ready"
+        ws.send_text(json.dumps({"type": "chat", "text": "tell me about stars"}))
+        _collect(ws, "assistant.end")
+    w, c = mock_provider.WARMUPS[-1], mock_provider.CHATS[-1]
+    # Same system prompt, tools and context size: Ollama can reuse its cache.
+    assert w["messages"][0] == c["messages"][0] and w["messages"][0]["role"] == "system"
+    assert w["tools"] == c["tools"]
+    assert w["options"]["num_ctx"] == c["options"]["num_ctx"]
+    assert w["keep_alive"] == c["keep_alive"]

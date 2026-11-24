@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useStore } from '../store'
+import { uiState, useStore } from '../store'
 
 const STATE_LABEL: Record<string, string> = {
   idle: 'STANDBY',
@@ -26,7 +26,7 @@ function Clock() {
 
 export function Hud() {
   const connected = useStore((s) => s.connected)
-  const state = useStore((s) => s.state)
+  const state = useStore(uiState)
   const provider = useStore((s) => s.settings?.provider)
   const version = useStore((s) => s.version)
   const open = useStore((s) => s.setSettingsOpen)

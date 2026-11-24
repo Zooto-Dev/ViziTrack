@@ -33,6 +33,14 @@ class Agent:
         self.store = store
 
     # ------------------------------------------------------------------
+    async def context(self, settings: Settings, provider: Any) -> tuple[str, list[dict[str, Any]]]:
+        """System prompt + tool schemas. Warmup uses the same so the prefix cache matches."""
+        memories = await asyncio.to_thread(self.store.recent_memories, 8)
+        system = build_system_prompt(settings, memories)
+        tools = self.registry.anthropic_schemas() if provider.name == "anthropic" else self.registry.openai_schemas()
+        return system, tools
+
+    # ------------------------------------------------------------------
     async def run_tool(self, name: str, args: dict[str, Any], emit: Emit, confirm: Confirm, settings: Settings) -> ToolResult:
         tool = self.registry.get(name)
         call_id = uuid.uuid4().hex[:8]
@@ -90,11 +98,7 @@ class Agent:
         except Exception as e:  # noqa: BLE001
             await emit({"type": "error", "message": f"AI provider configuration problem: {e}"})
             return new_entries
-        memories = await asyncio.to_thread(self.store.recent_memories, 8)
-        system = build_system_prompt(settings, memories)
-        tools = (
-            self.registry.anthropic_schemas() if provider.name == "anthropic" else self.registry.openai_schemas()
-        )
+        system, tools = await self.context(settings, provider)
         messages = [*history[-settings.history_limit :], *new_entries]
 
         full_text = ""

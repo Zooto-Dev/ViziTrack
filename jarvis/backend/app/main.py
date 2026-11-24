@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -31,6 +32,7 @@ from pydantic import BaseModel
 from . import __version__
 from .brain.agent import Agent
 from .brain.providers import build_provider
+from .brain.router import route
 from .config import PROVIDER_PRESETS, Settings, load_settings, public_settings, update_settings
 from .memory.store import MemoryStore
 from .monitor import SystemMonitor
@@ -114,6 +116,11 @@ class Session:
         return out[-80:]
 
     async def handle_chat(self, text: str) -> None:
+        match = route(text)
+        if match and match.intent == "stop":
+            await self.stop()
+            await self.emit({"type": "stopped"})
+            return
         if self.task and not self.task.done():
             # A new message while replying = interrupt, then answer the new one.
             await self.stop()
@@ -160,16 +167,47 @@ async def lifespan(app: FastAPI):
     app.state.hub = hub
     app.state.monitor = monitor
     app.state.agent = Agent(registry, store)
+    app.state.warm = {"state": "idle"}
     monitor.start()
+    schedule_warmup()
     log.info("Jarvis backend %s ready. %d tools registered.", __version__, len(registry.all()))
     try:
         yield
     finally:
+        task = getattr(app.state, "warm_task", None)
+        if task and not task.done():
+            task.cancel()
         await monitor.stop()
         store.close()
 
 
 app = FastAPI(title="J.A.R.V.I.S.", version=__version__, lifespan=lifespan)
+
+
+async def _warmup() -> None:
+    """Load the local model and cache the prompt so the first message is fast."""
+    s = load_settings()
+    if s.provider.name != "ollama":
+        app.state.warm = {"state": "idle"}
+        return
+    provider = build_provider(s)
+    hub: Hub = app.state.hub
+    app.state.warm = {"state": "loading", "model": s.provider.model}
+    await hub.broadcast({"type": "provider.warm", **app.state.warm})
+    t0 = time.perf_counter()
+    system, tools = await app.state.agent.context(s, provider)
+    ok = await provider.warmup(system, tools)  # type: ignore[attr-defined]
+    ms = int((time.perf_counter() - t0) * 1000)
+    app.state.warm = {"state": "ready" if ok else "failed", "model": s.provider.model, "ms": ms}
+    log.info("model warmup %s in %d ms", app.state.warm["state"], ms)
+    await hub.broadcast({"type": "provider.warm", **app.state.warm})
+
+
+def schedule_warmup() -> None:
+    prev = getattr(app.state, "warm_task", None)
+    if prev and not prev.done():
+        prev.cancel()
+    app.state.warm_task = asyncio.create_task(_warmup())
 
 
 # ---------------------------------------------------------------- REST ----
@@ -196,6 +234,8 @@ async def post_settings(body: SettingsPatch) -> dict[str, Any]:
         prov.pop("api_key")
     s = update_settings(body.patch)
     await app.state.hub.broadcast({"type": "settings", "settings": public_settings(s)})
+    if "provider" in body.patch:
+        schedule_warmup()
     return public_settings(s)
 
 
@@ -228,7 +268,6 @@ async def websocket(ws: WebSocket) -> None:
     hub: Hub = app.state.hub
     monitor: SystemMonitor = app.state.monitor
     session = Session(ws, app.state.agent, app.state.store)
-    hub.sessions.add(session)
     monitor.subscribers += 1
     try:
         await session.send(
@@ -239,8 +278,10 @@ async def websocket(ws: WebSocket) -> None:
                 "tools": registry.public_list(),
                 "history": session.ui_history(),
                 "monitor": monitor.last_snapshot or await asyncio.to_thread(monitor.sample),
+                "warm": app.state.warm,
             }
         )
+        hub.sessions.add(session)
         while True:
             raw = await ws.receive_text()
             try:
@@ -266,6 +307,8 @@ async def websocket(ws: WebSocket) -> None:
                     prov.pop("api_key")
                 s = update_settings(patch)
                 await hub.broadcast({"type": "settings", "settings": public_settings(s)})
+                if "provider" in patch:
+                    schedule_warmup()
             elif t == "history.clear":
                 await session.clear_history()
             elif t == "ping":

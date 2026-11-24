@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { live, useStore } from '../store'
+import { live, uiState, useStore } from '../store'
 import type { JarvisState } from '../types'
 
 /**
@@ -21,7 +21,8 @@ const PALETTE: Record<JarvisState, { core: string; ring: string; glow: string; s
 export function Reactor() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const stateRef = useRef<JarvisState>('idle')
-  const state = useStore((s) => s.state)
+  const state = useStore(uiState)
+  const warm = useStore((s) => s.warm)
   stateRef.current = state
 
   useEffect(() => {
@@ -152,7 +153,15 @@ export function Reactor() {
   return (
     <div className="reactor-wrap">
       <canvas ref={canvasRef} className="reactor" aria-label="Jarvis core visualisation" />
-      <div className="reactor-caption mono">{state === 'idle' ? 'READY' : state.toUpperCase()}</div>
+      <div className="reactor-caption mono">
+        {state !== 'idle'
+          ? state.toUpperCase()
+          : warm.state === 'loading'
+            ? 'LOADING AI MODEL…'
+            : warm.state === 'failed'
+              ? 'AI MODEL OFFLINE · COMMANDS STILL WORK'
+              : 'READY'}
+      </div>
     </div>
   )
 }

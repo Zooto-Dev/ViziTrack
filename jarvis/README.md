@@ -44,7 +44,18 @@ chmod +x start.sh && ./start.sh
 
 ---
 
-## 2. Kya bol sakte ho (abhi, text me)
+## 2. Voice se kaise chalayein
+
+1. Jarvis window me neeche **mic button** (🎤) dabao, ya keyboard par **Ctrl + Space**.
+2. Pehli baar window poochegi "Use your microphone?". **Allow** dabao.
+3. Boliye, jaise "chrome kholo". Bolna band karte hi command chali jayegi.
+4. Jarvis jawab bol kar sunayega. Beech me rokna ho toh mic dabakar "ruko" boliye, ya **STOP** dabaiye.
+
+Mic ke liye internet chahiye (awaaz Microsoft/Google pehchante hain, free). Awaaz, speed aur bhasha Settings → Voice me badal sakte ho.
+
+**Speed ke baare me sach:** "chrome kholo", "time kya hua", "youtube kholo", "yaad rakhna…", "mere tasks" jaise commands AI ke bina turant chalte hain. Aam sawaalon ka jawab AI model deta hai. Ollama aapke PC ke CPU par chalta hai, toh purane ya bina graphics card wale PC par 10–60 second lag sakte hain (pehla jawab sabse slow). Tez jawab chahiye toh Settings me **Groq** chuno (free key, jawab ~1 second me).
+
+## 3. Kya bol sakte ho
 
 | Aap likhoge | Jarvis karega |
 |---|---|
@@ -65,7 +76,7 @@ Destructive actions (delete, forget) hamesha pehle **confirm** maangte hain. Set
 
 ---
 
-## 3. AI provider options (Settings → AI Provider)
+## 4. AI provider options (Settings → AI Provider)
 
 | Provider | Cost | Key chahiye? | Notes |
 |---|---|---|---|
@@ -80,7 +91,7 @@ API keys sirf backend me store hoti hain (`backend/data/settings.json`, git me n
 
 ---
 
-## 4. Feature status
+## 5. Feature status
 
 **Done (tested)**
 - [x] Phase 1 — Core app: FastAPI backend + WebSocket, React HUD (reactor, waveform ring, live CPU/RAM/NET, conversation, quick actions, settings)
@@ -92,8 +103,10 @@ API keys sirf backend me store hoti hain (`backend/data/settings.json`, git me n
 - [x] Honest execution: failures are shown as failures, never faked
 
 **Pending**
-- [ ] Phase 3 — Voice: speech-to-text (faster-whisper, local), text-to-speech (edge-tts / Piper), mic controls
-- [ ] Phase 4 — Wake word "Hey Jarvis" (openWakeWord), barge-in interruption
+- [x] Phase 3 (pehla version) — Voice: mic button / Ctrl+Space, Hindi + English + Hinglish pehchaan, jawab bol kar sunana (sentence by sentence, streaming ke saath), awaaz chunna, "ruko"/STOP se turant chup
+- [x] Speed: model Jarvis start hote hi load ho jata hai aur 60 minute tak memory me rehta hai; chhota stable prompt jise Ollama cache karta hai; "Soch raha hoon… Ns" timer
+- [ ] Offline voice (faster-whisper + Piper) taaki mic bina internet ke chale
+- [ ] Phase 4 — Wake word "Hey Jarvis" (hamesha sunta rahe), bolte-bolte interrupt
 - [ ] Phase 5 — Smarter memory (auto-extract facts, semantic recall)
 - [ ] Phase 6 — Desktop control: file search, document summarise, screenshots, volume, window control
 - [ ] Phase 7 — Automation workflows, web search + summarise, integrations
@@ -101,7 +114,7 @@ API keys sirf backend me store hoti hain (`backend/data/settings.json`, git me n
 
 ---
 
-## 5. Developer notes
+## 6. Developer notes
 
 ```
 jarvis/
