@@ -55,7 +55,7 @@ export function send(msg: Outgoing): void {
 // ---- convenience API used by components --------------------------------
 function applyVoice(s: Settings | null | undefined) {
   if (!s?.voice) return
-  speaker.configure({ enabled: s.voice.speak_replies, voiceName: s.voice.tts_voice, rate: s.voice.tts_rate })
+  speaker.configure({ enabled: s.voice.speak_replies, voiceName: s.voice.tts_voice, rate: s.voice.tts_rate, mode: s.voice.tts_mode })
   setWakeEnabled(!!s.voice.wake_enabled)
 }
 

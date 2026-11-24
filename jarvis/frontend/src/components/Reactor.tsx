@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { live, uiState, useStore } from '../store'
 import type { JarvisState } from '../types'
 
@@ -24,6 +24,14 @@ export function Reactor() {
   const state = useStore(uiState)
   const warm = useStore((s) => s.warm)
   const wakeOn = useStore((s) => s.wakeOn)
+  const heard = useStore((s) => s.wakeHeard)
+  const [, tick] = useState(0)
+  useEffect(() => {
+    if (!heard) return
+    const id = window.setTimeout(() => tick((n) => n + 1), 4100)
+    return () => window.clearTimeout(id)
+  }, [heard])
+  const showHeard = heard && Date.now() - heard.at < 4000
   const name = useStore((s) => s.settings?.assistant_name || 'Friday')
   stateRef.current = state
 
@@ -155,6 +163,7 @@ export function Reactor() {
   return (
     <div className="reactor-wrap">
       <canvas ref={canvasRef} className="reactor" aria-label="FRIDAY core visualisation" />
+      {showHeard && <div className="reactor-heard">“{heard.text}”</div>}
       <div className="reactor-caption mono">
         {state !== 'idle'
           ? state.toUpperCase()

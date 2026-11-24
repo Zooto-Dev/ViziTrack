@@ -28,6 +28,7 @@ function Clock() {
 
 function WakeToggle() {
   const on = useStore((s) => s.wakeOn)
+  const status = useStore((s) => s.wakeStatus)
   const name = useStore((s) => s.settings?.assistant_name || 'Friday')
   const connected = useStore((s) => s.connected)
   if (!wakeSupported) return null
@@ -38,8 +39,14 @@ function WakeToggle() {
       onClick={() => api.setSettings({ voice: { wake_enabled: !on } })}
       title={on ? `Sun rahi hoon. "${name}" ya "Wake up" boliye. Band karne ke liye click karein.` : 'Click karke wake word on karein'}
     >
-      <span className={`dot ${on ? 'ok' : ''}`} />
-      {on ? `WAKE ON · SAY "${name.toUpperCase()}"` : 'WAKE OFF'}
+      <span className={`dot ${on ? (status === 'listening' ? 'ok' : 'warn') : ''}`} />
+      {!on
+        ? 'WAKE OFF'
+        : status === 'no-internet'
+          ? 'WAKE · INTERNET NAHI'
+          : status === 'no-mic'
+            ? 'WAKE · MIC NAHI MILA'
+            : `WAKE ON · SAY "${name.toUpperCase()}"`}
     </button>
   )
 }

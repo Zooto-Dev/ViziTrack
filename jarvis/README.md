@@ -55,13 +55,19 @@ Mic ke liye internet chahiye (awaaz Microsoft/Google pehchante hain, free). Awaa
 
 **Speed ke baare me sach:** "chrome kholo", "time kya hua", "youtube kholo", "yaad rakhna…", "mere tasks" jaise commands AI ke bina turant chalte hain. Aam sawaalon ka jawab AI model deta hai. Ollama aapke PC ke CPU par chalta hai, toh purane ya bina graphics card wale PC par 10–60 second lag sakte hain (pehla jawab sabse slow). Tez jawab chahiye toh Settings me **Groq** chuno (free key, jawab ~1 second me).
 
-### Wake word: "Friday" bolkar jagao
-1. Upar right me **WAKE OFF** button dabao. Wo **WAKE ON** ho jayega (ya Settings → Voice me checkbox).
-2. Ab bas boliye **"Friday"**, **"Hey Friday"** ya **"Wake up"**. Ek chhoti si "ting" aayegi, phir apni command boliye.
-3. Ek saans me bhi bol sakte ho: **"Hey Friday, chrome kholo"**.
+### Wake word: "Friday" bolkar jagao (default ON)
+1. FRIDAY khulte hi sunna shuru kar deti hai. Upar right me **WAKE ON** dikhta hai (hara dot = sun rahi hai).
+2. Boliye **"Friday"**, **"Hey Friday"** ya **"Wake up"**. "Ting" aayegi, phir apni command boliye.
+3. Ek saans me bhi: **"Hey Friday, chrome kholo"**.
 4. Wo bol rahi ho toh **"Friday stop"** ya **"ruko"** boliye.
+5. Reactor ke neeche dikhta hai ki usne kya suna. Kuch na dikhe toh mic sun nahi raha (permission ya mic check karo).
 
-Wake word on ho toh mic lagataar sunta hai, sirf jab tak FRIDAY ki window khuli hai. Iske liye internet chahiye. Band karna ho toh wahi button dobara dabao.
+Dot **peela** ho toh wo dobara connect ho rahi hai; "INTERNET NAHI" ya "MIC NAHI MILA" dikhe toh wahi problem hai.
+Mic button sirf backup hai, jab wake word band ho ya shor zyada ho.
+
+### Awaaz der se aaye ya na aaye
+- Settings → Voice → **Awaaz ki quality** = **Fast (offline)** karo. Awaaz turant aayegi, bas thodi robotic hogi.
+- Natural awaaz agar 2.5 second me shuru na ho, toh FRIDAY khud offline awaaz se bol deti hai, aur do baar aisa hone par baaki session offline awaaz hi use karti hai.
 
 ## 3. Kya bol sakte ho
 

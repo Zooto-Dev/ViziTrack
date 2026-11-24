@@ -45,6 +45,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
         tts_rate: draft.voice.tts_rate,
         stt_lang: draft.voice.stt_lang,
         wake_enabled: draft.voice.wake_enabled,
+        tts_mode: draft.voice.tts_mode,
       },
       provider: {
         name: draft.provider.name,
@@ -159,6 +160,16 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
             />
             Wake word: “{draft.assistant_name}”, “Hey {draft.assistant_name}” ya “Wake up” bolne par apne aap sune
           </label>
+          <label>
+            Awaaz ki quality
+            <select
+              value={draft.voice.tts_mode}
+              onChange={(e) => setDraft({ ...draft, voice: { ...draft.voice, tts_mode: e.target.value as 'natural' | 'fast' } })}
+            >
+              <option value="natural">Natural (insaan jaisi, online, ~1 second der)</option>
+              <option value="fast">Fast (turant, offline, thodi robotic)</option>
+            </select>
+          </label>
           <div className="grid2">
             <label>
               {draft.assistant_name} ki awaaz
@@ -205,6 +216,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
                   `Hello ${draft.user_name}. Main ${draft.assistant_name} hoon. Sab systems online hain.`,
                   draft.voice.tts_voice,
                   draft.voice.tts_rate,
+                  draft.voice.tts_mode,
                 )
               }
             >

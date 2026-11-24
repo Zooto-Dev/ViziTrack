@@ -91,24 +91,55 @@ function setArmed(on: boolean) {
   }
 }
 
+/** Splits "hey friday chrome kholo" into (woke=true, rest="chrome kholo"). */
+function splitWake(text: string): { woke: boolean; rest: string } {
+  const m = text.match(wakeRegex(useStore.getState().settings?.assistant_name || 'friday'))
+  if (!m) return { woke: false, rest: text.trim() }
+  const rest = text.slice((m.index ?? 0) + m[0].length).replace(/^[\s,.!?]+/, '').trim()
+  return { woke: true, rest }
+}
+
+const hasWords = (s: string) => /[\p{L}\p{N}]{2,}/u.test(s)
+
+function selfEcho(): boolean {
+  return useStore.getState().speaking || Date.now() - speaker.lastEnded < ECHO_GRACE_MS
+}
+
+/** Partial words: wake up the moment "Friday" is heard instead of waiting for the sentence to end. */
+function onInterim(raw: string) {
+  const st = useStore.getState()
+  if (armedUntil > Date.now()) {
+    st.setWakeHeard(raw)
+    return
+  }
+  if (selfEcho()) return
+  const { woke, rest } = splitWake(raw)
+  if (woke && !hasWords(rest)) {
+    chime()
+    setArmed(true)
+  }
+}
+
 function onFinal(raw: string) {
   const text = raw.trim()
   if (!text) return
   const st = useStore.getState()
+  st.setWakeHeard(text)
   // While she talks (and just after), accept only "stop" so she ignores her own voice.
-  if (st.speaking || Date.now() - speaker.lastEnded < ECHO_GRACE_MS) {
+  if (selfEcho()) {
     if (st.speaking && STOP_RE.test(text)) api.chat('ruko')
     return
   }
+  const { woke, rest } = splitWake(text)
   if (armedUntil > Date.now()) {
+    const cmd = woke ? rest : text
+    if (!hasWords(cmd)) return // just the wake word again: keep waiting for the command
     setArmed(false)
-    api.chat(text)
+    api.chat(cmd)
     return
   }
-  const m = text.match(wakeRegex(st.settings?.assistant_name || 'friday'))
-  if (!m) return
-  const rest = text.slice((m.index ?? 0) + m[0].length).replace(/^[\s,.!?]+/, '')
-  if (/[\p{L}\p{N}]{2,}/u.test(rest)) {
+  if (!woke) return
+  if (hasWords(rest)) {
     api.chat(rest)
   } else {
     chime()
@@ -121,11 +152,13 @@ function startRec() {
   const r = new Ctor()
   r.lang = useStore.getState().settings?.voice?.stt_lang || 'en-IN'
   r.continuous = true
-  r.interimResults = false
+  r.interimResults = true
   r.maxAlternatives = 1
   r.onresult = (e) => {
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) onFinal(e.results[i][0].transcript)
+      const t = e.results[i][0].transcript
+      if (e.results[i].isFinal) onFinal(t)
+      else onInterim(t)
     }
   }
   r.onerror = (e) => {
@@ -134,12 +167,16 @@ function startRec() {
       setWakeEnabled(false)
     } else if (e.error === 'network') {
       backoff = Math.min(15000, backoff * 2)
+      useStore.getState().setWakeStatus('no-internet')
+    } else if (e.error === 'audio-capture') {
+      useStore.getState().setWakeStatus('no-mic')
     }
   }
   r.onend = () => {
     if (rec === r) rec = null
     // Browsers end continuous recognition every minute or so; keep it going.
     if (enabled && !paused) {
+      if (useStore.getState().wakeStatus === 'listening') useStore.getState().setWakeStatus('restarting')
       window.clearTimeout(restartTimer)
       restartTimer = window.setTimeout(startRec, backoff)
     }
@@ -148,8 +185,10 @@ function startRec() {
   try {
     r.start()
     backoff = 300
+    useStore.getState().setWakeStatus('listening')
   } catch {
     rec = null
+    useStore.getState().setWakeStatus('restarting')
   }
 }
 
@@ -173,6 +212,7 @@ export function setWakeEnabled(on: boolean) {
   else {
     setArmed(false)
     stopRec()
+    useStore.getState().setWakeStatus('off')
   }
 }
 

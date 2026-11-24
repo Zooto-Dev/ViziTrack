@@ -885,3 +885,21 @@ pre.code {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.dot.warn {
+  background: var(--warn);
+  box-shadow: 0 0 8px var(--warn);
+}
+.reactor-heard {
+  position: absolute;
+  bottom: calc(6% + 22px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 80%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  color: var(--ink);
+  opacity: 0.85;
+}

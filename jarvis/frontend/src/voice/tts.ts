@@ -2,12 +2,21 @@ import { live, useStore } from '../store'
 
 /**
  * Text-to-speech with the browser's built-in voices (free, no download).
- * Edge ships natural "Online (Natural)" voices; Chrome on Windows has the
- * Microsoft voices plus Google voices. Replies are spoken sentence by sentence
- * while they stream, so FRIDAY starts talking before the answer is finished.
+ *
+ * Reliability matters more than anything here, because the wake listener
+ * ignores what it hears while FRIDAY is speaking. The browser's own queue is
+ * not trusted: Edge's online "Natural" voices sometimes never start or never
+ * report that they ended. So sentences are spoken one at a time from our own
+ * queue, each with two watchdogs:
+ *   - no start within START_TIMEOUT_MS  -> speak it again with an offline voice
+ *   - no end within an estimated length -> treat it as finished and move on
+ * After two online failures the rest of the session uses offline voices.
  */
 const synth: SpeechSynthesis | undefined = typeof window !== 'undefined' ? window.speechSynthesis : undefined
 const DEVANAGARI = /[ऀ-ॿ]/
+const START_TIMEOUT_MS = 2500
+const LOCAL_START_TIMEOUT_MS = 2000
+const AFTER_CANCEL_MS = 120
 
 let voices: SpeechSynthesisVoice[] = []
 function loadVoices() {
@@ -19,13 +28,15 @@ if (synth) {
 }
 
 export const ttsSupported = !!synth
+export type VoiceMode = 'natural' | 'fast'
 
 export function listVoices(): SpeechSynthesisVoice[] {
   loadVoices()
   return voices.filter((v) => /^(en|hi)/i.test(v.lang))
 }
 
-function score(v: SpeechSynthesisVoice, hindi: boolean): number {
+function score(v: SpeechSynthesisVoice, hindi: boolean, offlineOnly: boolean): number {
+  if (offlineOnly && !v.localService) return -1
   const name = v.name.toLowerCase()
   const lang = v.lang.toLowerCase().replace('_', '-')
   let s = 0
@@ -41,18 +52,18 @@ function score(v: SpeechSynthesisVoice, hindi: boolean): number {
   return s
 }
 
-export function pickVoice(text: string, preferred: string): SpeechSynthesisVoice | undefined {
+export function pickVoice(text: string, preferred: string, offlineOnly = false): SpeechSynthesisVoice | undefined {
   if (!voices.length) loadVoices()
   const hindi = DEVANAGARI.test(text)
   if (preferred) {
     const v = voices.find((x) => x.name === preferred)
     // A chosen English voice cannot read Devanagari, so Hindi falls back to a Hindi voice.
-    if (v && (!hindi || v.lang.toLowerCase().startsWith('hi'))) return v
+    if (v && (!offlineOnly || v.localService) && (!hindi || v.lang.toLowerCase().startsWith('hi'))) return v
   }
   let best: SpeechSynthesisVoice | undefined
   let bestScore = 0
   for (const v of voices) {
-    const sc = score(v, hindi)
+    const sc = score(v, hindi, offlineOnly)
     if (sc > bestScore) {
       best = v
       bestScore = sc
@@ -72,20 +83,34 @@ function clean(text: string): string {
 // Sentence end: . ! ? । followed by whitespace, or a newline.
 const SENTENCE = /^[\s\S]*?(?:[.!?।…]+(?=\s)|\n)/
 
+interface Item {
+  text: string
+  voiceName: string
+  rate: number
+  offline: boolean
+}
+
 class Speaker {
   enabled = true
   voiceName = ''
   rate = 1.05
+  mode: VoiceMode = 'natural'
   /** When the last sentence finished; the wake listener ignores her own echo. */
   lastEnded = 0
   private buf = ''
   private msgId = ''
-  private pending = new Set<SpeechSynthesisUtterance>() // keep refs: Chrome drops events of GC'd utterances
+  private queue: Item[] = []
+  private current: SpeechSynthesisUtterance | null = null // also keeps a ref so Chrome fires its events
+  private gen = 0
+  private cancelledAt = 0
+  private onlineFailures = 0
+  private warned = false
 
-  configure(o: { enabled?: boolean; voiceName?: string; rate?: number }) {
+  configure(o: { enabled?: boolean; voiceName?: string; rate?: number; mode?: VoiceMode }) {
     if (o.enabled !== undefined) this.enabled = o.enabled
     if (o.voiceName !== undefined) this.voiceName = o.voiceName
     if (o.rate !== undefined) this.rate = o.rate
+    if (o.mode !== undefined) this.mode = o.mode
     if (!this.enabled) this.stop()
   }
 
@@ -110,6 +135,25 @@ class Speaker {
     this.drain(true)
   }
 
+  /** Speak a one-off phrase (settings preview), even if replies are muted. */
+  preview(text: string, voiceName: string, rate: number, mode: VoiceMode) {
+    if (!synth) return
+    this.stop()
+    this.enqueue(text, { voiceName, rate, offline: mode === 'fast' })
+  }
+
+  stop() {
+    this.gen++
+    this.buf = ''
+    this.msgId = ''
+    this.queue = []
+    this.current = null
+    this.cancelledAt = Date.now()
+    this.lastEnded = Date.now()
+    synth?.cancel()
+    useStore.getState().setSpeaking(false)
+  }
+
   private drain(final: boolean) {
     for (;;) {
       const fence = this.buf.indexOf('```')
@@ -117,101 +161,143 @@ class Speaker {
       let m: RegExpMatchArray | null
       let consumed = 0
       while ((m = head.slice(consumed).match(SENTENCE))) {
-        this.say(m[0])
+        this.enqueue(m[0])
         consumed += m[0].length
       }
       if (fence === -1) {
         this.buf = this.buf.slice(consumed)
         if (final) {
-          this.say(this.buf)
+          this.enqueue(this.buf)
           this.buf = ''
         }
         return
       }
       // Text before the code block is spoken; the code itself is not.
-      this.say(head.slice(consumed))
+      this.enqueue(head.slice(consumed))
       const close = this.buf.indexOf('```', fence + 3)
       if (close === -1) {
         this.buf = this.buf.slice(fence) // wait for the rest of the block
         if (final) {
-          this.say('Code screen par hai.')
+          this.enqueue('Code screen par hai.')
           this.buf = ''
         }
         return
       }
-      this.say('Code screen par hai.')
+      this.enqueue('Code screen par hai.')
       this.buf = this.buf.slice(close + 3)
     }
   }
 
-  /** Speak a one-off phrase (settings preview). */
-  preview(text: string, voiceName: string, rate: number) {
-    if (!synth) return
-    this.stop()
-    const saved = { v: this.voiceName, r: this.rate }
-    this.voiceName = voiceName
-    this.rate = rate
-    this.say(text)
-    this.voiceName = saved.v
-    this.rate = saved.r
-  }
-
-  private say(raw: string) {
+  private enqueue(raw: string, opts?: Partial<Item>) {
     if (!synth) return
     const text = clean(raw)
     if (!text || !/[\p{L}\p{N}]/u.test(text)) return
-    const u = new SpeechSynthesisUtterance(text)
-    const v = pickVoice(text, this.voiceName)
-    if (v) {
-      u.voice = v
-      u.lang = v.lang
-    }
-    u.rate = this.rate
-    u.onstart = () => {
-      useStore.getState().setSpeaking(true)
-      live.bump(0.5)
-    }
-    u.onboundary = () => live.bump(0.35)
-    const done = () => {
-      this.pending.delete(u)
-      this.lastEnded = Date.now()
-      if (this.pending.size === 0) useStore.getState().setSpeaking(false)
-    }
-    u.onend = done
-    u.onerror = (e) => {
-      done()
-      // Online "Natural" voices fail without internet: retry once with a local voice.
-      const err = (e as SpeechSynthesisErrorEvent).error
-      if (err !== 'interrupted' && err !== 'canceled' && v && !v.localService) {
-        const local = voices.find((x) => x.localService && x.lang.slice(0, 2) === v.lang.slice(0, 2))
-        if (local) {
-          const r = new SpeechSynthesisUtterance(text)
-          r.voice = local
-          r.lang = local.lang
-          r.rate = this.rate
-          r.onend = r.onerror = () => {
-            this.pending.delete(r)
-            if (this.pending.size === 0) useStore.getState().setSpeaking(false)
-          }
-          this.pending.add(r)
-          synth.speak(r)
-        }
-      }
-    }
-    this.pending.add(u)
+    this.queue.push({
+      text,
+      voiceName: opts?.voiceName ?? this.voiceName,
+      rate: opts?.rate ?? this.rate,
+      offline: opts?.offline ?? (this.mode === 'fast' || this.onlineFailures >= 2),
+    })
     useStore.getState().setSpeaking(true)
-    // Chrome/Edge sometimes stay "paused" after cancel(); resume before speaking.
-    if (synth.paused) synth.resume()
-    synth.speak(u)
+    if (!this.current) this.next()
   }
 
-  stop() {
-    this.lastEnded = Date.now()
-    this.buf = ''
-    this.msgId = ''
-    this.pending.clear()
-    synth?.cancel()
-    useStore.getState().setSpeaking(false)
+  private next() {
+    const s = synth
+    const item = this.queue.shift()
+    if (!s || !item) {
+      this.current = null
+      this.lastEnded = Date.now()
+      useStore.getState().setSpeaking(false)
+      return
+    }
+    const gen = this.gen
+    const voice = pickVoice(item.text, item.voiceName, item.offline)
+    const online = !!voice && !voice.localService
+    const u = new SpeechSynthesisUtterance(item.text)
+    if (voice) {
+      u.voice = voice
+      u.lang = voice.lang
+    }
+    u.rate = item.rate
+    let started = false
+    let finished = false
+    let startTimer = 0
+    let endTimer = 0
+    let poll = 0
+
+    const finish = () => {
+      if (finished || gen !== this.gen) return
+      finished = true
+      window.clearTimeout(startTimer)
+      window.clearTimeout(endTimer)
+      window.clearInterval(poll)
+      this.current = null
+      this.lastEnded = Date.now()
+      this.next()
+    }
+    // The online voice did not work: say the same sentence with an offline voice.
+    const retryOffline = () => {
+      if (finished || gen !== this.gen) return
+      finished = true
+      window.clearTimeout(startTimer)
+      window.clearTimeout(endTimer)
+      window.clearInterval(poll)
+      this.onlineFailures++
+      if (this.onlineFailures >= 2 && !this.warned) {
+        this.warned = true
+        useStore.getState().showToast('Online awaaz atak rahi thi, isliye ab offline awaaz use kar rahi hoon.', 'info')
+      }
+      this.current = null
+      this.cancelledAt = Date.now()
+      s.cancel()
+      this.queue.unshift({ ...item, offline: true })
+      this.next()
+    }
+
+    u.onstart = () => {
+      if (finished || gen !== this.gen) return
+      started = true
+      window.clearTimeout(startTimer)
+      live.bump(0.5)
+      // Browsers sometimes never fire onend. Ask the synthesizer directly whether it
+      // is still talking, and as a last resort move on after a generous estimate.
+      const startedAt = Date.now()
+      poll = window.setInterval(() => {
+        if (Date.now() - startedAt > 600 && !s.speaking && !s.pending) finish()
+      }, 300)
+      const estimate = 2000 + (item.text.length * 90) / Math.max(0.5, item.rate)
+      endTimer = window.setTimeout(finish, estimate)
+    }
+    u.onboundary = () => live.bump(0.35)
+    u.onend = finish
+    u.onerror = (e) => {
+      const err = (e as SpeechSynthesisErrorEvent).error
+      if (err === 'interrupted' || err === 'canceled') return finish()
+      if (online && !started) retryOffline()
+      else finish()
+    }
+    startTimer = window.setTimeout(
+      () => {
+        if (started) return
+        if (online) retryOffline()
+        else {
+          s.cancel() // offline voice did not start either: skip this sentence
+          finish()
+        }
+      },
+      online ? START_TIMEOUT_MS : LOCAL_START_TIMEOUT_MS,
+    )
+
+    this.current = u
+    useStore.getState().setSpeaking(true)
+    // Chrome/Edge drop an utterance spoken right after cancel(), and can stay paused.
+    const wait = Math.max(0, AFTER_CANCEL_MS - (Date.now() - this.cancelledAt))
+    window.setTimeout(() => {
+      if (gen !== this.gen || finished) return
+      if (s.paused) s.resume()
+      s.speak(u)
+    }, wait)
   }
 }
 

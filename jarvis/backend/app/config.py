@@ -86,8 +86,10 @@ class VoiceSettings(BaseModel):
     tts_rate: float = 1.05
     stt_lang: str = "en-IN"  # en-IN understands English + Hinglish; hi-IN for pure Hindi
     wake_word: str = "friday"
-    # Always-on listening for the wake word. Off until the user turns it on.
-    wake_enabled: bool = False
+    # Always-on listening for the wake word (the user asked for it to be on by default).
+    wake_enabled: bool = True
+    # natural = online human-like voices (Edge), fast = offline voices, instant
+    tts_mode: str = "natural"
 
 
 class Settings(BaseModel):
@@ -101,7 +103,7 @@ class Settings(BaseModel):
     # confirmation for everything that touches the system.
     confirm_all_system_actions: bool = False
     history_limit: int = 40
-    settings_version: int = 2
+    settings_version: int = 3
 
 
 _lock = threading.Lock()
@@ -127,12 +129,17 @@ def load_settings() -> Settings:
         if SETTINGS_FILE.exists():
             try:
                 raw = json.loads(SETTINGS_FILE.read_text("utf-8"))
-                if raw.get("settings_version", 1) < 2:
+                version = raw.get("settings_version", 1)
+                if version < 2:
                     # v2: the assistant was renamed from Jarvis to Friday.
                     if raw.get("assistant_name") in (None, "Jarvis"):
                         raw["assistant_name"] = "Friday"
                     raw.setdefault("voice", {})["wake_word"] = "friday"
-                    raw["settings_version"] = 2
+                if version < 3:
+                    # v3: wake word listens by default.
+                    raw.setdefault("voice", {})["wake_enabled"] = True
+                if version < 3:
+                    raw["settings_version"] = 3
                     SETTINGS_FILE.write_text(json.dumps(raw, indent=2), "utf-8")
                 _settings = Settings.model_validate(raw)
             except Exception:  # corrupt file: start fresh, keep a backup

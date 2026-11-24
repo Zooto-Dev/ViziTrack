@@ -30,6 +30,8 @@ interface Store {
   listening: boolean
   wakeOn: boolean
   wakeArmed: boolean
+  wakeStatus: 'off' | 'listening' | 'restarting' | 'no-internet' | 'no-mic'
+  wakeHeard: { text: string; at: number } | null
   warm: WarmState
   thinkingSince: number
 
@@ -52,6 +54,8 @@ interface Store {
   setListening(v: boolean): void
   setWakeOn(v: boolean): void
   setWakeArmed(v: boolean): void
+  setWakeStatus(v: Store['wakeStatus']): void
+  setWakeHeard(text: string): void
   setWarm(w: WarmState): void
 }
 
@@ -82,6 +86,8 @@ export const useStore = create<Store>((set, get) => ({
   listening: false,
   wakeOn: false,
   wakeArmed: false,
+  wakeStatus: 'off',
+  wakeHeard: null,
   warm: { state: 'idle' },
   thinkingSince: 0,
 
@@ -131,5 +137,9 @@ export const useStore = create<Store>((set, get) => ({
   setListening: (listening) => set({ listening }),
   setWakeOn: (wakeOn) => set({ wakeOn }),
   setWakeArmed: (wakeArmed) => set({ wakeArmed }),
+  setWakeStatus: (wakeStatus) => {
+    if (get().wakeStatus !== wakeStatus) set({ wakeStatus })
+  },
+  setWakeHeard: (text) => set({ wakeHeard: { text, at: Date.now() } }),
   setWarm: (warm) => set({ warm }),
 }))
