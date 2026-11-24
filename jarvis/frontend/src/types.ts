@@ -33,7 +33,7 @@ export interface Settings {
     max_tokens: number
     timeout_s: number
   }
-  voice: { speak_replies: boolean; tts_voice: string; tts_rate: number; stt_lang: string; wake_word: string }
+  voice: { speak_replies: boolean; tts_voice: string; tts_rate: number; stt_lang: string; wake_word: string; wake_enabled: boolean }
   confirm_all_system_actions: boolean
   history_limit: number
   provider_presets: Record<string, ProviderPreset>

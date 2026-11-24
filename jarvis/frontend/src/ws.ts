@@ -1,6 +1,7 @@
 import { live, useStore } from './store'
 import type { Message, Settings } from './types'
 import { speaker } from './voice/tts'
+import { setWakeEnabled } from './voice/wake'
 
 type Outgoing =
   | { type: 'chat'; text: string }
@@ -55,13 +56,14 @@ export function send(msg: Outgoing): void {
 function applyVoice(s: Settings | null | undefined) {
   if (!s?.voice) return
   speaker.configure({ enabled: s.voice.speak_replies, voiceName: s.voice.tts_voice, rate: s.voice.tts_rate })
+  setWakeEnabled(!!s.voice.wake_enabled)
 }
 
 export const api = {
   chat(text: string) {
     const t = text.trim()
     if (!t) return
-    speaker.stop() // a new command always interrupts Jarvis
+    speaker.stop() // a new command always interrupts FRIDAY
     const st = useStore.getState()
     if (st.streaming) st.endStream(st.streaming.id, st.streaming.text, st.streaming.via, true)
     st.addMessage({ id: `u${Date.now()}`, role: 'user', text: t, ts: Date.now() })

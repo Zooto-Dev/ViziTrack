@@ -75,3 +75,23 @@ def test_schemas_are_well_formed():
         assert oa["function"]["name"] == t.name and oa["function"]["parameters"]["type"] == "object"
         an = t.anthropic_schema()
         assert an["input_schema"]["type"] == "object"
+
+
+def test_old_settings_are_renamed_to_friday(tmp_path, monkeypatch):
+    import json
+
+    from app import config
+
+    f = tmp_path / "settings.json"
+    f.write_text(json.dumps({"assistant_name": "Jarvis", "user_name": "Boss", "provider": {"name": "groq", "model": "m", "api_key": "k"}}))
+    monkeypatch.setattr(config, "SETTINGS_FILE", f)
+    monkeypatch.setattr(config, "_settings", None)
+    s = config.load_settings()
+    assert s.assistant_name == "Friday" and s.user_name == "Boss" and s.provider.api_key == "k"
+    assert s.voice.wake_enabled is False and s.settings_version == 2
+    assert json.loads(f.read_text())["assistant_name"] == "Friday"
+    # A name the user chose themselves is kept.
+    f.write_text(json.dumps({"assistant_name": "Edith"}))
+    monkeypatch.setattr(config, "_settings", None)
+    assert config.load_settings().assistant_name == "Edith"
+    monkeypatch.setattr(config, "_settings", None)

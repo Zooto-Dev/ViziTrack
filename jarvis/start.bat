@@ -1,12 +1,12 @@
 @echo off
 setlocal
 REM ============================================================
-REM  JARVIS one-click start for Windows.
+REM  FRIDAY one-click start for Windows.
 REM  No brackets in echo lines on purpose: cmd breaks on them.
 REM  Every failure stops with a pause so the error stays visible.
 REM ============================================================
 cd /d "%~dp0"
-title JARVIS
+title FRIDAY
 
 where python >nul 2>nul
 if errorlevel 1 goto :no_python
@@ -39,14 +39,14 @@ if errorlevel 1 goto :fail_pop
 popd
 :ui_ok
 
-echo [3/3] Jarvis start ho raha hai: http://127.0.0.1:8765
-echo Ye window band mat karna. Jarvis band karna ho tab ise band karo.
+echo [3/3] FRIDAY start ho rahi hai: http://127.0.0.1:8765
+echo Ye window band mat karna. FRIDAY band karni ho tab ise band karo.
 echo.
 start "" /b powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0open-ui.ps1"
 cd backend
 "%PY%" run.py
 echo.
-echo Jarvis band ho gaya. Upar koi error dikhe toh uska screenshot bhejo.
+echo FRIDAY band ho gayi. Upar koi error dikhe toh uska screenshot bhejo.
 pause
 exit /b 0
 

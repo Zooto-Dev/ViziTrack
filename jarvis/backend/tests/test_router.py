@@ -76,3 +76,8 @@ def test_phrasing_mirrors_language():
 def test_devanagari_from_speech_recognition():
     assert r("टाइम क्या हुआ")[1] == "get_time"
     assert r("मेरे टास्क बताओ")[1] == "list_tasks"
+
+
+def test_friday_name_is_understood():
+    assert r("Hey Friday, open chrome") == ("tool", "open_app", {"name": "chrome"})
+    assert r("friday stop") == ("stop", None, {})

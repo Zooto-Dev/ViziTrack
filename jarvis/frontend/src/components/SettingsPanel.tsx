@@ -44,6 +44,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
         tts_voice: draft.voice.tts_voice,
         tts_rate: draft.voice.tts_rate,
         stt_lang: draft.voice.stt_lang,
+        wake_enabled: draft.voice.wake_enabled,
       },
       provider: {
         name: draft.provider.name,
@@ -148,11 +149,19 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               checked={draft.voice.speak_replies}
               onChange={(e) => setDraft({ ...draft, voice: { ...draft.voice, speak_replies: e.target.checked } })}
             />
-            Jarvis jawab bol kar sunaye
+            {draft.assistant_name} jawab bol kar sunaye
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={draft.voice.wake_enabled}
+              onChange={(e) => setDraft({ ...draft, voice: { ...draft.voice, wake_enabled: e.target.checked } })}
+            />
+            Wake word: “{draft.assistant_name}”, “Hey {draft.assistant_name}” ya “Wake up” bolne par apne aap sune
           </label>
           <div className="grid2">
             <label>
-              Jarvis ki awaaz
+              {draft.assistant_name} ki awaaz
               <select
                 value={draft.voice.tts_voice}
                 onChange={(e) => setDraft({ ...draft, voice: { ...draft.voice, tts_voice: e.target.value } })}
@@ -204,7 +213,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
             {!ttsSupported && <span className="status bad">Is browser me awaaz support nahi hai.</span>}
           </div>
           <p className="hint">
-            Sabse natural awaaz Microsoft Edge me milti hai (“Online (Natural)” wali). Mic ke liye internet chahiye. Shortcut: Ctrl+Space.
+            Sabse natural awaaz Microsoft Edge me milti hai (“Online (Natural)” wali). Mic aur wake word ke liye internet chahiye. Wake word on ho toh mic lagataar sunta hai (sirf jab tak ye window khuli hai). Shortcut: Ctrl+Space.
           </p>
         </section>
 

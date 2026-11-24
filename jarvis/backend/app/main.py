@@ -171,7 +171,7 @@ async def lifespan(app: FastAPI):
     app.state.warm = {"state": "idle"}
     monitor.start()
     schedule_warmup()
-    log.info("Jarvis backend %s ready. %d tools registered.", __version__, len(registry.all()))
+    log.info("FRIDAY backend %s ready. %d tools registered.", __version__, len(registry.all()))
     try:
         yield
     finally:
@@ -182,7 +182,7 @@ async def lifespan(app: FastAPI):
         store.close()
 
 
-app = FastAPI(title="J.A.R.V.I.S.", version=__version__, lifespan=lifespan)
+app = FastAPI(title="F.R.I.D.A.Y.", version=__version__, lifespan=lifespan)
 
 
 async def _warmup() -> None:

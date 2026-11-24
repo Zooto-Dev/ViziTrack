@@ -4,6 +4,7 @@ import { api } from '../ws'
 
 export function ConfirmDialog() {
   const c = useStore((s) => s.confirm)
+  const name = useStore((s) => s.settings?.assistant_name || 'FRIDAY')
   useEffect(() => {
     if (!c) return
     const onKey = (e: KeyboardEvent) => {
@@ -19,7 +20,7 @@ export function ConfirmDialog() {
       <div className="modal confirm">
         <div className="modal-title">CONFIRM ACTION</div>
         <p>
-          Jarvis wants to run <b className="mono">{c.tool}</b>
+          {name} wants to run <b className="mono">{c.tool}</b>
         </p>
         <pre className="mono args">{JSON.stringify(c.args, null, 2)}</pre>
         <p className="dim">{c.reason}</p>

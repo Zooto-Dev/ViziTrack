@@ -4,7 +4,7 @@ import { live, useStore } from '../store'
  * Text-to-speech with the browser's built-in voices (free, no download).
  * Edge ships natural "Online (Natural)" voices; Chrome on Windows has the
  * Microsoft voices plus Google voices. Replies are spoken sentence by sentence
- * while they stream, so Jarvis starts talking before the answer is finished.
+ * while they stream, so FRIDAY starts talking before the answer is finished.
  */
 const synth: SpeechSynthesis | undefined = typeof window !== 'undefined' ? window.speechSynthesis : undefined
 const DEVANAGARI = /[ऀ-ॿ]/
@@ -36,8 +36,8 @@ function score(v: SpeechSynthesisVoice, hindi: boolean): number {
   else if (lang.startsWith('en')) s += 30
   if (name.includes('natural') || name.includes('online')) s += 25
   if (name.includes('google')) s += 8
-  // Calm male voices suit Jarvis best.
-  if (/prabhat|madhur|ravi|hemant|ryan|george|guy|daniel|thomas/.test(name)) s += 6
+  // FRIDAY speaks with a calm female voice (Edge: Neerja / Swara; Windows: Heera / Kalpana).
+  if (/neerja|swara|heera|kalpana|sonia|libby|emily|jenny|aria|ava|zira/.test(name)) s += 6
   return s
 }
 
@@ -76,6 +76,8 @@ class Speaker {
   enabled = true
   voiceName = ''
   rate = 1.05
+  /** When the last sentence finished; the wake listener ignores her own echo. */
+  lastEnded = 0
   private buf = ''
   private msgId = ''
   private pending = new Set<SpeechSynthesisUtterance>() // keep refs: Chrome drops events of GC'd utterances
@@ -172,6 +174,7 @@ class Speaker {
     u.onboundary = () => live.bump(0.35)
     const done = () => {
       this.pending.delete(u)
+      this.lastEnded = Date.now()
       if (this.pending.size === 0) useStore.getState().setSpeaking(false)
     }
     u.onend = done
@@ -203,6 +206,7 @@ class Speaker {
   }
 
   stop() {
+    this.lastEnded = Date.now()
     this.buf = ''
     this.msgId = ''
     this.pending.clear()

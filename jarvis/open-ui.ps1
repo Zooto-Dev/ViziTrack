@@ -1,4 +1,4 @@
-# Waits for the Jarvis backend, then opens the UI as an app window.
+# Waits for the FRIDAY backend, then opens the UI as an app window.
 $url = 'http://127.0.0.1:8765'
 for ($i = 0; $i -lt 120; $i++) {
   try { Invoke-WebRequest -UseBasicParsing "$url/api/health" -TimeoutSec 1 | Out-Null; break }

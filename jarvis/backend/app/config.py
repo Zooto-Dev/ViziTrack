@@ -85,12 +85,14 @@ class VoiceSettings(BaseModel):
     tts_voice: str = ""  # browser voice name; empty = pick the best automatically
     tts_rate: float = 1.05
     stt_lang: str = "en-IN"  # en-IN understands English + Hinglish; hi-IN for pure Hindi
-    wake_word: str = "hey jarvis"
+    wake_word: str = "friday"
+    # Always-on listening for the wake word. Off until the user turns it on.
+    wake_enabled: bool = False
 
 
 class Settings(BaseModel):
     user_name: str = "Sir"
-    assistant_name: str = "Jarvis"
+    assistant_name: str = "Friday"
     # auto = mirror the user's language (Hindi / English / Hinglish)
     reply_language: Literal["auto", "english", "hindi", "hinglish"] = "auto"
     provider: ProviderSettings = Field(default_factory=ProviderSettings)
@@ -99,6 +101,7 @@ class Settings(BaseModel):
     # confirmation for everything that touches the system.
     confirm_all_system_actions: bool = False
     history_limit: int = 40
+    settings_version: int = 2
 
 
 _lock = threading.Lock()
@@ -123,7 +126,15 @@ def load_settings() -> Settings:
             return _settings
         if SETTINGS_FILE.exists():
             try:
-                _settings = Settings.model_validate(json.loads(SETTINGS_FILE.read_text("utf-8")))
+                raw = json.loads(SETTINGS_FILE.read_text("utf-8"))
+                if raw.get("settings_version", 1) < 2:
+                    # v2: the assistant was renamed from Jarvis to Friday.
+                    if raw.get("assistant_name") in (None, "Jarvis"):
+                        raw["assistant_name"] = "Friday"
+                    raw.setdefault("voice", {})["wake_word"] = "friday"
+                    raw["settings_version"] = 2
+                    SETTINGS_FILE.write_text(json.dumps(raw, indent=2), "utf-8")
+                _settings = Settings.model_validate(raw)
             except Exception:  # corrupt file: start fresh, keep a backup
                 SETTINGS_FILE.rename(SETTINGS_FILE.with_suffix(".bad.json"))
                 _settings = Settings()

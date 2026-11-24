@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { uiState, useStore } from '../store'
+import { api } from '../ws'
+import { wakeSupported } from '../voice/wake'
 
 const STATE_LABEL: Record<string, string> = {
   idle: 'STANDBY',
@@ -24,18 +26,44 @@ function Clock() {
   )
 }
 
+function WakeToggle() {
+  const on = useStore((s) => s.wakeOn)
+  const name = useStore((s) => s.settings?.assistant_name || 'Friday')
+  const connected = useStore((s) => s.connected)
+  if (!wakeSupported) return null
+  return (
+    <button
+      className={`chip wake ${on ? 'on' : ''}`}
+      disabled={!connected}
+      onClick={() => api.setSettings({ voice: { wake_enabled: !on } })}
+      title={on ? `Sun rahi hoon. "${name}" ya "Wake up" boliye. Band karne ke liye click karein.` : 'Click karke wake word on karein'}
+    >
+      <span className={`dot ${on ? 'ok' : ''}`} />
+      {on ? `WAKE ON · SAY "${name.toUpperCase()}"` : 'WAKE OFF'}
+    </button>
+  )
+}
+
+function spaced(name: string) {
+  return name.toUpperCase().replace(/[^A-Z0-9]/g, '').split('').join('.') + '.'
+}
+
 export function Hud() {
   const connected = useStore((s) => s.connected)
   const state = useStore(uiState)
   const provider = useStore((s) => s.settings?.provider)
   const version = useStore((s) => s.version)
   const open = useStore((s) => s.setSettingsOpen)
+  const name = useStore((s) => s.settings?.assistant_name || 'Friday')
+  useEffect(() => {
+    document.title = spaced(name)
+  }, [name])
 
   return (
     <header className="hud">
       <div className="hud-left">
         <div className="wordmark">
-          <span className="wordmark-main">J.A.R.V.I.S.</span>
+          <span className="wordmark-main">{spaced(name)}</span>
           <span className="wordmark-sub">Personal AI Operating System {version && `· v${version}`}</span>
         </div>
       </div>
@@ -46,6 +74,7 @@ export function Hud() {
         </div>
       </div>
       <div className="hud-right">
+        <WakeToggle />
         <button className="chip" onClick={() => open(true)} title="Settings (Ctrl+,)">
           <span className={`dot ${connected ? 'ok' : 'bad'}`} />
           {connected ? 'LINK' : 'OFFLINE'}

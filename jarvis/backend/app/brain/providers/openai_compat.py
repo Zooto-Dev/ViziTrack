@@ -87,7 +87,7 @@ class OpenAICompatProvider(LLMProvider):
         if self.api_key:
             h["Authorization"] = f"Bearer {self.api_key}"
         if self.name == "openrouter":
-            h["X-Title"] = "Jarvis"
+            h["X-Title"] = "FRIDAY"
         return h
 
     def describe(self) -> str:
@@ -147,7 +147,7 @@ class OpenAICompatProvider(LLMProvider):
                         if resp.status_code == 404 or "model_not_found" in text:
                             raise ProviderError(
                                 f"Model '{self.model}' {self.name} par ab available nahi hai. Settings kholo aur "
-                                "Test connection dabao, Jarvis sahi model khud chun lega."
+                                "Test connection dabao, FRIDAY sahi model khud chun lega."
                             )
                         if resp.status_code == 429:
                             raise ProviderError("Rate limit reached on the free tier (429). Try again in a moment.")

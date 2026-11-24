@@ -873,3 +873,15 @@ pre.code {
   overflow-x: auto;
   max-height: 320px;
 }
+
+.chip.wake.on {
+  border-color: rgba(124, 255, 178, 0.55);
+  color: #c9ffe0;
+}
+.chip.wake .dot:not(.ok) {
+  background: var(--muted);
+}
+.chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

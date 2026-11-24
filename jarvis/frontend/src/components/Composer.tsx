@@ -3,6 +3,7 @@ import { uiState, useStore } from '../store'
 import { api } from '../ws'
 import { speaker } from '../voice/tts'
 import { startListening, stopListening, sttSupported } from '../voice/stt'
+import { pauseWake, resumeWake } from '../voice/wake'
 
 export function Composer() {
   const [text, setText] = useState('')
@@ -26,7 +27,8 @@ export function Composer() {
       stopListening()
       return
     }
-    speaker.stop() // barge-in: talking over Jarvis stops it
+    speaker.stop() // barge-in: talking over FRIDAY stops it
+    pauseWake()
     st.setListening(true)
     setText('')
     const lang = st.settings?.voice?.stt_lang || 'en-IN'
@@ -36,7 +38,10 @@ export function Composer() {
         setText('')
         api.chat(t)
       },
-      onEnd: () => useStore.getState().setListening(false),
+      onEnd: () => {
+        useStore.getState().setListening(false)
+        resumeWake()
+      },
       onError: (m) => useStore.getState().showToast(m, 'error'),
     })
   }, [])
@@ -77,9 +82,9 @@ export function Composer() {
         rows={1}
         placeholder={
           !connected
-            ? 'Connecting to Jarvis backend…'
+            ? 'Connecting to FRIDAY…'
             : listening
-              ? 'Sun raha hoon… boliye'
+              ? 'Sun rahi hoon… boliye'
               : 'Mic dabakar boliye, ya yahan likhiye (Enter)'
         }
         value={text}

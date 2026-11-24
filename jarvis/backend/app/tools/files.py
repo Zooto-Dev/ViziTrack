@@ -4,7 +4,7 @@ Safety rules
 * Searching and reading never change anything.
 * open_file never runs programs or scripts: executables are refused, and code
   files open in an editor instead of being executed.
-* write_file saves into the user's Jarvis folder (Documents/Jarvis).  Writing
+* write_file saves into the user's FRIDAY folder (Documents/FRIDAY).  Writing
   anywhere else, or replacing an existing file, asks the user first.
 """
 
@@ -60,7 +60,7 @@ SEARCH_MAX_ENTRIES = 400_000
 # helpers
 # --------------------------------------------------------------------------
 def workspace() -> Path:
-    d = Path(os.environ.get("JARVIS_WORKSPACE") or Path.home() / "Documents" / "Jarvis")
+    d = Path(os.environ.get("JARVIS_WORKSPACE") or Path.home() / "Documents" / "FRIDAY")
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -279,7 +279,7 @@ def _read_xlsx(p: Path, limit: int) -> str:
     try:
         import openpyxl
     except ImportError as e:
-        raise RuntimeError("Excel reading needs the openpyxl package; restart Jarvis with start.bat to install it") from e
+        raise RuntimeError("Excel reading needs the openpyxl package; restart FRIDAY with start.bat to install it") from e
     wb = openpyxl.load_workbook(p, read_only=True, data_only=True)
     out: list[str] = []
     try:
@@ -305,7 +305,7 @@ def _read_pdf(p: Path, limit: int) -> str:
     try:
         from pypdf import PdfReader
     except ImportError as e:
-        raise RuntimeError("PDF reading needs the pypdf package; restart Jarvis with start.bat to install it") from e
+        raise RuntimeError("PDF reading needs the pypdf package; restart FRIDAY with start.bat to install it") from e
     reader = PdfReader(str(p))
     out: list[str] = []
     for i, page in enumerate(reader.pages[:30]):
@@ -367,15 +367,15 @@ def _write_needs_confirm(args: dict[str, Any]) -> str | None:
     p = _resolve(str(args.get("filename", "")))
     ws = workspace().resolve()
     if not p.is_relative_to(ws):
-        return f"Jarvis wants to save a file outside your Jarvis folder: {p}"
+        return f"FRIDAY wants to save a file outside your FRIDAY folder: {p}"
     if p.exists():
-        return f"{p.name} already exists in your Jarvis folder. Replace it?"
+        return f"{p.name} already exists in your FRIDAY folder. Replace it?"
     return None
 
 
 @registry.tool(
     "write_file",
-    "Save text or code to a file in the user's Jarvis folder (Documents/Jarvis) and open it. Use this whenever the "
+    "Save text or code to a file in the user's FRIDAY folder (Documents/FRIDAY) and open it. Use this whenever the "
     "user asks you to write code, a script, a letter or notes. Give a sensible file name with the right extension.",
     {
         "type": "object",

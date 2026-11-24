@@ -46,11 +46,11 @@ class RouteMatch:
 # Words that mean "open" in all three languages.
 OPEN = r"(?:open|launch|start|run|kholo|khol|chalao|chalu|shuru|खोलो|खोल|चलाओ)"
 OPEN_TAIL = r"(?:\s+(?:karo|kar|do|dijiye|kardo|please|na|zara|jara|toh|to|kro|करो|कर|दो))*"
-POLITE = r"(?:please|jarvis|hey jarvis|ok jarvis|bhai|sir|ji|zara|jara|yaar|,|\.|!)"
+POLITE = r"(?:please|hey friday|hi friday|ok friday|okay friday|friday|फ्राइडे|jarvis|hey jarvis|ok jarvis|bhai|sir|ji|zara|jara|yaar|,|\.|!)"
 
 STOP_RE = re.compile(
     r"^\s*(?:" + POLITE + r"\s*)*(?:stop|ruko|ruk|chup|bas|band karo|band kar|stop speaking|stop talking|"
-    r"quiet|shut up|cancel|रुको|चुप|बस|बंद करो|hold on|wait)(?:\s+(?:speaking|talking|jarvis|karo|kar|ho|ja|jao|bolna|please))*\s*[.!]*\s*$",
+    r"quiet|shut up|cancel|रुको|चुप|बस|बंद करो|hold on|wait)(?:\s+(?:speaking|talking|friday|jarvis|karo|kar|ho|ja|jao|bolna|please))*\s*[.!]*\s*$",
     re.IGNORECASE,
 )
 
@@ -246,7 +246,7 @@ def phrase_result(tool: str, ok: bool, message: str, data: dict[str, Any], lang:
         return {"hindi": f"{host} खोल दिया।", "hinglish": f"{host} khol diya, {user_name}.", "english": f"Opening {host}, {user_name}."}[lang]
     if tool == "open_app":
         app = message.replace("launched ", "")
-        return {"hindi": f"{app} खोल रहा हूँ।", "hinglish": f"{app} khol diya.", "english": f"Launching {app}."}[lang]
+        return {"hindi": f"{app} खोल रही हूँ।", "hinglish": f"{app} khol diya.", "english": f"Launching {app}."}[lang]
     if tool == "remember":
         return {"hindi": "ठीक है, याद रख लिया।", "hinglish": "Theek hai, yaad rakh liya.", "english": "Noted. I'll remember that."}[lang]
     if tool == "open_latest_file":

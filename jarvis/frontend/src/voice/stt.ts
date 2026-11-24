@@ -54,7 +54,7 @@ export interface ListenHandlers {
 
 export function startListening(lang: string, h: ListenHandlers): void {
   if (!Ctor) {
-    h.onError('Is browser me voice input nahi hai. Jarvis ko Chrome ya Edge me kholein.')
+    h.onError('Is browser me voice input nahi hai. FRIDAY ko Chrome ya Edge me kholein.')
     h.onEnd()
     return
   }

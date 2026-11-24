@@ -28,6 +28,8 @@ interface Store {
   version: string
   speaking: boolean
   listening: boolean
+  wakeOn: boolean
+  wakeArmed: boolean
   warm: WarmState
   thinkingSince: number
 
@@ -48,12 +50,14 @@ interface Store {
   setProviderStatus(s: ProviderStatus | null): void
   setSpeaking(v: boolean): void
   setListening(v: boolean): void
+  setWakeOn(v: boolean): void
+  setWakeArmed(v: boolean): void
   setWarm(w: WarmState): void
 }
 
 /** What the HUD shows: local voice activity wins over the backend state. */
-export function uiState(s: { state: JarvisState; speaking: boolean; listening: boolean }): JarvisState {
-  if (s.listening) return 'listening'
+export function uiState(s: { state: JarvisState; speaking: boolean; listening: boolean; wakeArmed: boolean }): JarvisState {
+  if (s.listening || s.wakeArmed) return 'listening'
   if (s.state === 'thinking' || s.state === 'executing' || s.state === 'waiting') return s.state
   if (s.speaking) return 'speaking'
   return s.state
@@ -76,6 +80,8 @@ export const useStore = create<Store>((set, get) => ({
   version: '',
   speaking: false,
   listening: false,
+  wakeOn: false,
+  wakeArmed: false,
   warm: { state: 'idle' },
   thinkingSince: 0,
 
@@ -123,5 +129,7 @@ export const useStore = create<Store>((set, get) => ({
     if (get().speaking !== speaking) set({ speaking })
   },
   setListening: (listening) => set({ listening }),
+  setWakeOn: (wakeOn) => set({ wakeOn }),
+  setWakeArmed: (wakeArmed) => set({ wakeArmed }),
   setWarm: (warm) => set({ warm }),
 }))

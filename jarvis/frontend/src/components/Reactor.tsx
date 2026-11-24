@@ -23,6 +23,8 @@ export function Reactor() {
   const stateRef = useRef<JarvisState>('idle')
   const state = useStore(uiState)
   const warm = useStore((s) => s.warm)
+  const wakeOn = useStore((s) => s.wakeOn)
+  const name = useStore((s) => s.settings?.assistant_name || 'Friday')
   stateRef.current = state
 
   useEffect(() => {
@@ -152,7 +154,7 @@ export function Reactor() {
 
   return (
     <div className="reactor-wrap">
-      <canvas ref={canvasRef} className="reactor" aria-label="Jarvis core visualisation" />
+      <canvas ref={canvasRef} className="reactor" aria-label="FRIDAY core visualisation" />
       <div className="reactor-caption mono">
         {state !== 'idle'
           ? state.toUpperCase()
@@ -160,7 +162,9 @@ export function Reactor() {
             ? 'LOADING AI MODEL…'
             : warm.state === 'failed'
               ? 'AI MODEL OFFLINE · COMMANDS STILL WORK'
-              : 'READY'}
+              : wakeOn
+                ? `SAY “${name.toUpperCase()}”`
+                : 'READY'}
       </div>
     </div>
   )

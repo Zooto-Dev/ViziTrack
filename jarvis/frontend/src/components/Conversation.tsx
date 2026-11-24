@@ -70,7 +70,7 @@ function Thinking() {
           <i />
           <i />
         </span>{' '}
-        Soch raha hoon… <span className="mono dim">{secs}s</span>
+        Soch rahi hoon… <span className="mono dim">{secs}s</span>
       </div>
       {local && secs >= 8 && (
         <div className="bubble-meta">
