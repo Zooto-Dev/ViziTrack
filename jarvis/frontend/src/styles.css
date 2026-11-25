@@ -1621,3 +1621,191 @@ pre.code {
 :root[data-theme='daylight'] .boot {
   background: radial-gradient(ellipse at center, #ffffff, #dfe8f5 70%);
 }
+
+/* ==========================================================================
+   Plain-language additions
+   ========================================================================== */
+.reactor-status {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+}
+.rs-line {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  text-shadow: 0 0 12px rgba(var(--rgb), 0.5);
+}
+.rs-hint {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.reactor-status.s-waiting .rs-line {
+  color: var(--warn);
+}
+.reactor-heard {
+  bottom: 50px;
+}
+.health {
+  margin: -2px 0 10px;
+  padding: 6px 10px;
+  font-size: 14px;
+  border-left: 3px solid var(--ok);
+  background: rgba(var(--rgb), 0.06);
+}
+.health.warn {
+  border-left-color: var(--warn);
+}
+.health.bad {
+  border-left-color: var(--bad);
+  color: #ffc1c6;
+}
+.tag.live {
+  color: var(--ok);
+  border-color: transparent;
+}
+.sg-sub {
+  font-family: var(--font);
+  font-size: 11.5px;
+}
+.spark-head {
+  letter-spacing: 0.02em;
+  font-size: 12px;
+}
+.kv {
+  font-size: 12.5px;
+}
+.task-add {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.task-add input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(var(--rgb), 0.05);
+  border: 1px solid var(--line);
+  padding: 7px 9px;
+  outline: none;
+  font-size: 14px;
+}
+.task-add input:focus {
+  border-color: var(--line-strong);
+}
+.task-add button {
+  background: rgba(var(--rgb), 0.14);
+  border: 1px solid var(--line-mid);
+  padding: 0 12px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.task-add button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.hint-line {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.quick-text i {
+  font-family: var(--font);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+}
+.tool-chip {
+  font-size: 13px;
+  padding: 4px 10px;
+}
+.tool-icon {
+  font-size: 13px;
+  font-weight: 700;
+}
+.tool-name {
+  font-weight: 600;
+}
+.bubble-who {
+  font-size: 10.5px;
+}
+.bubble-meta {
+  font-family: var(--font);
+  font-size: 12px;
+}
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.example {
+  background: rgba(var(--rgb), 0.07);
+  border: 1px solid var(--line-mid);
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.example:hover {
+  background: rgba(var(--rgb), 0.16);
+}
+.chip.help {
+  justify-content: center;
+  width: 32px;
+  padding: 6px 0;
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+.statusbar {
+  font-family: var(--font);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+.state-pill {
+  letter-spacing: 0.18em;
+}
+.modal.help {
+  width: min(720px, 94vw);
+}
+.steps {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.7;
+  font-size: 15px;
+}
+.parts {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 8px 14px;
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+.parts dt {
+  color: var(--cyan);
+  font-weight: 600;
+}
+.parts dd {
+  margin: 0;
+  color: var(--ink);
+}
+@media (max-width: 760px) {
+  .parts {
+    grid-template-columns: 1fr;
+  }
+  .parts dd {
+    margin-bottom: 6px;
+  }
+  .rs-hint {
+    font-size: 12.5px;
+  }
+}

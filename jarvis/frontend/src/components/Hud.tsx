@@ -2,15 +2,8 @@ import { useEffect, useState } from 'react'
 import { uiState, useStore } from '../store'
 import { api } from '../ws'
 import { wakeSupported } from '../voice/wake'
+import { providerWords, STATE_WORDS } from '../words'
 
-const STATE_LABEL: Record<string, string> = {
-  idle: 'STANDBY',
-  listening: 'LISTENING',
-  thinking: 'PROCESSING',
-  speaking: 'RESPONDING',
-  executing: 'EXECUTING',
-  waiting: 'AWAITING CONFIRMATION',
-}
 
 function Clock() {
   const [now, setNow] = useState(() => new Date())
@@ -37,18 +30,19 @@ function WakeToggle() {
       className={`chip wake ${on ? 'on' : ''}`}
       disabled={!connected}
       onClick={() => api.setSettings({ voice: { wake_enabled: !on } })}
-      title={on ? `Sun rahi hoon. "${name}" ya "Wake up" boliye. Band karne ke liye click karein.` : 'Click karke wake word on karein'}
+      title={on ? `Main sun rahi hoon. "${name}" ya "Wake up" boliye. Band karne ke liye yahan click karein.` : 'Click karein: phir "' + name + '" bolne par main apne aap sununghi'}
     >
       <span className={`dot ${on ? (status === 'listening' ? 'ok' : 'warn') : ''}`} />
+      🎙
       {!on
-        ? 'WAKE OFF'
+        ? ' Sunna band'
         : status === 'no-internet'
-          ? 'WAKE · INTERNET NAHI'
+          ? ' Internet nahi'
           : status === 'no-mic'
-            ? 'WAKE · MIC NAHI MILA'
+            ? ' Mic nahi mila'
             : (
               <>
-                WAKE ON<span className="chip-long"> · SAY "{name.toUpperCase()}"</span>
+                {' '}“{name}” bolo<span className="chip-long"> · sun rahi hoon</span>
               </>
             )}
     </button>
@@ -65,6 +59,7 @@ export function Hud() {
   const provider = useStore((s) => s.settings?.provider)
   const version = useStore((s) => s.version)
   const open = useStore((s) => s.setSettingsOpen)
+  const setHelp = useStore((s) => s.setHelpOpen)
   const name = useStore((s) => s.settings?.assistant_name || 'Friday')
   useEffect(() => {
     document.title = spaced(name)
@@ -80,25 +75,25 @@ export function Hud() {
         </svg>
         <div className="wordmark">
           <span className="wordmark-main">{spaced(name)}</span>
-          <span className="wordmark-sub">Personal AI Operating System {version && `· v${version}`}</span>
+          <span className="wordmark-sub">Aapki personal AI assistant {version && `· v${version}`}</span>
         </div>
       </div>
       <div className="hud-center">
         <div className={`state-pill state-${state}`}>
           <span className="br">[</span>
           <span className="dot" />
-          {STATE_LABEL[state] ?? state.toUpperCase()}
+          {STATE_WORDS[state]}
           <span className="br">]</span>
         </div>
       </div>
       <div className="hud-right">
         <WakeToggle />
-        <button className="chip link" onClick={() => open(true)} title="Settings (Ctrl+,)">
+        <button className="chip link" onClick={() => open(true)} title={`AI model: ${provider?.model ?? '—'} · badalne ke liye click karein`}>
           <span className={`dot ${connected ? 'ok' : 'bad'}`} />
-          {connected ? 'LINK' : 'OFFLINE'}
-          <span className="chip-sep">|</span>
-          {provider ? provider.name : '—'}
-          {provider?.model && <span className="chip-long"> · {provider.model}</span>}
+          {connected ? 'AI:' : 'Connection toota'} {connected && providerWords(provider?.name)}
+        </button>
+        <button className="chip help" onClick={() => setHelp(true)} title="FRIDAY kaise use karein">
+          ?
         </button>
         <Clock />
       </div>

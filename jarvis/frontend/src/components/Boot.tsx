@@ -36,16 +36,16 @@ export function Boot() {
 
   if (done) return null
   const lines: [string, string, boolean][] = [
-    ['NEURAL LINK', connected ? 'ONLINE' : 'CONNECTING', connected],
-    ['AI CORE', provider ? `${provider.name.toUpperCase()}` : 'PENDING', !!provider],
-    ['VOICE SYNTHESIS', ttsSupported ? 'READY' : 'UNAVAILABLE', ttsSupported],
-    ['SPEECH RECOGNITION', wakeSupported ? 'READY' : 'UNAVAILABLE', wakeSupported],
+    ['CONNECTION', connected ? 'JUD GAYA' : 'JUD RAHA HAI', connected],
+    ['AI DIMAAG', provider ? `${provider.name.toUpperCase()}` : 'TAIYAAR HO RAHA', !!provider],
+    ['BOLNE KI AWAAZ', ttsSupported ? 'TAIYAAR' : 'NAHI MILI', ttsSupported],
+    ['SUNNE KI SHAKTI', wakeSupported ? 'TAIYAAR' : 'NAHI MILI', wakeSupported],
   ]
   return (
     <div className="boot" onClick={finish} role="presentation">
       <div className="boot-inner">
         <div className="boot-title">{name.toUpperCase().split('').join(' ')}</div>
-        <div className="boot-sub mono">INITIALIZING PERSONAL AI SYSTEM</div>
+        <div className="boot-sub mono">SHURU HO RAHI HOON…</div>
         <div className="boot-bar">
           <i />
         </div>

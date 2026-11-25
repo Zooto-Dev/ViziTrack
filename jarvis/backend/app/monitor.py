@@ -92,6 +92,23 @@ class SystemMonitor:
             await asyncio.sleep(self._interval)
 
 
+def quick_status() -> dict[str, float | str]:
+    """Numbers for the `system_status` tool."""
+    vm = psutil.virtual_memory()
+    try:
+        disk = psutil.disk_usage("C:\\" if platform.system() == "Windows" else "/").percent
+    except Exception:
+        disk = -1.0
+    return {
+        "cpu": round(psutil.cpu_percent(interval=0.2)),
+        "ram_used": round(vm.used / 2**30, 1),
+        "ram_total": round(vm.total / 2**30, 1),
+        "ram_pct": round(vm.percent),
+        "disk_pct": round(disk),
+        "os": f"{platform.system()} {platform.release()}",
+    }
+
+
 def quick_status_text() -> str:
     """Human-readable one-liner used by the `system_status` tool."""
     vm = psutil.virtual_memory()

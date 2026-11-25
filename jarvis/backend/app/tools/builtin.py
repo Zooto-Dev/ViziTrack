@@ -16,7 +16,7 @@ from typing import Any
 from urllib.parse import quote_plus, urlparse
 
 from ..memory.store import MemoryStore
-from ..monitor import quick_status_text
+from ..monitor import quick_status
 from .registry import ToolResult, registry
 
 OS = platform.system()  # "Windows" | "Darwin" | "Linux"
@@ -125,8 +125,12 @@ def get_time() -> dict[str, Any]:
     "Live CPU, RAM and OS status of this computer. Use when asked about performance, memory, CPU or 'system status'.",
     category="system",
 )
-def system_status() -> str:
-    return quick_status_text()
+def system_status() -> dict[str, Any]:
+    s = quick_status()
+    msg = f"CPU {s['cpu']}% busy, RAM {s['ram_used']} of {s['ram_total']} GB used ({s['ram_pct']}%)"
+    if s["disk_pct"] >= 0:
+        msg += f", disk {s['disk_pct']}% full"
+    return {"message": msg + f", {s['os']}", **s}
 
 
 # --------------------------------------------------------------------------

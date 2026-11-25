@@ -11,6 +11,7 @@ import { Toast } from './components/Toast'
 import { TaskPanel } from './components/TaskPanel'
 import { StatusBar } from './components/StatusBar'
 import { Boot } from './components/Boot'
+import { Help } from './components/Help'
 
 // Settings is only loaded when opened.
 const SettingsPanel = lazy(() => import('./components/SettingsPanel'))
@@ -21,12 +22,14 @@ export default function App() {
   const theme = useStore((s) => s.settings?.theme)
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme || 'holo'
+    document.documentElement.dataset.theme = theme || 'tactical'
   }, [theme])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setSettingsOpen(false)
+      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
+      if (e.key === '?' && !typing) useStore.getState().setHelpOpen(!useStore.getState().helpOpen)
       if ((e.ctrlKey || e.metaKey) && e.key === ',') {
         e.preventDefault()
         setSettingsOpen(!useStore.getState().settingsOpen)
@@ -69,6 +72,7 @@ export default function App() {
           <SettingsPanel onClose={() => setSettingsOpen(false)} />
         </Suspense>
       )}
+      <Help />
       <Boot />
     </div>
   )

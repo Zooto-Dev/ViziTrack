@@ -87,3 +87,11 @@ def test_task_done_shortcut():
     assert r("task 5 done") == ("tool", "complete_task", {"task_id": 5})
     assert r("task #12 ho gaya") == ("tool", "complete_task", {"task_id": 12})
     assert r("task list dikhao")[1] == "list_tasks"
+
+
+def test_friendly_status_and_task_replies():
+    data = {"cpu": 34, "ram_used": 0.9, "ram_total": 15.7, "ram_pct": 6, "disk_pct": 40, "os": "Windows 11"}
+    assert phrase_result("system_status", True, "x", data, "hinglish", "Sir") == "Aapka PC: processor 34% busy hai, RAM 0.9 / 15.7 GB bhari hai. Sab theek hai."
+    assert "load zyada" in phrase_result("system_status", True, "x", {**data, "cpu": 95}, "hinglish", "Sir")
+    assert phrase_result("add_task", True, "x", {"task": {"title": "GST return"}}, "hinglish", "Sir") == "Kaam jod diya: GST return"
+    assert r("task add karo: GST return file karna") == ("tool", "add_task", {"title": "GST return file karna"})

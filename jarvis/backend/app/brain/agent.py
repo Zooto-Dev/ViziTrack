@@ -98,7 +98,8 @@ class Agent:
         match = route(text)
         if match and match.intent == "tool" and match.tool:
             res = await self.run_tool(match.tool, match.args, emit, confirm, settings)
-            reply = phrase_result(match.tool, res.ok, res.message, res.data, match.lang, settings.user_name)
+            lang = match.lang if settings.reply_language == "auto" else settings.reply_language
+            reply = phrase_result(match.tool, res.ok, res.message, res.data, lang, settings.user_name)
             await emit({"type": "assistant.start", "id": msg_id, "via": "direct"})
             await emit({"type": "assistant.delta", "id": msg_id, "text": reply})
             await emit({"type": "assistant.end", "id": msg_id, "text": reply, "via": "direct"})

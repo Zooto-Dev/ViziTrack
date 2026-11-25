@@ -97,7 +97,7 @@ class Settings(BaseModel):
     assistant_name: str = "Friday"
     # auto = mirror the user's language (Hindi / English / Hinglish)
     reply_language: Literal["auto", "english", "hindi", "hinglish"] = "auto"
-    theme: Literal["holo", "stark", "minimal", "ice", "tactical", "crimson", "vibranium", "solar", "cyber", "daylight"] = "holo"
+    theme: Literal["holo", "stark", "minimal", "ice", "tactical", "crimson", "vibranium", "solar", "cyber", "daylight"] = "tactical"
     provider: ProviderSettings = Field(default_factory=ProviderSettings)
     voice: VoiceSettings = Field(default_factory=VoiceSettings)
     # Tools with risk "confirm" always ask; this lets the user also require
@@ -106,7 +106,7 @@ class Settings(BaseModel):
     history_limit: int = 40
     # When the online AI hits a limit or the internet is down, answer with the local Ollama model.
     offline_fallback: bool = True
-    settings_version: int = 3
+    settings_version: int = 4
 
 
 _lock = threading.Lock()
@@ -141,8 +141,11 @@ def load_settings() -> Settings:
                 if version < 3:
                     # v3: wake word listens by default.
                     raw.setdefault("voice", {})["wake_enabled"] = True
-                if version < 3:
-                    raw["settings_version"] = 3
+                if version < 4:
+                    # v4: the user picked the green (tactical) look.
+                    raw["theme"] = "tactical"
+                if version < 4:
+                    raw["settings_version"] = 4
                     SETTINGS_FILE.write_text(json.dumps(raw, indent=2), "utf-8")
                 _settings = Settings.model_validate(raw)
             except Exception:  # corrupt file: start fresh, keep a backup

@@ -1,6 +1,7 @@
 import { useStore } from '../store'
+import { providerWords, secondsWords } from '../words'
 
-/** Bottom telemetry strip: everything here is a live value, nothing decorative. */
+/** Bottom strip in plain words. Every value is live. */
 export function StatusBar() {
   const provider = useStore((s) => s.settings?.provider)
   const latency = useStore((s) => s.latencyMs)
@@ -11,29 +12,38 @@ export function StatusBar() {
   const speakOn = useStore((s) => s.settings?.voice?.speak_replies)
   const connected = useStore((s) => s.connected)
   const warm = useStore((s) => s.warm)
+  const name = useStore((s) => s.settings?.assistant_name || 'Friday')
 
-  const wake = !wakeOn ? 'OFF' : wakeStatus === 'listening' ? 'LISTENING' : wakeStatus.toUpperCase().replace('-', ' ')
+  const wake = !wakeOn
+    ? 'band'
+    : wakeStatus === 'listening'
+      ? `“${name}” sun rahi hai`
+      : wakeStatus === 'no-internet'
+        ? 'internet nahi'
+        : wakeStatus === 'no-mic'
+          ? 'mic nahi mila'
+          : 'jud rahi hai…'
   return (
-    <footer className="statusbar mono">
-      <span className={connected ? 'ok' : 'bad'}>● CORE {connected ? 'ONLINE' : 'OFFLINE'}</span>
+    <footer className="statusbar">
+      <span className={connected ? 'ok' : 'bad'}>● {connected ? 'Connected' : 'Connection toota'}</span>
       <span>
-        AI <b>{provider ? `${provider.name.toUpperCase()} · ${provider.model}` : '—'}</b>
-        {warm.state === 'loading' && <i> (loading)</i>}
+        AI: <b>{providerWords(provider?.name)}</b>
+        {warm.state === 'loading' && <i> (load ho raha)</i>}
+      </span>
+      <span title="Aapke bolne se pehle shabd tak ka samay">
+        Pichhla jawab: <b>{secondsWords(latency)}</b>
       </span>
       <span>
-        RESPONSE <b>{latency === null ? '—' : latency < 1000 ? `${latency} ms` : `${(latency / 1000).toFixed(1)} s`}</b>
-      </span>
-      <span>
-        VOICE <b>{speakOn === false ? 'MUTED' : voiceMode === 'fast' ? 'FAST' : 'NATURAL'}</b>
+        Awaaz: <b>{speakOn === false ? 'band' : voiceMode === 'fast' ? 'tez (offline)' : 'natural'}</b>
       </span>
       <span className={wakeOn && wakeStatus === 'listening' ? 'ok' : ''}>
-        WAKE <b>{wake}</b>
+        Wake word: <b>{wake}</b>
       </span>
       <span>
-        MIC <b>{micActive ? 'LIVE' : 'IDLE'}</b>
+        Mic: <b>{micActive ? 'on' : 'off'}</b>
       </span>
       <span className="grow" />
-      <span className="dim">CTRL+SPACE TALK · CTRL+, SETTINGS</span>
+      <span className="dim">Ctrl+Space = bolo · ? = guide</span>
     </footer>
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { live, uiState, useStore } from '../store'
 import type { JarvisState } from '../types'
 import { micLevel, micSpectrum, startMicLevel, stopMicLevel } from '../voice/level'
+import { stateHint } from '../words'
 
 /**
  * The central holographic core. Pure Canvas 2D in one requestAnimationFrame
@@ -157,14 +158,6 @@ export function Reactor() {
         ctx.lineTo(Math.cos(a) * (r0 + len), Math.sin(a) * (r0 + len))
         ctx.stroke()
       }
-      ctx.font = `600 ${Math.max(8, R * 0.045)}px "JetBrains Mono", monospace`
-      ctx.fillStyle = rgba(p.main, 0.55)
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      for (let i = 0; i < 4; i++) {
-        const a = (i / 4) * Math.PI * 2 - Math.PI / 2
-        ctx.fillText(String(i * 90).padStart(3, '0'), Math.cos(a) * R * 1.53, Math.sin(a) * R * 1.53)
-      }
       ctx.restore()
 
       // 2. Outer segmented arcs with gradient tails.
@@ -292,24 +285,16 @@ export function Reactor() {
     }
   }, [])
 
-  const caption =
-    state !== 'idle'
-      ? state.toUpperCase()
-      : warm.state === 'loading'
-        ? 'LOADING AI MODEL…'
-        : warm.state === 'failed'
-          ? 'AI MODEL OFFLINE · COMMANDS STILL WORK'
-          : wakeOn
-            ? `SAY “${name.toUpperCase()}”`
-            : 'READY'
+  const [line, hint] = stateHint(state, { wakeOn, name, warm: warm.state })
 
   return (
     <div className="reactor-wrap">
       <canvas ref={canvasRef} className="reactor" aria-label="FRIDAY core visualisation" />
-      <div className="reactor-label tl mono">CORE // {name.toUpperCase()}</div>
-      <div className="reactor-label tr mono">{state.toUpperCase()}</div>
-      {showHeard && <div className="reactor-heard">“{heard.text}”</div>}
-      <div className="reactor-caption">{caption}</div>
+      {showHeard && <div className="reactor-heard">Suna: “{heard.text}”</div>}
+      <div className={`reactor-status s-${state}`}>
+        <div className="rs-line">{line}</div>
+        <div className="rs-hint">{hint}</div>
+      </div>
     </div>
   )
 }

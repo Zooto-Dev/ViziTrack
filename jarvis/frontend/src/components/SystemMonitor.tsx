@@ -1,5 +1,7 @@
 import { memo } from 'react'
 import { useStore } from '../store'
+import type { Monitor } from '../types'
+import { uptimeWords } from '../words'
 
 /** Radial gauge made of 32 segments; lit segments show the value. */
 const SegGauge = memo(function SegGauge({ label, pct, sub, warn }: { label: string; pct: number; sub: string; warn?: number }) {
@@ -9,7 +11,6 @@ const SegGauge = memo(function SegGauge({ label, pct, sub, warn }: { label: stri
   const hot = warn !== undefined && v >= warn
   const segs = []
   for (let i = 0; i < n; i++) {
-    // 270° sweep starting bottom-left.
     const a0 = (135 + (i / n) * 270) * (Math.PI / 180)
     const a1 = (135 + ((i + 0.72) / n) * 270) * (Math.PI / 180)
     const r0 = 26
@@ -59,43 +60,46 @@ function Spark({ data, max, label, value }: { data: number[]; max?: number; labe
   )
 }
 
-function fmtUptime(s: number) {
-  const d = Math.floor(s / 86400)
-  const h = Math.floor((s % 86400) / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  return d ? `${d}d ${h}h` : `${h}h ${m}m`
+function rate(kbps: number) {
+  return kbps >= 1024 ? `${(kbps / 1024).toFixed(1)} MB/s` : `${Math.round(kbps)} KB/s`
 }
 
-function fmtRate(kbps: number) {
-  return kbps >= 1024 ? `${(kbps / 1024).toFixed(1)} MB/s` : `${Math.round(kbps)} KB/s`
+/** One sentence anyone can read: is the computer fine? */
+function health(m: Monitor): { text: string; level: 'ok' | 'warn' | 'bad' } {
+  if (m.cpu >= 90 || m.ram.pct >= 92) return { text: 'PC par bahut load hai. Kuch apps band karein.', level: 'bad' }
+  if (m.disk_pct !== null && m.disk_pct >= 92) return { text: 'Storage lagbhag full hai. Faltu files hatayein.', level: 'bad' }
+  if (m.cpu >= 70 || m.ram.pct >= 80) return { text: 'PC thoda busy hai, par theek chal raha hai.', level: 'warn' }
+  return { text: 'PC aaram se chal raha hai.', level: 'ok' }
 }
 
 export function SystemMonitor() {
   const m = useStore((s) => s.monitor)
   const hist = useStore((s) => s.history)
+  const h = m ? health(m) : null
   return (
     <div className="panel">
       <div className="panel-title">
-        <span>SYSTEM TELEMETRY</span>
-        <span className="tag">SYS // 01</span>
+        <span>PC KI HALAT</span>
+        <span className="tag live">● LIVE</span>
       </div>
-      {!m ? (
-        <div className="dim">Waiting for telemetry…</div>
+      {!m || !h ? (
+        <div className="dim">Jaankari aa rahi hai…</div>
       ) : (
         <>
+          <div className={`health ${h.level}`}>{h.text}</div>
           <div className="sgauges">
-            <SegGauge label="CPU" pct={m.cpu} sub={`${m.cpu_cores} cores`} warn={85} />
-            <SegGauge label="MEMORY" pct={m.ram.pct} sub={`${m.ram.used_gb}/${m.ram.total_gb} GB`} warn={90} />
-            <SegGauge label="DISK" pct={m.disk_pct ?? 0} sub={m.battery ? `BAT ${Math.round(m.battery.percent)}%` : 'C:'} warn={92} />
+            <SegGauge label="PROCESSOR" pct={m.cpu} sub="kitna kaam" warn={85} />
+            <SegGauge label="RAM" pct={m.ram.pct} sub={`${m.ram.used_gb} / ${m.ram.total_gb} GB`} warn={90} />
+            <SegGauge label="STORAGE" pct={m.disk_pct ?? 0} sub={m.battery ? `Battery ${Math.round(m.battery.percent)}%` : 'C: drive bhari'} warn={92} />
           </div>
-          <Spark data={hist.cpu} max={100} label="CPU LOAD · 60s" value={`${Math.round(m.cpu)}%`} />
-          <Spark data={hist.net} label="NETWORK · 60s" value={`↓${fmtRate(m.net.down_kbps)} ↑${fmtRate(m.net.up_kbps)}`} />
-          <div className="kv mono">
+          <Spark data={hist.cpu} max={100} label="Processor · pichhla 1 minute" value={`${Math.round(m.cpu)}%`} />
+          <Spark data={hist.net} label="Internet · pichhla 1 minute" value={`↓ ${rate(m.net.down_kbps)}  ↑ ${rate(m.net.up_kbps)}`} />
+          <div className="kv">
             <span>
-              OS <b>{m.os}</b>
+              PC chalu: <b>{uptimeWords(m.uptime_s)}</b>
             </span>
             <span>
-              UP <b>{fmtUptime(m.uptime_s)}</b>
+              <b>{m.cpu_cores}</b> cores
             </span>
           </div>
         </>

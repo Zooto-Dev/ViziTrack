@@ -41,6 +41,7 @@ interface Store {
   sentAt: number
   tasks: { id: number; title: string; due: string | null }[]
   micActive: boolean
+  helpOpen: boolean
 
   setConnected(v: boolean): void
   setState(s: JarvisState): void
@@ -68,6 +69,7 @@ interface Store {
   markFirstWord(): void
   setTasks(t: Store['tasks']): void
   setMicActive(v: boolean): void
+  setHelpOpen(v: boolean): void
 }
 
 /** What the HUD shows: local voice activity wins over the backend state. */
@@ -106,6 +108,7 @@ export const useStore = create<Store>((set, get) => ({
   sentAt: 0,
   tasks: [],
   micActive: false,
+  helpOpen: false,
 
   setConnected: (connected) => set({ connected }),
   setState: (state) =>
@@ -176,4 +179,5 @@ export const useStore = create<Store>((set, get) => ({
   },
   setTasks: (tasks) => set({ tasks }),
   setMicActive: (micActive) => set({ micActive }),
+  setHelpOpen: (helpOpen) => set({ helpOpen }),
 }))

@@ -1,6 +1,8 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 import type { Message } from '../types'
+import { api } from '../ws'
+import { EXAMPLES, toolWords, viaWords } from '../words'
 
 /** Plain text with ```fenced``` code blocks shown as code. */
 function RichText({ text }: { text: string }) {
@@ -24,18 +26,17 @@ function RichText({ text }: { text: string }) {
 const Bubble = memo(function Bubble({ m }: { m: Message }) {
   if (m.role === 'tool') {
     return (
-      <div className={`tool-chip ${m.ok ? 'ok' : 'fail'}`} title={m.text}>
-        <span className="tool-icon mono">{m.ok ? '▸ EXEC' : '▸ FAIL'}</span>
-        <span className="tool-name mono">{m.name}</span>
-        <span className="tool-result">{m.text.split('\n')[0].slice(0, 90)}</span>
-        {typeof m.ms === 'number' && <span className="tool-ms mono">{m.ms}ms</span>}
+      <div className={`tool-chip ${m.ok ? 'ok' : 'fail'}`} title={`${m.name}: ${m.text}`}>
+        <span className="tool-icon">{m.ok ? '✓' : '✗'}</span>
+        <span className="tool-name">{toolWords(m.name ?? '', !!m.ok)}</span>
+        {!m.ok && <span className="tool-result">{m.text.split('\n')[0].slice(0, 90)}</span>}
       </div>
     )
   }
   if (m.role === 'error') {
     return <div className="bubble error">{m.text}</div>
   }
-  const who = m.role === 'user' ? 'YOU' : (useStore.getState().settings?.assistant_name || 'FRIDAY').toUpperCase()
+  const who = m.role === 'user' ? 'AAP' : (useStore.getState().settings?.assistant_name || 'FRIDAY').toUpperCase()
   const time = m.ts ? new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
   return (
     <div className={`bubble ${m.role}`}>
@@ -48,8 +49,8 @@ const Bubble = memo(function Bubble({ m }: { m: Message }) {
       </div>
       {m.role === 'assistant' && (m.via || m.interrupted) && (
         <div className="bubble-meta mono">
-          {m.interrupted ? 'interrupted · ' : ''}
-          {m.via === 'direct' ? <span className="instant">⚡ INSTANT · NO AI</span> : m.via}
+          {m.interrupted ? 'beech me roka · ' : ''}
+          <span className={m.via === 'direct' ? 'instant' : ''}>{viaWords(m.via)}</span>
         </div>
       )}
     </div>
@@ -115,14 +116,20 @@ export function Conversation() {
   return (
     <div className="panel conversation">
       <div className="panel-title">
-        <span>COMMS LOG</span>
-        <span className="tag">{messages.filter((m) => m.role !== 'tool').length} ENTRIES</span>
+        <span>BAATCHEET</span>
+        <span className="tag">{messages.filter((m) => m.role === 'user').length} sawaal</span>
       </div>
       <div className="conversation-scroll" ref={scrollRef}>
         {messages.length === 0 && (
           <div className="empty">
-            <p>Mic dabaiye aur boliye: “chrome kholo”, “youtube kholo”, “time kya hua”, “meri latest excel file kholo”, “mere pending tasks”, “ek python script likho jo…”.</p>
-            <p className="dim">General questions go to your configured AI provider.</p>
+            <p>Namaste! Mujhse kuch bhi boliye ya likhiye. In me se kisi par click karke bhi try kar sakte hain:</p>
+            <div className="examples">
+              {EXAMPLES.map((e) => (
+                <button key={e} className="example" onClick={() => api.chat(e)}>
+                  “{e}”
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {messages.map((m) => (

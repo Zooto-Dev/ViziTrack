@@ -25,14 +25,33 @@ HINGLISH_MARKERS = {
 }
 
 
+ENGLISH_MARKERS = {
+    "what", "whats", "is", "are", "the", "a", "an", "my", "me", "please", "open", "launch", "start", "show", "tell",
+    "how", "why", "when", "where", "who", "can", "could", "would", "you", "your", "do", "does", "did", "have", "has",
+    "remember", "that", "this", "add", "search", "find", "write", "read", "for", "to", "of", "and", "in", "on", "it",
+}
+HINGLISH_EXTRA = {
+    "ko", "se", "me", "mein", "pe", "par", "ne", "jo", "ye", "yeh", "wo", "woh", "hain", "ho", "hua", "hui", "kab",
+    "kyun", "kyu", "bhejna", "dekho", "dekhna", "suno", "likho", "padho", "chahiye", "mujhko", "humko", "apna", "apni",
+}
+
+
 def detect_language(text: str) -> Lang:
+    """Hindi if Devanagari; English only for a clearly English sentence; otherwise Hinglish.
+
+    Short commands made of nouns ("system status", "excel report") count as
+    Hinglish because that is how the user normally talks.
+    """
     if DEVANAGARI.search(text):
         return "hindi"
     words = re.findall(r"[a-z]+", text.lower())
     if not words:
-        return "english"
-    hits = sum(1 for w in words if w in HINGLISH_MARKERS)
-    return "hinglish" if hits >= 1 and hits / len(words) >= 0.2 else "english"
+        return "hinglish"
+    hing = sum(1 for w in words if w in HINGLISH_MARKERS or w in HINGLISH_EXTRA)
+    eng = sum(1 for w in words if w in ENGLISH_MARKERS)
+    if hing and hing * 2 >= eng:
+        return "hinglish"
+    return "english" if eng else "hinglish"
 
 
 @dataclass
@@ -249,6 +268,14 @@ def phrase_result(tool: str, ok: bool, message: str, data: dict[str, Any], lang:
             "hinglish": f"Abhi {t} baje hain, {d}.",
             "english": f"It's {t}, {d}.",
         }[lang]
+    if tool == "system_status" and "cpu" in data:
+        cpu, used, total = data["cpu"], data["ram_used"], data["ram_total"]
+        busy = cpu >= 85 or data.get("ram_pct", 0) >= 90
+        return {
+            "hindi": f"आपका PC: प्रोसेसर {cpu}% व्यस्त है, RAM {used} / {total} GB भरी है।" + (" थोड़ा भारी चल रहा है।" if busy else " सब ठीक है।"),
+            "hinglish": f"Aapka PC: processor {cpu}% busy hai, RAM {used} / {total} GB bhari hai." + (" Thoda load zyada hai." if busy else " Sab theek hai."),
+            "english": f"Your PC: processor {cpu}% busy, RAM {used} of {total} GB used." + (" It's under heavy load." if busy else " All good."),
+        }[lang]
     if tool == "system_status":
         return {"hindi": f"सिस्टम स्थिति: {message}", "hinglish": f"System status: {message}", "english": f"System status: {message}"}[lang]
     if tool == "open_website":
@@ -267,7 +294,12 @@ def phrase_result(tool: str, ok: bool, message: str, data: dict[str, Any], lang:
         title = data.get("task", {}).get("title", "task")
         return {"hindi": f"बढ़िया, “{title}” पूरा हो गया।", "hinglish": f"Badhiya, “{title}” done mark kar diya.", "english": f"Done: “{title}”."}[lang]
     if tool == "add_task":
-        return {"hindi": "टास्क जोड़ दिया।", "hinglish": "Task add kar diya.", "english": "Task added."}[lang]
+        title = data.get("task", {}).get("title", "")
+        return {
+            "hindi": f"काम जोड़ दिया: {title}",
+            "hinglish": f"Kaam jod diya: {title}",
+            "english": f"Added to your tasks: {title}",
+        }[lang]
     if tool == "list_tasks":
         tasks = data.get("tasks", [])
         if not tasks:
