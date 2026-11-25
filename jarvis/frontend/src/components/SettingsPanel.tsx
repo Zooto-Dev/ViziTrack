@@ -39,6 +39,8 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
       assistant_name: draft.assistant_name,
       reply_language: draft.reply_language,
       theme: draft.theme,
+      visual: draft.visual,
+      gauge_style: draft.gauge_style,
       confirm_all_system_actions: draft.confirm_all_system_actions,
       offline_fallback: draft.offline_fallback,
       voice: {
@@ -263,6 +265,26 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               <option value="daylight">10. Daylight (light mode)</option>
             </select>
           </label>
+          <div className="grid2">
+            <label>
+              Beech ka design
+              <select value={draft.visual} onChange={(e) => setDraft({ ...draft, visual: e.target.value as typeof draft.visual })}>
+                <option value="radar">1. Radar rings</option>
+                <option value="orb">2. Energy orb</option>
+                <option value="wave">3. Sound wave</option>
+                <option value="globe">4. Particle globe</option>
+                <option value="arc">5. Arc reactor</option>
+                <option value="hex">6. Hex grid</option>
+              </select>
+            </label>
+            <label>
+              PC ki halat kaise dikhe
+              <select value={draft.gauge_style} onChange={(e) => setDraft({ ...draft, gauge_style: e.target.value as typeof draft.gauge_style })}>
+                <option value="bars">Seedhi bars</option>
+                <option value="rings">Gol meter</option>
+              </select>
+            </label>
+          </div>
         </section>
 
         <section>

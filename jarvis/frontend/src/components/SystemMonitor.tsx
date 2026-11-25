@@ -42,6 +42,24 @@ const SegGauge = memo(function SegGauge({ label, pct, sub, warn }: { label: stri
   )
 })
 
+/** Plain horizontal bar: label, value, and a filled track. */
+function BarGauge({ label, pct, sub, warn }: { label: string; pct: number; sub: string; warn?: number }) {
+  const v = Math.max(0, Math.min(100, pct))
+  const hot = warn !== undefined && v >= warn
+  return (
+    <div className={`bgauge ${hot ? 'hot' : ''}`}>
+      <div className="bg-head">
+        <span className="bg-label">{label}</span>
+        <span className="bg-sub">{sub}</span>
+        <b className="bg-num">{Math.round(v)}%</b>
+      </div>
+      <div className="bg-track">
+        <i style={{ transform: `scaleX(${v / 100})` }} />
+      </div>
+    </div>
+  )
+}
+
 function Spark({ data, max, label, value }: { data: number[]; max?: number; label: string; value: string }) {
   const top = max ?? Math.max(1, ...data)
   const pts = data.map((v, i) => `${(i / 59) * 100},${28 - (Math.min(v, top) / top) * 26}`).join(' ')
@@ -75,6 +93,7 @@ function health(m: Monitor): { text: string; level: 'ok' | 'warn' | 'bad' } {
 export function SystemMonitor() {
   const m = useStore((s) => s.monitor)
   const hist = useStore((s) => s.history)
+  const bars = useStore((s) => (s.settings?.gauge_style ?? 'bars') === 'bars')
   const h = m ? health(m) : null
   return (
     <div className="panel">
@@ -87,11 +106,20 @@ export function SystemMonitor() {
       ) : (
         <>
           <div className={`health ${h.level}`}>{h.text}</div>
-          <div className="sgauges">
-            <SegGauge label="PROCESSOR" pct={m.cpu} sub="kitna kaam" warn={85} />
-            <SegGauge label="RAM" pct={m.ram.pct} sub={`${m.ram.used_gb} / ${m.ram.total_gb} GB`} warn={90} />
-            <SegGauge label="STORAGE" pct={m.disk_pct ?? 0} sub={m.battery ? `Battery ${Math.round(m.battery.percent)}%` : 'C: drive bhari'} warn={92} />
-          </div>
+          {bars ? (
+            <div className="bgauges">
+              <BarGauge label="Processor" pct={m.cpu} sub="kitna busy" warn={85} />
+              <BarGauge label="RAM" pct={m.ram.pct} sub={`${m.ram.used_gb} / ${m.ram.total_gb} GB`} warn={90} />
+              <BarGauge label="Storage" pct={m.disk_pct ?? 0} sub="C: drive" warn={92} />
+              {m.battery && <BarGauge label="Battery" pct={m.battery.percent} sub={m.battery.plugged ? 'charge ho rahi' : 'battery par'} />}
+            </div>
+          ) : (
+            <div className="sgauges">
+              <SegGauge label="PROCESSOR" pct={m.cpu} sub="kitna kaam" warn={85} />
+              <SegGauge label="RAM" pct={m.ram.pct} sub={`${m.ram.used_gb} / ${m.ram.total_gb} GB`} warn={90} />
+              <SegGauge label="STORAGE" pct={m.disk_pct ?? 0} sub={m.battery ? `Battery ${Math.round(m.battery.percent)}%` : 'C: drive bhari'} warn={92} />
+            </div>
+          )}
           <Spark data={hist.cpu} max={100} label="Processor · pichhla 1 minute" value={`${Math.round(m.cpu)}%`} />
           <Spark data={hist.net} label="Internet · pichhla 1 minute" value={`↓ ${rate(m.net.down_kbps)}  ↑ ${rate(m.net.up_kbps)}`} />
           <div className="kv">

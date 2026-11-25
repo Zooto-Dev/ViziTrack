@@ -1809,3 +1809,50 @@ pre.code {
     font-size: 12.5px;
   }
 }
+
+/* ---------- bar gauges ---------- */
+.bgauges {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 8px;
+}
+.bg-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13.5px;
+}
+.bg-label {
+  font-weight: 600;
+}
+.bg-sub {
+  flex: 1;
+  color: var(--muted);
+  font-size: 12px;
+}
+.bg-num {
+  font-family: var(--display);
+  font-size: 13px;
+  color: var(--cyan);
+}
+.bg-track {
+  height: 7px;
+  margin-top: 4px;
+  background: rgba(var(--rgb), 0.1);
+  overflow: hidden;
+}
+.bg-track i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(var(--rgb), 0.5), var(--cyan));
+  box-shadow: 0 0 8px rgba(var(--rgb), 0.6);
+  transform-origin: left;
+  transition: transform 0.6s ease;
+}
+.bgauge.hot .bg-track i {
+  background: var(--bad);
+}
+.bgauge.hot .bg-num {
+  color: var(--bad);
+}

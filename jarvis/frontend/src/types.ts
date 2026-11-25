@@ -24,6 +24,8 @@ export interface Settings {
   user_name: string
   assistant_name: string
   reply_language: 'auto' | 'english' | 'hindi' | 'hinglish'
+  visual: 'radar' | 'orb' | 'wave' | 'globe' | 'arc' | 'hex'
+  gauge_style: 'bars' | 'rings'
   theme: 'holo' | 'stark' | 'minimal' | 'ice' | 'tactical' | 'crimson' | 'vibranium' | 'solar' | 'cyber' | 'daylight'
   provider: {
     name: string

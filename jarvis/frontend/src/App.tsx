@@ -20,10 +20,12 @@ export default function App() {
   const settingsOpen = useStore((s) => s.settingsOpen)
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
   const theme = useStore((s) => s.settings?.theme)
+  const visual = useStore((s) => s.settings?.visual)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme || 'tactical'
-  }, [theme])
+    document.documentElement.dataset.visual = visual || 'radar'
+  }, [theme, visual])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -98,6 +98,8 @@ class Settings(BaseModel):
     # auto = mirror the user's language (Hindi / English / Hinglish)
     reply_language: Literal["auto", "english", "hindi", "hinglish"] = "auto"
     theme: Literal["holo", "stark", "minimal", "ice", "tactical", "crimson", "vibranium", "solar", "cyber", "daylight"] = "tactical"
+    visual: Literal["radar", "orb", "wave", "globe", "arc", "hex"] = "radar"
+    gauge_style: Literal["bars", "rings"] = "bars"
     provider: ProviderSettings = Field(default_factory=ProviderSettings)
     voice: VoiceSettings = Field(default_factory=VoiceSettings)
     # Tools with risk "confirm" always ask; this lets the user also require

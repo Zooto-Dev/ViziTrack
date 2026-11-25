@@ -3,6 +3,7 @@ import { live, uiState, useStore } from '../store'
 import type { JarvisState } from '../types'
 import { micLevel, micSpectrum, startMicLevel, stopMicLevel } from '../voice/level'
 import { stateHint } from '../words'
+import { VISUALS } from '../visuals'
 
 /**
  * The central holographic core. Pure Canvas 2D in one requestAnimationFrame
@@ -93,6 +94,7 @@ export function Reactor() {
     ]
     let w = 0
     let h = 0
+    const mem: Record<string, unknown> = {}
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -133,6 +135,13 @@ export function Reactor() {
       sweep += dt * (st === 'thinking' ? 2.6 : 0.6)
 
       ctx.clearRect(0, 0, w, h)
+
+      // Other centre designs (chosen in Settings -> Look).
+      const alt = VISUALS[document.documentElement.dataset.visual || '']
+      if (alt) {
+        alt({ ctx, w, h, t, dt, state: st, main: p.main, accent: p.accent, energy, spec, mem })
+        return
+      }
 
       // Bloom behind everything.
       const glow = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.7)
