@@ -18,6 +18,11 @@ const SettingsPanel = lazy(() => import('./components/SettingsPanel'))
 export default function App() {
   const settingsOpen = useStore((s) => s.settingsOpen)
   const setSettingsOpen = useStore((s) => s.setSettingsOpen)
+  const theme = useStore((s) => s.settings?.theme)
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme || 'holo'
+  }, [theme])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

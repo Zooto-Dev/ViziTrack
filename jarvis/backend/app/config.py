@@ -97,6 +97,7 @@ class Settings(BaseModel):
     assistant_name: str = "Friday"
     # auto = mirror the user's language (Hindi / English / Hinglish)
     reply_language: Literal["auto", "english", "hindi", "hinglish"] = "auto"
+    theme: Literal["holo", "stark", "minimal", "ice", "tactical", "crimson", "vibranium", "solar", "cyber", "daylight"] = "holo"
     provider: ProviderSettings = Field(default_factory=ProviderSettings)
     voice: VoiceSettings = Field(default_factory=VoiceSettings)
     # Tools with risk "confirm" always ask; this lets the user also require

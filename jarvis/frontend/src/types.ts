@@ -24,6 +24,7 @@ export interface Settings {
   user_name: string
   assistant_name: string
   reply_language: 'auto' | 'english' | 'hindi' | 'hinglish'
+  theme: 'holo' | 'stark' | 'minimal' | 'ice' | 'tactical' | 'crimson' | 'vibranium' | 'solar' | 'cyber' | 'daylight'
   provider: {
     name: string
     base_url: string

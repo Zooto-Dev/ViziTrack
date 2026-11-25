@@ -38,6 +38,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
       user_name: draft.user_name,
       assistant_name: draft.assistant_name,
       reply_language: draft.reply_language,
+      theme: draft.theme,
       confirm_all_system_actions: draft.confirm_all_system_actions,
       offline_fallback: draft.offline_fallback,
       voice: {
@@ -243,6 +244,25 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
           <p className="hint">
             Sabse natural awaaz Microsoft Edge me milti hai (“Online (Natural)” wali). Mic aur wake word ke liye internet chahiye. Wake word on ho toh mic lagataar sunta hai (sirf jab tak ye window khuli hai). Shortcut: Ctrl+Space.
           </p>
+        </section>
+
+        <section>
+          <h3>LOOK</h3>
+          <label>
+            Theme
+            <select value={draft.theme} onChange={(e) => setDraft({ ...draft, theme: e.target.value as typeof draft.theme })}>
+              <option value="holo">1. Holographic Cyan</option>
+              <option value="stark">2. Stark Red-Gold</option>
+              <option value="minimal">3. Minimal Glass</option>
+              <option value="ice">4. Ice White</option>
+              <option value="tactical">5. Tactical Green</option>
+              <option value="crimson">6. Ultron Crimson</option>
+              <option value="vibranium">7. Vibranium Purple</option>
+              <option value="solar">8. Solar Orange</option>
+              <option value="cyber">9. Cyberpunk Neon</option>
+              <option value="daylight">10. Daylight (light mode)</option>
+            </select>
+          </label>
         </section>
 
         <section>

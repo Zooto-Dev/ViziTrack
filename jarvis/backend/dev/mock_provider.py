@@ -87,6 +87,8 @@ def decide(messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None) -
         return {"tool": "write_file", "args": {"filename": "hello.py", "content": "print('hello')\n", "open_after": False}}
     if "fail" in low and "open_app" in names:
         return {"tool": "open_app", "args": {"name": "definitely-not-an-app-xyz"}}
+    if "aaj ka plan" in low:  # demo line for screenshots
+        return {"text": "Aaj aapke teen kaam pending hain: GST return, Rahul ka invoice, aur Monday ki PPT. GST ki deadline sabse paas hai, wahi pehle karein?"}
     if "show code" in low:
         return {"text": "Here is the script.\n```python\nfor i in range(3):\n    print(i)\n```\nRun it with Python."}
     if "slow" in low:
@@ -142,7 +144,7 @@ async def chat_completions(req: Request) -> StreamingResponse | JSONResponse:
     body = await req.json()
     if req.headers.get("authorization", "") == "Bearer bad-key":
         return JSONResponse({"error": {"message": "invalid api key"}}, status_code=401)
-    gemini = body.get("model") == GEMINI_MODEL
+    gemini = str(body.get("model", "")).startswith("gemini")
     if body.get("model") != MODEL and not gemini:
         return JSONResponse(
             {"error": {"message": f"The model `{body.get('model')}` does not exist", "code": "model_not_found"}},

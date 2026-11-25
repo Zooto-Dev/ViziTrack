@@ -27,6 +27,26 @@ const PALETTE: Record<JarvisState, Palette> = {
   waiting: { main: [255, 196, 87], accent: [255, 236, 190], speed: 0.35 },
 }
 
+const THEME_COLORS: Record<string, { main: [number, number, number]; accent: [number, number, number] }> = {
+  stark: { main: [255, 184, 77], accent: [255, 92, 66] },
+  minimal: { main: [150, 190, 255], accent: [235, 242, 255] },
+  ice: { main: [190, 230, 255], accent: [255, 255, 255] },
+  tactical: { main: [64, 255, 128], accent: [200, 255, 215] },
+  crimson: { main: [255, 59, 76], accent: [255, 170, 120] },
+  vibranium: { main: [176, 120, 255], accent: [225, 205, 255] },
+  solar: { main: [255, 140, 40], accent: [255, 220, 120] },
+  cyber: { main: [255, 60, 200], accent: [46, 242, 255] },
+  daylight: { main: [0, 110, 230], accent: [0, 60, 160] },
+}
+
+/** Idle/listening/speaking take the theme colours; status colours stay universal. */
+function paletteFor(st: JarvisState): Palette {
+  const base = PALETTE[st]
+  const theme = THEME_COLORS[document.documentElement.dataset.theme || '']
+  if (!theme || st === 'executing' || st === 'waiting') return base
+  return { ...base, main: theme.main, accent: st === 'thinking' ? [255, 255, 255] : theme.accent }
+}
+
 const rgba = (c: [number, number, number], a: number) => `rgba(${c[0]},${c[1]},${c[2]},${a})`
 
 export function Reactor() {
@@ -93,7 +113,7 @@ export function Reactor() {
       if (calm && t - last < 33) return // ~30 fps at rest
       const dt = Math.min(0.1, (t - last) / 1000 || 0.016)
       last = t
-      const p = PALETTE[st]
+      const p = paletteFor(st)
       const cx = w / 2
       const cy = h / 2
       const R = Math.min(w, h) * 0.33

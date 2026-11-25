@@ -4,15 +4,17 @@
    stays smooth on low-end laptops.
    ========================================================================== */
 :root {
+  --rgb: 0, 229, 255;
+  --rgb-deep: 0, 90, 140;
   --bg: #02060b;
   --panel: rgba(3, 14, 22, 0.86);
   --panel-2: rgba(6, 22, 34, 0.9);
-  --line: rgba(0, 229, 255, 0.16);
-  --line-mid: rgba(0, 229, 255, 0.32);
-  --line-strong: rgba(0, 229, 255, 0.6);
-  --cyan: #00e5ff;
+  --line: rgba(var(--rgb), 0.16);
+  --line-mid: rgba(var(--rgb), 0.32);
+  --line-strong: rgba(var(--rgb), 0.6);
+  --cyan: rgb(var(--rgb));
   --cyan-soft: #7fefff;
-  --cyan-dim: rgba(0, 229, 255, 0.55);
+  --cyan-dim: rgba(var(--rgb), 0.55);
   --ink: #d8f6ff;
   --muted: #6a8fa0;
   --ok: #7cffb2;
@@ -63,7 +65,7 @@ textarea {
   line-height: 1.5;
 }
 ::selection {
-  background: rgba(0, 229, 255, 0.35);
+  background: rgba(var(--rgb), 0.35);
 }
 
 /* ---------- backdrop ---------- */
@@ -79,10 +81,10 @@ textarea {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 60% 55% at 50% 48%, rgba(0, 180, 255, 0.12), transparent 70%),
-    radial-gradient(ellipse 120% 90% at 50% 120%, rgba(0, 90, 140, 0.25), transparent 60%),
-    linear-gradient(rgba(0, 229, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.045) 1px, transparent 1px);
+    radial-gradient(ellipse 60% 55% at 50% 48%, rgba(var(--rgb), 0.12), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 120%, rgba(var(--rgb-deep), 0.25), transparent 60%),
+    linear-gradient(rgba(var(--rgb), 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--rgb), 0.045) 1px, transparent 1px);
   background-size:
     100% 100%,
     100% 100%,
@@ -164,7 +166,7 @@ textarea {
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 229, 255, 0.25) transparent;
+  scrollbar-color: rgba(var(--rgb), 0.25) transparent;
 }
 .col-center {
   justify-content: flex-end;
@@ -283,7 +285,7 @@ textarea {
   stroke-width: 1.6;
 }
 .logo-hex2 {
-  fill: rgba(0, 229, 255, 0.12);
+  fill: rgba(var(--rgb), 0.12);
   stroke: var(--cyan-dim);
   stroke-width: 1;
   transform-origin: 20px 20px;
@@ -310,8 +312,8 @@ textarea {
   letter-spacing: 0.34em;
   color: var(--cyan);
   text-shadow:
-    0 0 12px rgba(0, 229, 255, 0.55),
-    0 0 30px rgba(0, 229, 255, 0.25);
+    0 0 12px rgba(var(--rgb), 0.55),
+    0 0 30px rgba(var(--rgb), 0.25);
 }
 .wordmark-sub {
   font-size: 10.5px;
@@ -329,7 +331,7 @@ textarea {
   font-weight: 700;
   letter-spacing: 0.3em;
   color: var(--cyan);
-  background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.08), transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--rgb), 0.08), transparent);
   clip-path: var(--clip-sm);
 }
 .state-pill .br {
@@ -384,11 +386,11 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  max-width: 100%;
+  max-width: 340px;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  background: rgba(0, 229, 255, 0.05);
+  background: rgba(var(--rgb), 0.05);
   border: 1px solid var(--line);
   padding: 6px 12px;
   font-family: var(--mono);
@@ -403,7 +405,7 @@ textarea {
 }
 .chip:hover:not(:disabled) {
   border-color: var(--line-strong);
-  background: rgba(0, 229, 255, 0.1);
+  background: rgba(var(--rgb), 0.1);
 }
 .chip:disabled {
   opacity: 0.5;
@@ -473,7 +475,7 @@ textarea {
   z-index: -1;
   clip-path: var(--clip);
   background:
-    linear-gradient(180deg, rgba(0, 229, 255, 0.06), transparent 40%),
+    linear-gradient(180deg, rgba(var(--rgb), 0.06), transparent 40%),
     var(--panel);
 }
 .panel-title {
@@ -535,7 +537,7 @@ textarea {
   height: 78px;
 }
 .seg {
-  fill: rgba(0, 229, 255, 0.1);
+  fill: rgba(var(--rgb), 0.1);
 }
 .seg.on {
   fill: var(--cyan);
@@ -587,7 +589,7 @@ textarea {
   width: 100%;
   height: 34px;
   border-bottom: 1px solid var(--line);
-  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(0, 229, 255, 0.06) calc(10% - 1px) 10%);
+  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), rgba(var(--rgb), 0.06) calc(10% - 1px) 10%);
 }
 .spark-line {
   fill: none;
@@ -596,7 +598,7 @@ textarea {
   vector-effect: non-scaling-stroke;
 }
 .spark-area {
-  fill: rgba(0, 229, 255, 0.12);
+  fill: rgba(var(--rgb), 0.12);
 }
 
 /* ---------- mission queue ---------- */
@@ -613,7 +615,7 @@ textarea {
   align-items: center;
   gap: 10px;
   padding: 6px 8px;
-  background: rgba(0, 229, 255, 0.04);
+  background: rgba(var(--rgb), 0.04);
   border-left: 2px solid var(--line-mid);
   font-size: 14px;
 }
@@ -654,7 +656,7 @@ textarea {
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.09), rgba(0, 229, 255, 0.02));
+  background: linear-gradient(135deg, rgba(var(--rgb), 0.09), rgba(var(--rgb), 0.02));
   border: 1px solid var(--line);
   cursor: pointer;
   text-align: left;
@@ -666,7 +668,7 @@ textarea {
 }
 .quick-btn:hover:not(:disabled) {
   border-color: var(--line-strong);
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.18), rgba(0, 229, 255, 0.04));
+  background: linear-gradient(135deg, rgba(var(--rgb), 0.18), rgba(var(--rgb), 0.04));
 }
 .quick-btn:active:not(:disabled) {
   transform: translateY(1px);
@@ -682,7 +684,7 @@ textarea {
 .quick-icon {
   display: flex;
   color: var(--cyan);
-  filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.5));
+  filter: drop-shadow(0 0 4px rgba(var(--rgb), 0.5));
 }
 .quick-text {
   display: flex;
@@ -753,7 +755,7 @@ textarea {
   text-overflow: ellipsis;
   font-size: 16px;
   color: #fff;
-  background: rgba(0, 229, 255, 0.08);
+  background: rgba(var(--rgb), 0.08);
   border-left: 2px solid var(--cyan);
   animation: rise 0.2s ease-out;
 }
@@ -795,7 +797,7 @@ textarea {
   color: var(--muted);
 }
 .btn {
-  background: rgba(0, 229, 255, 0.06);
+  background: rgba(var(--rgb), 0.06);
   border: 1px solid var(--line-strong);
   padding: 9px 16px;
   cursor: pointer;
@@ -810,7 +812,7 @@ textarea {
     transform 0.1s;
 }
 .btn:hover:not(:disabled) {
-  background: rgba(0, 229, 255, 0.16);
+  background: rgba(var(--rgb), 0.16);
 }
 .btn:active:not(:disabled) {
   transform: translateY(1px);
@@ -820,7 +822,7 @@ textarea {
   cursor: not-allowed;
 }
 .btn-send {
-  background: rgba(0, 229, 255, 0.2);
+  background: rgba(var(--rgb), 0.2);
   color: #fff;
 }
 .btn-stop {
@@ -863,7 +865,7 @@ textarea {
   gap: 10px;
   padding-right: 6px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 229, 255, 0.3) transparent;
+  scrollbar-color: rgba(var(--rgb), 0.3) transparent;
 }
 .empty {
   font-size: 14px;
@@ -891,7 +893,7 @@ textarea {
 }
 .bubble.user {
   align-self: flex-end;
-  background: linear-gradient(270deg, rgba(0, 229, 255, 0.16), rgba(0, 229, 255, 0.05));
+  background: linear-gradient(270deg, rgba(var(--rgb), 0.16), rgba(var(--rgb), 0.05));
   border-right: 2px solid var(--cyan);
   text-align: right;
 }
@@ -1018,7 +1020,7 @@ pre.code {
   letter-spacing: 0.1em;
   color: var(--muted);
   border-top: 1px solid var(--line);
-  background: linear-gradient(0deg, rgba(0, 229, 255, 0.04), transparent);
+  background: linear-gradient(0deg, rgba(var(--rgb), 0.04), transparent);
   white-space: nowrap;
   overflow: hidden;
 }
@@ -1062,7 +1064,7 @@ pre.code {
   font-size: clamp(26px, 5vw, 44px);
   letter-spacing: 0.3em;
   color: var(--cyan);
-  text-shadow: 0 0 24px rgba(0, 229, 255, 0.6);
+  text-shadow: 0 0 24px rgba(var(--rgb), 0.6);
   text-align: center;
   animation: rise 0.5s ease-out;
 }
@@ -1163,7 +1165,7 @@ pre.code {
   background: linear-gradient(180deg, #07161f, #040d14);
   border: 1px solid var(--line-strong);
   padding: 20px 22px;
-  box-shadow: 0 0 80px rgba(0, 229, 255, 0.15);
+  box-shadow: 0 0 80px rgba(var(--rgb), 0.15);
   clip-path: var(--clip);
   animation: rise 0.18s ease-out;
 }
@@ -1212,7 +1214,7 @@ pre.code {
 }
 .modal input:not([type='checkbox']):not([type='range']),
 .modal select {
-  background: rgba(0, 229, 255, 0.05);
+  background: rgba(var(--rgb), 0.05);
   border: 1px solid var(--line);
   padding: 9px 10px;
   color: var(--ink);
@@ -1348,4 +1350,274 @@ pre.code {
   .hud-clock {
     display: none;
   }
+}
+
+/* ==========================================================================
+   Themes. "holo" is the default above.
+   ========================================================================== */
+
+/* Stark: Iron Man suit colours. Gold HUD, red highlights. */
+:root[data-theme='stark'] {
+  --rgb: 255, 184, 77;
+  --rgb-deep: 140, 30, 20;
+  --bg: #070303;
+  --panel: rgba(20, 8, 6, 0.88);
+  --panel-2: rgba(30, 10, 8, 0.92);
+  --cyan-soft: #ffd79a;
+  --ink: #ffeedd;
+  --muted: #a8877a;
+}
+:root[data-theme='stark'] .wordmark-main {
+  background: linear-gradient(90deg, #ffcf70, #ff4d3d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 10px rgba(255, 90, 60, 0.45));
+}
+:root[data-theme='stark'] .bubble.user {
+  border-right-color: #ff4d3d;
+  background: linear-gradient(270deg, rgba(255, 77, 61, 0.18), rgba(255, 77, 61, 0.04));
+}
+:root[data-theme='stark'] .panel-title > span:first-child::before {
+  background: #ff4d3d;
+  box-shadow: 0 0 8px #ff4d3d;
+}
+
+/* Minimal: calm glass, rounded corners, no scanlines or brackets. */
+:root[data-theme='minimal'] {
+  --rgb: 150, 190, 255;
+  --rgb-deep: 40, 60, 120;
+  --bg: #05070d;
+  --panel: rgba(14, 18, 30, 0.72);
+  --panel-2: rgba(18, 23, 38, 0.85);
+  --cyan-soft: #d6e4ff;
+  --ink: #e9eefc;
+  --muted: #7d879e;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-mid: rgba(255, 255, 255, 0.14);
+  --line-strong: rgba(150, 190, 255, 0.35);
+  --display: 'Rajdhani', 'Segoe UI', sans-serif;
+  --clip: none;
+  --clip-sm: none;
+}
+:root[data-theme='minimal'] .scanlines,
+:root[data-theme='minimal'] .frame,
+:root[data-theme='minimal'] .tag,
+:root[data-theme='minimal'] .reactor-label {
+  display: none;
+}
+:root[data-theme='minimal'] .panel,
+:root[data-theme='minimal'] .composer {
+  border-radius: 18px;
+  background: var(--line-mid);
+}
+:root[data-theme='minimal'] .panel::before,
+:root[data-theme='minimal'] .composer::before {
+  border-radius: 17px;
+}
+:root[data-theme='minimal'] .quick-btn,
+:root[data-theme='minimal'] .chip,
+:root[data-theme='minimal'] .btn,
+:root[data-theme='minimal'] .state-pill,
+:root[data-theme='minimal'] .bubble,
+:root[data-theme='minimal'] .task-list li,
+:root[data-theme='minimal'] .modal,
+:root[data-theme='minimal'] .toast {
+  border-radius: 12px;
+}
+:root[data-theme='minimal'] .bg-grid {
+  background: radial-gradient(ellipse 60% 55% at 50% 45%, rgba(var(--rgb), 0.1), transparent 70%);
+}
+:root[data-theme='minimal'] .wordmark-main,
+:root[data-theme='minimal'] .panel-title,
+:root[data-theme='minimal'] .state-pill {
+  text-shadow: none;
+  font-weight: 600;
+}
+:root[data-theme='minimal'] .panel-title > span:first-child::before {
+  display: none;
+}
+:root[data-theme='minimal'] .bubble.user,
+:root[data-theme='minimal'] .bubble.assistant {
+  border: 0;
+}
+:root[data-theme='minimal'] .state-pill .br {
+  display: none;
+}
+
+/* ---- 4. Ice White: navy with ice-blue light ---- */
+:root[data-theme='ice'] {
+  --rgb: 200, 235, 255;
+  --rgb-deep: 20, 50, 110;
+  --bg: #030817;
+  --panel: rgba(8, 16, 38, 0.88);
+  --panel-2: rgba(10, 20, 46, 0.92);
+  --cyan-soft: #ffffff;
+  --ink: #f2f8ff;
+  --muted: #8193b8;
+}
+:root[data-theme='ice'] .wordmark-main {
+  color: #fff;
+  text-shadow: 0 0 18px rgba(170, 220, 255, 0.9);
+}
+
+/* ---- 5. Tactical Green: field terminal ---- */
+:root[data-theme='tactical'] {
+  --rgb: 64, 255, 128;
+  --rgb-deep: 0, 70, 30;
+  --bg: #010603;
+  --panel: rgba(2, 16, 8, 0.9);
+  --panel-2: rgba(3, 22, 10, 0.92);
+  --cyan-soft: #b8ffd0;
+  --ink: #d6ffe2;
+  --muted: #5f9b73;
+  --display: 'JetBrains Mono', monospace;
+}
+:root[data-theme='tactical'] .scanlines {
+  background: repeating-linear-gradient(to bottom, rgba(64, 255, 128, 0.05) 0 1px, transparent 1px 3px);
+}
+
+/* ---- 6. Ultron Crimson ---- */
+:root[data-theme='crimson'] {
+  --rgb: 255, 59, 76;
+  --rgb-deep: 110, 0, 20;
+  --bg: #080102;
+  --panel: rgba(22, 3, 6, 0.9);
+  --panel-2: rgba(30, 4, 8, 0.92);
+  --cyan-soft: #ffb3ba;
+  --ink: #ffe3e6;
+  --muted: #a3707a;
+}
+
+/* ---- 7. Vibranium Purple ---- */
+:root[data-theme='vibranium'] {
+  --rgb: 176, 120, 255;
+  --rgb-deep: 60, 20, 120;
+  --bg: #05020c;
+  --panel: rgba(14, 6, 30, 0.88);
+  --panel-2: rgba(18, 8, 38, 0.92);
+  --cyan-soft: #e2d0ff;
+  --ink: #f1e9ff;
+  --muted: #8a7aa8;
+}
+:root[data-theme='vibranium'] .wordmark-main {
+  background: linear-gradient(90deg, #d6b8ff, #8f5bff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 10px rgba(160, 100, 255, 0.5));
+}
+
+/* ---- 8. Solar Orange ---- */
+:root[data-theme='solar'] {
+  --rgb: 255, 140, 40;
+  --rgb-deep: 120, 40, 0;
+  --bg: #070402;
+  --panel: rgba(22, 11, 4, 0.9);
+  --panel-2: rgba(30, 14, 5, 0.92);
+  --cyan-soft: #ffd2a6;
+  --ink: #fff0e2;
+  --muted: #a88a70;
+}
+
+/* ---- 9. Cyberpunk Neon: magenta + cyan ---- */
+:root[data-theme='cyber'] {
+  --rgb: 255, 60, 200;
+  --rgb-deep: 0, 120, 160;
+  --bg: #07020a;
+  --panel: rgba(18, 4, 24, 0.88);
+  --panel-2: rgba(24, 6, 32, 0.92);
+  --cyan-soft: #6ff6ff;
+  --ink: #fbe8ff;
+  --muted: #9a7aa6;
+}
+:root[data-theme='cyber'] .wordmark-main {
+  background: linear-gradient(90deg, #ff3cc8, #2ef2ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 10px rgba(255, 60, 200, 0.5));
+}
+:root[data-theme='cyber'] .bubble.user {
+  border-right-color: #2ef2ff;
+  background: linear-gradient(270deg, rgba(46, 242, 255, 0.16), rgba(46, 242, 255, 0.04));
+}
+:root[data-theme='cyber'] .seg.on,
+:root[data-theme='cyber'] .spark-line {
+  fill: #2ef2ff;
+  stroke: #2ef2ff;
+}
+:root[data-theme='cyber'] .spark-line {
+  fill: none;
+}
+
+/* ---- 10. Daylight: light mode for bright rooms ---- */
+:root[data-theme='daylight'] {
+  --rgb: 0, 110, 230;
+  --rgb-deep: 160, 200, 255;
+  --bg: #eef3fa;
+  --panel: rgba(255, 255, 255, 0.92);
+  --panel-2: rgba(255, 255, 255, 0.96);
+  --cyan-soft: #0b4fa8;
+  --ink: #0d1b2e;
+  --muted: #5d6b80;
+  --line: rgba(0, 60, 140, 0.12);
+  --line-mid: rgba(0, 60, 140, 0.22);
+  --line-strong: rgba(0, 110, 230, 0.55);
+  --ok: #0a8f4a;
+  --warn: #b26a00;
+  --bad: #d12c3c;
+}
+:root[data-theme='daylight'] .scanlines,
+:root[data-theme='daylight'] .frame {
+  display: none;
+}
+:root[data-theme='daylight'] .bg-grid {
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 48%, rgba(0, 110, 230, 0.1), transparent 70%),
+    linear-gradient(rgba(0, 60, 140, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 60, 140, 0.05) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    44px 44px,
+    44px 44px;
+}
+:root[data-theme='daylight'] .wordmark-main {
+  text-shadow: none;
+}
+:root[data-theme='daylight'] .bubble.assistant {
+  background: rgba(0, 60, 140, 0.04);
+}
+:root[data-theme='daylight'] .btn-send,
+:root[data-theme='daylight'] .reactor-heard {
+  color: var(--ink);
+}
+:root[data-theme='daylight'] .tool-chip {
+  color: #0a6a38;
+}
+:root[data-theme='daylight'] .bubble.error,
+:root[data-theme='daylight'] .tool-chip.fail,
+:root[data-theme='daylight'] .btn-stop {
+  color: #a01828;
+}
+:root[data-theme='daylight'] .chip.wake.on {
+  color: #0a6a38;
+}
+:root[data-theme='daylight'] pre.code {
+  background: #f3f6fb;
+}
+:root[data-theme='daylight'] .modal {
+  background: #fff;
+}
+:root[data-theme='daylight'] .modal select option {
+  background: #fff;
+}
+:root[data-theme='daylight'] .toast.info {
+  background: #fff;
+}
+:root[data-theme='daylight'] .boot {
+  background: radial-gradient(ellipse at center, #ffffff, #dfe8f5 70%);
 }
