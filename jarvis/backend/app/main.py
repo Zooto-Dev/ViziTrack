@@ -261,6 +261,11 @@ async def test_provider() -> dict[str, Any]:
     return result
 
 
+@app.get("/api/tasks")
+async def tasks(status: str = "pending") -> list[dict[str, Any]]:
+    return await asyncio.to_thread(app.state.store.list_tasks, status if status in ("pending", "done", "all") else "pending")
+
+
 @app.get("/api/tools")
 async def list_tools() -> list[dict[str, Any]]:
     return registry.public_list()

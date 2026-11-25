@@ -81,3 +81,9 @@ def test_devanagari_from_speech_recognition():
 def test_friday_name_is_understood():
     assert r("Hey Friday, open chrome") == ("tool", "open_app", {"name": "chrome"})
     assert r("friday stop") == ("stop", None, {})
+
+
+def test_task_done_shortcut():
+    assert r("task 5 done") == ("tool", "complete_task", {"task_id": 5})
+    assert r("task #12 ho gaya") == ("tool", "complete_task", {"task_id": 12})
+    assert r("task list dikhao")[1] == "list_tasks"

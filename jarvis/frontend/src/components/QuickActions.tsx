@@ -1,14 +1,21 @@
+import type { ReactNode } from 'react'
 import { useStore } from '../store'
 import { api } from '../ws'
 
-/** Every button here performs a real action through the backend. */
-const ACTIONS: { label: string; icon: string; text: string }[] = [
-  { label: 'System status', icon: '◉', text: 'system status' },
-  { label: 'Pending tasks', icon: '☰', text: 'mere pending tasks' },
-  { label: 'Time & date', icon: '◷', text: 'what time is it' },
-  { label: 'Open YouTube', icon: '▶', text: 'open youtube' },
-  { label: 'Latest Excel', icon: '▦', text: 'meri latest excel file kholo' },
-  { label: 'What I told you', icon: '◈', text: 'what do you remember about me?' },
+const I = (d: string) => (
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+    <path d={d} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+
+/** Every button here runs a real command through the backend. */
+const ACTIONS: { label: string; code: string; icon: ReactNode; text: string }[] = [
+  { label: 'System status', code: 'SYS', icon: I('M3 12h4l3-8 4 16 3-8h4'), text: 'system status' },
+  { label: 'Pending tasks', code: 'TSK', icon: I('M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2'), text: 'mere pending tasks' },
+  { label: 'Latest Excel', code: 'XLS', icon: I('M4 4h16v16H4zM4 10h16M4 15h16M10 4v16'), text: 'meri latest excel file kholo' },
+  { label: 'Time & date', code: 'CLK', icon: I('M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z'), text: 'time kya hua' },
+  { label: 'Open YouTube', code: 'YTB', icon: I('M3 7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zM10 9l5 3-5 3z'), text: 'youtube kholo' },
+  { label: 'My memory', code: 'MEM', icon: I('M9 3a4 4 0 0 0-4 4v1a3 3 0 0 0 0 6v1a4 4 0 0 0 7 2.6A4 4 0 0 0 19 15v-1a3 3 0 0 0 0-6V7a4 4 0 0 0-7-2.6A4 4 0 0 0 9 3zM12 4v16'), text: 'what do you remember about me?' },
 ]
 
 export function QuickActions() {
@@ -17,28 +24,38 @@ export function QuickActions() {
   return (
     <div className="panel quick">
       <div className="panel-title">
-        <span>QUICK ACTIONS</span>
+        <span>QUICK OPS</span>
+        <span className="tag">CMD // 02</span>
       </div>
       <div className="quick-grid">
         {ACTIONS.map((a) => (
           <button key={a.label} className="quick-btn" disabled={!connected} onClick={() => api.chat(a.text)}>
             <span className="quick-icon">{a.icon}</span>
-            <span>{a.label}</span>
+            <span className="quick-text">
+              <b>{a.label}</b>
+              <i className="mono">{a.code}</i>
+            </span>
           </button>
         ))}
         <button className="quick-btn" onClick={() => openSettings(true)}>
-          <span className="quick-icon">⚙</span>
-          <span>Settings</span>
+          <span className="quick-icon">{I('M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z')}</span>
+          <span className="quick-text">
+            <b>Settings</b>
+            <i className="mono">CFG</i>
+          </span>
         </button>
         <button
           className="quick-btn danger"
           disabled={!connected}
           onClick={() => {
-            if (confirm('Clear the conversation history? Memories and tasks are kept.')) api.clearHistory()
+            if (confirm('Conversation saaf karein? Memory aur tasks bache rahenge.')) api.clearHistory()
           }}
         >
-          <span className="quick-icon">⌫</span>
-          <span>Clear chat</span>
+          <span className="quick-icon">{I('M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3')}</span>
+          <span className="quick-text">
+            <b>Clear chat</b>
+            <i className="mono">CLR</i>
+          </span>
         </button>
       </div>
     </div>

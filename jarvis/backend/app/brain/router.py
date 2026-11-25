@@ -93,6 +93,12 @@ ADD_TASK_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+TASK_DONE_RE = re.compile(
+    r"^\s*(?:" + POLITE + r"\s*)*(?:task|टास्क)\s*#?\s*(?P<id>\d+)\s+(?:complete|completed|done|finish|finished|ho gaya|ho gayi|"
+    r"khatam|poora|pura|complete karo|done karo|हो गया|पूरा)\b.*$",
+    re.IGNORECASE,
+)
+
 OPEN_RE = re.compile(
     r"^\s*(?:" + POLITE + r"\s*)*(?:(?:mujhe|mera|meri|zara|jara|ek baar)\s+)*" + OPEN +
     r"\s+(?P<target>.+?)" + OPEN_TAIL + r"\s*[.!]*\s*$",
@@ -183,6 +189,10 @@ def route(text: str) -> RouteMatch | None:
     if m and not OPEN_RE.match(text):
         return RouteMatch("tool", "remember", {"text": m.group("text").strip(" .!")}, lang)
 
+    m = TASK_DONE_RE.match(text)
+    if m:
+        return RouteMatch("tool", "complete_task", {"task_id": int(m.group("id"))}, lang)
+
     m = ADD_TASK_RE.match(text)
     if m:
         return RouteMatch("tool", "add_task", {"title": m.group("text").strip(" .!")}, lang)
@@ -253,6 +263,9 @@ def phrase_result(tool: str, ok: bool, message: str, data: dict[str, Any], lang:
         f = data.get("file", {})
         name = f.get("name", "file")
         return {"hindi": f"{name} खोल दी।", "hinglish": f"{name} khol di.", "english": f"Opening {name}."}[lang]
+    if tool == "complete_task":
+        title = data.get("task", {}).get("title", "task")
+        return {"hindi": f"बढ़िया, “{title}” पूरा हो गया।", "hinglish": f"Badhiya, “{title}” done mark kar diya.", "english": f"Done: “{title}”."}[lang]
     if tool == "add_task":
         return {"hindi": "टास्क जोड़ दिया।", "hinglish": "Task add kar diya.", "english": "Task added."}[lang]
     if tool == "list_tasks":

@@ -34,6 +34,13 @@ interface Store {
   wakeHeard: { text: string; at: number } | null
   warm: WarmState
   thinkingSince: number
+  /** Last 60 seconds of telemetry for the sparklines. */
+  history: { cpu: number[]; ram: number[]; net: number[] }
+  /** Time from sending a command to the first word of the reply. */
+  latencyMs: number | null
+  sentAt: number
+  tasks: { id: number; title: string; due: string | null }[]
+  micActive: boolean
 
   setConnected(v: boolean): void
   setState(s: JarvisState): void
@@ -57,6 +64,10 @@ interface Store {
   setWakeStatus(v: Store['wakeStatus']): void
   setWakeHeard(text: string): void
   setWarm(w: WarmState): void
+  markSent(): void
+  markFirstWord(): void
+  setTasks(t: Store['tasks']): void
+  setMicActive(v: boolean): void
 }
 
 /** What the HUD shows: local voice activity wins over the backend state. */
@@ -90,11 +101,27 @@ export const useStore = create<Store>((set, get) => ({
   wakeHeard: null,
   warm: { state: 'idle' },
   thinkingSince: 0,
+  history: { cpu: [], ram: [], net: [] },
+  latencyMs: null,
+  sentAt: 0,
+  tasks: [],
+  micActive: false,
 
   setConnected: (connected) => set({ connected }),
   setState: (state) =>
     set({ state, thinkingSince: state === 'thinking' ? get().thinkingSince || Date.now() : state === 'idle' ? 0 : get().thinkingSince }),
-  setMonitor: (monitor) => set({ monitor }),
+  setMonitor: (monitor) => {
+    const h = get().history
+    const push = (arr: number[], v: number) => (arr.length >= 60 ? [...arr.slice(1), v] : [...arr, v])
+    set({
+      monitor,
+      history: {
+        cpu: push(h.cpu, monitor.cpu),
+        ram: push(h.ram, monitor.ram.pct),
+        net: push(h.net, monitor.net.up_kbps + monitor.net.down_kbps),
+      },
+    })
+  },
   setSettings: (settings) => set({ settings }),
   setHello: ({ settings, tools, history, version }) =>
     set({
@@ -142,4 +169,11 @@ export const useStore = create<Store>((set, get) => ({
   },
   setWakeHeard: (text) => set({ wakeHeard: { text, at: Date.now() } }),
   setWarm: (warm) => set({ warm }),
+  markSent: () => set({ sentAt: Date.now() }),
+  markFirstWord: () => {
+    const t = get().sentAt
+    if (t) set({ latencyMs: Date.now() - t, sentAt: 0 })
+  },
+  setTasks: (tasks) => set({ tasks }),
+  setMicActive: (micActive) => set({ micActive }),
 }))

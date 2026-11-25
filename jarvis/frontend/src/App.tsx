@@ -8,6 +8,9 @@ import { QuickActions } from './components/QuickActions'
 import { SystemMonitor } from './components/SystemMonitor'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { Toast } from './components/Toast'
+import { TaskPanel } from './components/TaskPanel'
+import { StatusBar } from './components/StatusBar'
+import { Boot } from './components/Boot'
 
 // Settings is only loaded when opened.
 const SettingsPanel = lazy(() => import('./components/SettingsPanel'))
@@ -31,10 +34,18 @@ export default function App() {
   return (
     <div className="app">
       <div className="bg-grid" aria-hidden />
+      <div className="scanlines" aria-hidden />
+      <div className="frame" aria-hidden>
+        <i className="c tl" />
+        <i className="c tr" />
+        <i className="c bl" />
+        <i className="c br" />
+      </div>
       <Hud />
       <main className="layout">
         <aside className="col col-left">
           <SystemMonitor />
+          <TaskPanel />
           <QuickActions />
         </aside>
         <section className="col col-center">
@@ -45,6 +56,7 @@ export default function App() {
           <Conversation />
         </aside>
       </main>
+      <StatusBar />
       <ConfirmDialog />
       <Toast />
       {settingsOpen && (
@@ -52,6 +64,7 @@ export default function App() {
           <SettingsPanel onClose={() => setSettingsOpen(false)} />
         </Suspense>
       )}
+      <Boot />
     </div>
   )
 }

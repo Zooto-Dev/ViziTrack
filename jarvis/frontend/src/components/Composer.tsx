@@ -85,7 +85,7 @@ export function Composer() {
             ? 'Connecting to FRIDAY…'
             : listening
               ? 'Sun rahi hoon… boliye'
-              : 'Mic dabakar boliye, ya yahan likhiye (Enter)'
+              : 'Boliye ya likhiye… (Enter)'
         }
         value={text}
         disabled={!connected}

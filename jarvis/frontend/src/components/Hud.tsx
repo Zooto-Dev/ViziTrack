@@ -46,7 +46,11 @@ function WakeToggle() {
           ? 'WAKE · INTERNET NAHI'
           : status === 'no-mic'
             ? 'WAKE · MIC NAHI MILA'
-            : `WAKE ON · SAY "${name.toUpperCase()}"`}
+            : (
+              <>
+                WAKE ON<span className="chip-long"> · SAY "{name.toUpperCase()}"</span>
+              </>
+            )}
     </button>
   )
 }
@@ -69,6 +73,11 @@ export function Hud() {
   return (
     <header className="hud">
       <div className="hud-left">
+        <svg className="logo" viewBox="0 0 40 40" aria-hidden>
+          <polygon points="20,2 36,11 36,29 20,38 4,29 4,11" className="logo-hex" />
+          <polygon points="20,10 28,15 28,25 20,30 12,25 12,15" className="logo-hex2" />
+          <circle cx="20" cy="20" r="3.5" className="logo-core" />
+        </svg>
         <div className="wordmark">
           <span className="wordmark-main">{spaced(name)}</span>
           <span className="wordmark-sub">Personal AI Operating System {version && `· v${version}`}</span>
@@ -76,17 +85,20 @@ export function Hud() {
       </div>
       <div className="hud-center">
         <div className={`state-pill state-${state}`}>
+          <span className="br">[</span>
           <span className="dot" />
           {STATE_LABEL[state] ?? state.toUpperCase()}
+          <span className="br">]</span>
         </div>
       </div>
       <div className="hud-right">
         <WakeToggle />
-        <button className="chip" onClick={() => open(true)} title="Settings (Ctrl+,)">
+        <button className="chip link" onClick={() => open(true)} title="Settings (Ctrl+,)">
           <span className={`dot ${connected ? 'ok' : 'bad'}`} />
           {connected ? 'LINK' : 'OFFLINE'}
           <span className="chip-sep">|</span>
-          {provider ? `${provider.name}${provider.model ? ' · ' + provider.model : ''}` : '—'}
+          {provider ? provider.name : '—'}
+          {provider?.model && <span className="chip-long"> · {provider.model}</span>}
         </button>
         <Clock />
       </div>

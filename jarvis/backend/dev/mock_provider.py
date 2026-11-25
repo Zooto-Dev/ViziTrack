@@ -101,6 +101,7 @@ def _words(text: str) -> list[str]:
 
 # ----------------------------------------------------------- OpenAI style --
 async def _openai_stream(decision: dict[str, Any], gemini: bool = False) -> AsyncIterator[bytes]:
+    await asyncio.sleep(decision.get("delay", 0))
     cid = "chatcmpl-" + uuid.uuid4().hex[:8]
     base = {"id": cid, "object": "chat.completion.chunk", "created": int(time.time()), "model": MODEL}
     if "tool" in decision:

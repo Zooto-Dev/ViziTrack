@@ -25,7 +25,7 @@ const Bubble = memo(function Bubble({ m }: { m: Message }) {
   if (m.role === 'tool') {
     return (
       <div className={`tool-chip ${m.ok ? 'ok' : 'fail'}`} title={m.text}>
-        <span className="tool-icon">{m.ok ? '✓' : '✕'}</span>
+        <span className="tool-icon mono">{m.ok ? '▸ EXEC' : '▸ FAIL'}</span>
         <span className="tool-name mono">{m.name}</span>
         <span className="tool-result">{m.text.split('\n')[0].slice(0, 90)}</span>
         {typeof m.ms === 'number' && <span className="tool-ms mono">{m.ms}ms</span>}
@@ -35,15 +35,21 @@ const Bubble = memo(function Bubble({ m }: { m: Message }) {
   if (m.role === 'error') {
     return <div className="bubble error">{m.text}</div>
   }
+  const who = m.role === 'user' ? 'YOU' : (useStore.getState().settings?.assistant_name || 'FRIDAY').toUpperCase()
+  const time = m.ts ? new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
   return (
     <div className={`bubble ${m.role}`}>
+      <div className="bubble-who mono">
+        {who}
+        {time && <span> · {time}</span>}
+      </div>
       <div className="bubble-text">
         <RichText text={m.text} />
       </div>
       {m.role === 'assistant' && (m.via || m.interrupted) && (
         <div className="bubble-meta mono">
           {m.interrupted ? 'interrupted · ' : ''}
-          {m.via}
+          {m.via === 'direct' ? <span className="instant">⚡ INSTANT · NO AI</span> : m.via}
         </div>
       )}
     </div>
@@ -98,19 +104,21 @@ export function Conversation() {
   const messages = useStore((s) => s.messages)
   const streamingText = useStore((s) => s.streaming?.text.length ?? 0)
   const thinking = useStore((s) => s.state === 'thinking')
-  const endRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Scroll only the log itself; scrollIntoView would also scroll the page on phones.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'end' })
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
   }, [messages.length, streamingText, thinking])
 
   return (
     <div className="panel conversation">
       <div className="panel-title">
-        <span>CONVERSATION</span>
-        <span className="mono dim">{messages.filter((m) => m.role !== 'tool').length}</span>
+        <span>COMMS LOG</span>
+        <span className="tag">{messages.filter((m) => m.role !== 'tool').length} ENTRIES</span>
       </div>
-      <div className="conversation-scroll">
+      <div className="conversation-scroll" ref={scrollRef}>
         {messages.length === 0 && (
           <div className="empty">
             <p>Mic dabaiye aur boliye: “chrome kholo”, “youtube kholo”, “time kya hua”, “meri latest excel file kholo”, “mere pending tasks”, “ek python script likho jo…”.</p>
@@ -122,7 +130,6 @@ export function Conversation() {
         ))}
         <Thinking />
         <Streaming />
-        <div ref={endRef} />
       </div>
     </div>
   )

@@ -67,6 +67,7 @@ export const api = {
     const st = useStore.getState()
     if (st.streaming) st.endStream(st.streaming.id, st.streaming.text, st.streaming.via, true)
     st.addMessage({ id: `u${Date.now()}`, role: 'user', text: t, ts: Date.now() })
+    st.markSent()
     send({ type: 'chat', text: t })
   },
   stop() {
@@ -99,6 +100,15 @@ export const api = {
   },
 }
 
+export async function refreshTasks(): Promise<void> {
+  try {
+    const r = await fetch('/api/tasks')
+    if (r.ok) useStore.getState().setTasks(await r.json())
+  } catch {
+    /* backend restarting; the next hello refreshes */
+  }
+}
+
 // ---- incoming -----------------------------------------------------------
 function handle(msg: Record<string, any>): void {
   const st = useStore.getState()
@@ -107,6 +117,7 @@ function handle(msg: Record<string, any>): void {
       st.setHello({ settings: msg.settings, tools: msg.tools, history: msg.history as Message[], version: msg.version })
       if (msg.monitor) st.setMonitor(msg.monitor)
       if (msg.warm) st.setWarm(msg.warm)
+      refreshTasks()
       applyVoice(msg.settings)
       break
     case 'provider.warm':
@@ -123,6 +134,7 @@ function handle(msg: Record<string, any>): void {
       st.setState(msg.value)
       break
     case 'assistant.start':
+      st.markFirstWord()
       st.startStream(msg.id, msg.via)
       st.setState('speaking')
       break
@@ -139,6 +151,7 @@ function handle(msg: Record<string, any>): void {
       st.setState('executing')
       break
     case 'tool.end':
+      if (/task/.test(msg.name)) refreshTasks()
       st.addMessage({
         id: `t${msg.id}`,
         role: 'tool',
