@@ -14,7 +14,8 @@ $candidates = @(
 )
 $browser = $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 if ($browser) {
-  Start-Process -FilePath $browser -ArgumentList "--app=$url", "--window-size=1440,900"
+  # Autoplay allowed so FRIDAY can answer out loud right after the wake word, before any click.
+  Start-Process -FilePath $browser -ArgumentList "--app=$url", "--window-size=1440,900", "--autoplay-policy=no-user-gesture-required"
 } else {
   Start-Process $url
 }

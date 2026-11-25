@@ -17,6 +17,7 @@ const DEVANAGARI = /[ऀ-ॿ]/
 const START_TIMEOUT_MS = 2500
 const LOCAL_START_TIMEOUT_MS = 2000
 const AFTER_CANCEL_MS = 120
+const NEURAL_WAIT_MS = 2500
 
 let voices: SpeechSynthesisVoice[] = []
 function loadVoices() {
@@ -28,7 +29,7 @@ if (synth) {
 }
 
 export const ttsSupported = !!synth
-export type VoiceMode = 'natural' | 'fast'
+export type VoiceMode = 'neural' | 'natural' | 'fast'
 
 export function listVoices(): SpeechSynthesisVoice[] {
   loadVoices()
@@ -88,6 +89,8 @@ interface Item {
   voiceName: string
   rate: number
   offline: boolean
+  /** Neural voice audio from FRIDAY's server (object URL), fetched ahead of time. */
+  audio?: Promise<string | null>
 }
 
 class Speaker {
@@ -101,6 +104,12 @@ class Speaker {
   private msgId = ''
   private queue: Item[] = []
   private current: SpeechSynthesisUtterance | null = null // also keeps a ref so Chrome fires its events
+  private busy = false
+  private player: HTMLAudioElement | null = null
+  private fetches = new AbortController()
+  private urls = new Set<string>()
+  private neuralFailures = 0
+  private neuralWarned = false
   private gen = 0
   private cancelledAt = 0
   private onlineFailures = 0
@@ -136,10 +145,10 @@ class Speaker {
   }
 
   /** Speak a one-off phrase (settings preview), even if replies are muted. */
-  preview(text: string, voiceName: string, rate: number, mode: VoiceMode) {
-    if (!synth) return
+  preview(text: string, voiceName: string, rate: number, mode: VoiceMode, neuralVoice = '') {
     this.stop()
-    this.enqueue(text, { voiceName, rate, offline: mode === 'fast' })
+    this.neuralFailures = 0
+    this.enqueue(text, { voiceName, rate, offline: mode === 'fast' }, mode === 'neural', neuralVoice)
   }
 
   stop() {
@@ -147,11 +156,94 @@ class Speaker {
     this.buf = ''
     this.msgId = ''
     this.queue = []
+    if (this.current) this.current.onend = null // the cancelled sentence must not start the next one
     this.current = null
+    this.busy = false
+    this.fetches.abort()
+    this.fetches = new AbortController()
+    if (this.player) {
+      this.player.pause()
+      this.player = null
+    }
+    this.urls.forEach((u) => URL.revokeObjectURL(u))
+    this.urls.clear()
     this.cancelledAt = Date.now()
     this.lastEnded = Date.now()
     synth?.cancel()
     useStore.getState().setSpeaking(false)
+  }
+
+  /** Ask FRIDAY's server for this sentence in the neural voice; null if it cannot. */
+  private fetchNeural(text: string, voice: string): Promise<string | null> {
+    const q = new URLSearchParams({ text })
+    if (voice) q.set('voice', voice)
+    const audio = fetch(`/api/tts?${q}`, { signal: this.fetches.signal })
+      .then((r) => (r.ok ? r.blob() : null))
+      .then((b) => {
+        if (!b || b.size < 100) return null
+        const url = URL.createObjectURL(b)
+        this.urls.add(url)
+        return url
+      })
+      .catch(() => null)
+    // A voice that arrives late is worse than a plainer voice now.
+    const tooSlow = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), NEURAL_WAIT_MS))
+    return Promise.race([audio, tooSlow])
+  }
+
+  private playNeural(item: Item, gen: number) {
+    const fallBack = () => {
+      // This sentence goes to the browser voice instead; after two failures, stop asking the server.
+      this.neuralFailures++
+      if (this.neuralFailures >= 2 && !this.neuralWarned) {
+        this.neuralWarned = true
+        useStore.getState().showToast('Neural awaaz abhi nahi mil rahi (internet?), isliye browser ki awaaz use kar rahi hoon.', 'info')
+      }
+      this.busy = false
+      this.queue.unshift({ ...item, audio: undefined })
+      this.next()
+    }
+    item.audio!.then((url) => {
+      if (gen !== this.gen) return
+      if (!url) return fallBack()
+      const a = new Audio(url)
+      this.player = a
+      let done = false
+      const pulse = window.setInterval(() => live.bump(0.15 + Math.random() * 0.3), 110)
+      const finish = () => {
+        if (done || gen !== this.gen) return
+        done = true
+        window.clearInterval(pulse)
+        window.clearTimeout(guard)
+        this.player = null
+        URL.revokeObjectURL(url)
+        this.urls.delete(url)
+        this.busy = false
+        this.lastEnded = Date.now()
+        this.next()
+      }
+      // Last resort if the audio element never reports the end.
+      const guard = window.setTimeout(finish, 4000 + item.text.length * 120)
+      a.onended = finish
+      a.onerror = () => {
+        if (done) return
+        done = true
+        window.clearInterval(pulse)
+        window.clearTimeout(guard)
+        this.player = null
+        fallBack()
+      }
+      useStore.getState().setSpeaking(true)
+      a.play().catch(() => {
+        // Autoplay blocked or audio not decodable: use the browser voice for this sentence.
+        if (done) return
+        done = true
+        window.clearInterval(pulse)
+        window.clearTimeout(guard)
+        this.player = null
+        fallBack()
+      })
+    })
   }
 
   private drain(final: boolean) {
@@ -188,31 +280,39 @@ class Speaker {
     }
   }
 
-  private enqueue(raw: string, opts?: Partial<Item>) {
-    if (!synth) return
+  private enqueue(raw: string, opts?: Partial<Item>, neural = this.mode === 'neural', neuralVoice = '') {
     const text = clean(raw)
     if (!text || !/[\p{L}\p{N}]/u.test(text)) return
+    const useNeural = neural && this.neuralFailures < 2
+    if (!useNeural && !synth) return
     this.queue.push({
       text,
       voiceName: opts?.voiceName ?? this.voiceName,
       rate: opts?.rate ?? this.rate,
       offline: opts?.offline ?? (this.mode === 'fast' || this.onlineFailures >= 2),
+      // Start fetching now so the audio is ready when its turn comes.
+      audio: useNeural ? this.fetchNeural(text, neuralVoice) : undefined,
     })
     useStore.getState().setSpeaking(true)
-    if (!this.current) this.next()
+    if (!this.busy) this.next()
   }
 
   private next() {
     const s = synth
     const item = this.queue.shift()
-    if (!s || !item) {
+    if (!item || (!item.audio && !s)) {
       this.current = null
+      this.busy = false
       this.lastEnded = Date.now()
       useStore.getState().setSpeaking(false)
       return
     }
+    this.busy = true
     const gen = this.gen
-    const voice = pickVoice(item.text, item.voiceName, item.offline)
+    if (item.audio) return this.playNeural(item, gen)
+    if (!s) return
+    // Decide online vs offline now, not when queued: earlier sentences may have just failed.
+    const voice = pickVoice(item.text, item.voiceName, item.offline || this.onlineFailures >= 2)
     const online = !!voice && !voice.localService
     const u = new SpeechSynthesisUtterance(item.text)
     if (voice) {

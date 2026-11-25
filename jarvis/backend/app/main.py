@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -36,6 +36,7 @@ from .brain.router import route
 from .config import PROVIDER_PRESETS, Settings, load_settings, public_settings, update_settings
 from .memory.store import MemoryStore
 from .monitor import SystemMonitor
+from . import voice_tts
 from .tools import builtin  # noqa: F401  (registers tools)
 from .tools import files  # noqa: F401  (registers file tools)
 from .tools.registry import registry
@@ -259,6 +260,23 @@ async def test_provider() -> dict[str, Any]:
         result = {"ok": False, "detail": f"{type(e).__name__}: {e}"}
     result.update({"provider": s.provider.name, "model": s.provider.model})
     return result
+
+
+@app.get("/api/tts")
+async def tts(text: str, voice: str = "") -> Response:
+    """One sentence of FRIDAY's reply as MP3, in a neural voice."""
+    s = load_settings()
+    try:
+        audio = await voice_tts.synthesize(text, voice or s.voice.neural_voice, s.voice.tts_rate)
+    except voice_tts.TTSUnavailable as e:
+        log.warning("neural voice unavailable: %s", e)
+        return JSONResponse({"error": str(e)}, status_code=503)
+    return Response(audio, media_type="audio/mpeg", headers={"Cache-Control": "private, max-age=3600"})
+
+
+@app.get("/api/voices")
+async def voices() -> list[dict[str, str]]:
+    return [{"id": v, "label": label} for v, label in voice_tts.NEURAL_VOICES]
 
 
 @app.get("/api/tasks")

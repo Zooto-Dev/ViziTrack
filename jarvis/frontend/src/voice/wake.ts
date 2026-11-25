@@ -125,11 +125,14 @@ function onFinal(raw: string) {
   if (!text) return
   const st = useStore.getState()
   st.setWakeHeard(text)
-  // While she talks (and just after), accept only "stop" so she ignores her own voice.
-  if (selfEcho()) {
-    if (st.speaking && STOP_RE.test(text)) api.chat('ruko')
+  // "Stop" works whenever she is busy: thinking, working, or talking.
+  const busy = st.speaking || st.state === 'speaking' || st.state === 'thinking' || st.state === 'executing'
+  if (busy && STOP_RE.test(text)) {
+    api.chat('ruko')
     return
   }
+  // While she talks (and just after), ignore everything else so she does not react to her own voice.
+  if (selfEcho()) return
   const { woke, rest } = splitWake(text)
   if (armedUntil > Date.now()) {
     const cmd = woke ? rest : text

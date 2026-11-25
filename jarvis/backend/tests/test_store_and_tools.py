@@ -88,7 +88,7 @@ def test_old_settings_are_renamed_to_friday(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "_settings", None)
     s = config.load_settings()
     assert s.assistant_name == "Friday" and s.user_name == "Boss" and s.provider.api_key == "k"
-    assert s.voice.wake_enabled is True and s.settings_version == 4 and s.voice.tts_mode == "natural" and s.theme == "tactical"
+    assert s.voice.wake_enabled is True and s.settings_version == 5 and s.voice.tts_mode == "neural" and s.theme == "tactical" and s.visual == "globe"
     assert json.loads(f.read_text())["assistant_name"] == "Friday"
     # A name the user chose themselves is kept.
     f.write_text(json.dumps({"assistant_name": "Edith"}))

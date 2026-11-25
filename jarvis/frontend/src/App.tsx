@@ -24,7 +24,7 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme || 'tactical'
-    document.documentElement.dataset.visual = visual || 'radar'
+    document.documentElement.dataset.visual = visual || 'globe'
   }, [theme, visual])
 
   useEffect(() => {

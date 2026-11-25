@@ -88,8 +88,10 @@ class VoiceSettings(BaseModel):
     wake_word: str = "friday"
     # Always-on listening for the wake word (the user asked for it to be on by default).
     wake_enabled: bool = True
-    # natural = online human-like voices (Edge), fast = offline voices, instant
-    tts_mode: str = "natural"
+    # neural = Microsoft neural voice made by FRIDAY (smooth, same in every browser)
+    # natural = the browser's online voices, fast = the browser's offline voices
+    tts_mode: str = "neural"
+    neural_voice: str = "en-IN-NeerjaNeural"
 
 
 class Settings(BaseModel):
@@ -98,7 +100,7 @@ class Settings(BaseModel):
     # auto = mirror the user's language (Hindi / English / Hinglish)
     reply_language: Literal["auto", "english", "hindi", "hinglish"] = "auto"
     theme: Literal["holo", "stark", "minimal", "ice", "tactical", "crimson", "vibranium", "solar", "cyber", "daylight"] = "tactical"
-    visual: Literal["radar", "orb", "wave", "globe", "arc", "hex"] = "radar"
+    visual: Literal["radar", "orb", "wave", "globe", "arc", "hex"] = "globe"
     gauge_style: Literal["bars", "rings"] = "bars"
     provider: ProviderSettings = Field(default_factory=ProviderSettings)
     voice: VoiceSettings = Field(default_factory=VoiceSettings)
@@ -108,7 +110,7 @@ class Settings(BaseModel):
     history_limit: int = 40
     # When the online AI hits a limit or the internet is down, answer with the local Ollama model.
     offline_fallback: bool = True
-    settings_version: int = 4
+    settings_version: int = 5
 
 
 _lock = threading.Lock()
@@ -146,8 +148,14 @@ def load_settings() -> Settings:
                 if version < 4:
                     # v4: the user picked the green (tactical) look.
                     raw["theme"] = "tactical"
-                if version < 4:
-                    raw["settings_version"] = 4
+                if version < 5:
+                    # v5: the user picked the particle globe and bar gauges.
+                    raw["visual"] = "globe"
+                    raw["gauge_style"] = "bars"
+                    # ...and a smooth neural voice instead of the browser's robotic one.
+                    raw.setdefault("voice", {})["tts_mode"] = "neural"
+                if version < 5:
+                    raw["settings_version"] = 5
                     SETTINGS_FILE.write_text(json.dumps(raw, indent=2), "utf-8")
                 _settings = Settings.model_validate(raw)
             except Exception:  # corrupt file: start fresh, keep a backup

@@ -34,7 +34,7 @@ export function StatusBar() {
         Pichhla jawab: <b>{secondsWords(latency)}</b>
       </span>
       <span>
-        Awaaz: <b>{speakOn === false ? 'band' : voiceMode === 'fast' ? 'tez (offline)' : 'natural'}</b>
+        Awaaz: <b>{speakOn === false ? 'band' : voiceMode === 'fast' ? 'tez (offline)' : voiceMode === 'neural' ? 'neural (smooth)' : 'browser'}</b>
       </span>
       <span className={wakeOn && wakeStatus === 'listening' ? 'ok' : ''}>
         Wake word: <b>{wake}</b>

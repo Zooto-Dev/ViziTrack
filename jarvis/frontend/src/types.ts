@@ -36,7 +36,7 @@ export interface Settings {
     max_tokens: number
     timeout_s: number
   }
-  voice: { speak_replies: boolean; tts_voice: string; tts_rate: number; stt_lang: string; wake_word: string; wake_enabled: boolean; tts_mode: 'natural' | 'fast' }
+  voice: { speak_replies: boolean; tts_voice: string; tts_rate: number; stt_lang: string; wake_word: string; wake_enabled: boolean; tts_mode: 'neural' | 'natural' | 'fast'; neural_voice: string }
   confirm_all_system_actions: boolean
   offline_fallback: boolean
   history_limit: number

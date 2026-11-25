@@ -65,6 +65,11 @@ Mic ke liye internet chahiye (awaaz Microsoft/Google pehchante hain, free). Awaa
 Dot **peela** ho toh wo dobara connect ho rahi hai; "INTERNET NAHI" ya "MIC NAHI MILA" dikhe toh wahi problem hai.
 Mic button sirf backup hai, jab wake word band ho ya shor zyada ho.
 
+### FRIDAY ki awaaz (Neural)
+FRIDAY ab Microsoft ki **neural** awaaz me bolti hai: Neerja (Indian English) aur Hindi text ke liye Swara. Ye smooth, insaan jaisi awaaz har browser me same hai. Iske liye internet chahiye. Neural awaaz 2.5 second me na mile toh FRIDAY usi sentence ko browser ki awaaz me bol deti hai. Settings → Voice me awaaz (Neerja, Swara, Prabhat, Madhur) aur speed badal sakte ho.
+
+Ye awaaz Microsoft Edge ki "read aloud" service se aati hai (`edge-tts`), jo official API nahi hai. Kabhi wo badal gayi toh FRIDAY apne aap browser ki awaaz par chali jayegi.
+
 ### Awaaz der se aaye ya na aaye
 - Settings → Voice → **Awaaz ki quality** = **Fast (offline)** karo. Awaaz turant aayegi, bas thodi robotic hogi.
 - Natural awaaz agar 2.5 second me shuru na ho, toh FRIDAY khud offline awaaz se bol deti hai, aur do baar aisa hone par baaki session offline awaaz hi use karti hai.
@@ -128,6 +133,7 @@ API keys sirf backend me store hoti hain (`backend/data/settings.json`, git me n
 - [x] Speed: model FRIDAY start hote hi load ho jata hai aur 60 minute tak memory me rehta hai; chhota stable prompt jise Ollama cache karta hai; "Soch raha hoon… Ns" timer
 - [ ] Offline voice (faster-whisper + Piper) taaki mic bina internet ke chale
 - [x] Phase 4 — Wake word "Friday" / "Hey Friday" / "Wake up", apni awaaz par nahi jaagti, "Friday stop" se rukti hai
+- [x] Look: green (Tactical) theme, Particle globe beech me, seedhi bars me PC ki halat; Settings → Look me 10 theme aur 6 design
 - [ ] Offline wake word (bina internet, PC par hi)
 - [ ] Phase 5 — Smarter memory (auto-extract facts, semantic recall)
 - [x] Phase 6 (pehla hissa) — Files: dhoondhna, kholna, latest file kholna, Excel/PDF/Word padhna, code/letter likh kar save karna

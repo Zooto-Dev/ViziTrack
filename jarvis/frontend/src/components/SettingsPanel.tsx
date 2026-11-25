@@ -12,6 +12,14 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
   const [testing, setTesting] = useState(false)
   const [saved, setSaved] = useState(false)
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>(() => listVoices())
+  const [neuralVoices, setNeuralVoices] = useState<{ id: string; label: string }[]>([])
+
+  useEffect(() => {
+    fetch('/api/voices')
+      .then((r) => r.json())
+      .then(setNeuralVoices)
+      .catch(() => setNeuralVoices([]))
+  }, [])
 
   useEffect(() => {
     if (!ttsSupported) return
@@ -50,6 +58,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
         stt_lang: draft.voice.stt_lang,
         wake_enabled: draft.voice.wake_enabled,
         tts_mode: draft.voice.tts_mode,
+        neural_voice: draft.voice.neural_voice,
       },
       provider: {
         name: draft.provider.name,
@@ -185,11 +194,27 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               value={draft.voice.tts_mode}
               onChange={(e) => setDraft({ ...draft, voice: { ...draft.voice, tts_mode: e.target.value as 'natural' | 'fast' } })}
             >
-              <option value="natural">Natural (insaan jaisi, online, ~1 second der)</option>
-              <option value="fast">Fast (turant, offline, thodi robotic)</option>
+              <option value="neural">Neural (sabse smooth, insaan jaisi, internet chahiye)</option>
+              <option value="natural">Browser natural (sirf Edge me achhi)</option>
+              <option value="fast">Fast (turant, offline, robotic)</option>
             </select>
           </label>
           <div className="grid2">
+            {draft.voice.tts_mode === 'neural' ? (
+              <label>
+                {draft.assistant_name} ki awaaz
+                <select
+                  value={draft.voice.neural_voice}
+                  onChange={(e) => setDraft({ ...draft, voice: { ...draft.voice, neural_voice: e.target.value } })}
+                >
+                  {neuralVoices.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
             <label>
               {draft.assistant_name} ki awaaz
               <select
@@ -204,6 +229,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
                 ))}
               </select>
             </label>
+            )}
             <label>
               Aap kis bhasha me bologe
               <select
@@ -236,6 +262,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
                   draft.voice.tts_voice,
                   draft.voice.tts_rate,
                   draft.voice.tts_mode,
+                  draft.voice.neural_voice,
                 )
               }
             >
@@ -244,7 +271,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
             {!ttsSupported && <span className="status bad">Is browser me awaaz support nahi hai.</span>}
           </div>
           <p className="hint">
-            Sabse natural awaaz Microsoft Edge me milti hai (“Online (Natural)” wali). Mic aur wake word ke liye internet chahiye. Wake word on ho toh mic lagataar sunta hai (sirf jab tak ye window khuli hai). Shortcut: Ctrl+Space.
+            “Neural” awaaz Microsoft ki insaan jaisi awaaz hai, har browser me same. Internet na ho toh FRIDAY apne aap browser ki awaaz use karti hai. Mic aur wake word ke liye bhi internet chahiye. Wake word on ho toh mic lagataar sunta hai (sirf jab tak ye window khuli hai). Shortcut: Ctrl+Space.
           </p>
         </section>
 
@@ -272,7 +299,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
                 <option value="radar">1. Radar rings</option>
                 <option value="orb">2. Energy orb</option>
                 <option value="wave">3. Sound wave</option>
-                <option value="globe">4. Particle globe</option>
+                <option value="globe">4. Particle globe (default)</option>
                 <option value="arc">5. Arc reactor</option>
                 <option value="hex">6. Hex grid</option>
               </select>
