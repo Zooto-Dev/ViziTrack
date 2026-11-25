@@ -13,7 +13,7 @@ import httpx
 
 import re
 
-from .base import LLMProvider, ProviderError, RateLimited, StreamEvent, ToolCall, TooLarge
+from .base import LLMProvider, ProviderError, RateLimited, StreamEvent, ToolCall, TooLarge, Unavailable
 
 
 def to_openai_messages(messages: list[dict[str, Any]], system: str | None) -> list[dict[str, Any]]:
@@ -51,7 +51,7 @@ PREFERRED_MODELS: dict[str, list[str]] = {
         "llama-3.3-70b", "gpt-oss-120b", "llama-4-maverick", "kimi-k2", "qwen3-32b",
         "llama-4-scout", "gpt-oss-20b", "llama-3.1-8b",
     ],
-    "gemini": ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash", "flash"],
+    "gemini": ["gemini-flash-lite-latest", "gemini-flash-latest", "flash-lite", "gemini-2.5-flash", "flash"],
     "openrouter": [":free"],
 }
 # Models that are not for chat.
@@ -182,6 +182,8 @@ class OpenAICompatProvider(LLMProvider):
                                 f"Model '{self.model}' {self.name} par ab available nahi hai. Settings kholo aur "
                                 "Test connection dabao, FRIDAY sahi model khud chun lega."
                             )
+                        if resp.status_code >= 500:
+                            raise Unavailable(f"{self.name} abhi kaam nahi kar raha (error {resp.status_code}).")
                         raise ProviderError(f"Provider error {resp.status_code}: {text}")
                     async for line in resp.aiter_lines():
                         if not line.startswith("data:"):
@@ -213,7 +215,7 @@ class OpenAICompatProvider(LLMProvider):
                             if choice.get("finish_reason"):
                                 finish = choice["finish_reason"]
         except httpx.HTTPError as e:
-            raise ProviderError(f"Network problem talking to {self.name}: {e.__class__.__name__}") from e
+            raise Unavailable(f"Network problem talking to {self.name}: {e.__class__.__name__}") from e
 
         for idx in sorted(pending):
             slot = pending[idx]

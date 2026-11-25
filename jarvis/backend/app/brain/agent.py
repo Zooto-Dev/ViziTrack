@@ -15,9 +15,9 @@ from ..config import Settings, load_settings
 from ..memory.store import MemoryStore
 from ..tools.registry import ToolRegistry, ToolResult
 from .prompts import build_system_prompt
-from .providers import build_provider
+from .providers import build_provider, local_fallback
 from .context import cap_tool_result, fit_history, select_tools
-from .providers.base import ProviderError, RateLimited, StreamEvent, TooLarge
+from .providers.base import ProviderError, RateLimited, StreamEvent, TooLarge, Unavailable
 from .router import detect_language, phrase_result, route
 
 log = logging.getLogger("jarvis.agent")
@@ -121,6 +121,7 @@ class Agent:
 
         full_text = ""
         started = False
+        switched = False
         for _round in range(MAX_TOOL_ROUNDS):
             if cancel.is_set():
                 break
@@ -173,6 +174,23 @@ class Agent:
                         if cancel.is_set():
                             break
             except ProviderError as e:
+                fallback = None
+                if not switched and not round_text and isinstance(e, (RateLimited, TooLarge, Unavailable)):
+                    fallback = await local_fallback(settings)
+                if fallback is not None:
+                    # Keep answering: same conversation, local model.
+                    switched = True
+                    reason = "internet/server" if isinstance(e, Unavailable) else "free limit"
+                    await emit(
+                        {
+                            "type": "notice",
+                            "message": f"{provider.name} ki {reason} problem, isliye PC ke local AI ({fallback.describe()}) se jawab de rahi hoon…",
+                        }
+                    )
+                    provider = fallback
+                    system, tools = await self.context(settings, provider)
+                    messages = [*fit_history(history, provider.history_tokens, settings.history_limit), *new_entries]
+                    continue
                 await emit({"type": "error", "message": str(e)})
                 if started:
                     await emit({"type": "assistant.end", "id": msg_id, "text": full_text, "via": provider.describe()})

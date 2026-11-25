@@ -40,9 +40,9 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "kind": "openai_compat",
     },
     "gemini": {
-        "label": "Google Gemini (free tier, needs free key)",
+        "label": "Google Gemini (free, fast, big limits, needs free key)",
         "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
-        "model": "gemini-2.0-flash",
+        "model": "gemini-flash-lite-latest",
         "needs_key": True,
         "kind": "openai_compat",
     },
@@ -103,6 +103,8 @@ class Settings(BaseModel):
     # confirmation for everything that touches the system.
     confirm_all_system_actions: bool = False
     history_limit: int = 40
+    # When the online AI hits a limit or the internet is down, answer with the local Ollama model.
+    offline_fallback: bool = True
     settings_version: int = 3
 
 

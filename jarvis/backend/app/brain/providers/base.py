@@ -42,6 +42,10 @@ class TooLarge(ProviderError):
     """The request is bigger than the provider allows (e.g. a free-tier token cap)."""
 
 
+class Unavailable(ProviderError):
+    """Network down or the provider's servers failing; worth trying another provider."""
+
+
 class RateLimited(ProviderError):
     """Too many tokens/requests this minute. ``retry_after`` is seconds, if known."""
 

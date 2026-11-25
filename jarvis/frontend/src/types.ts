@@ -35,6 +35,7 @@ export interface Settings {
   }
   voice: { speak_replies: boolean; tts_voice: string; tts_rate: number; stt_lang: string; wake_word: string; wake_enabled: boolean; tts_mode: 'natural' | 'fast' }
   confirm_all_system_actions: boolean
+  offline_fallback: boolean
   history_limit: number
   provider_presets: Record<string, ProviderPreset>
 }

@@ -101,9 +101,9 @@ Destructive actions (delete, forget) hamesha pehle **confirm** maangte hain. Set
 
 | Provider | Cost | Key chahiye? | Notes |
 |---|---|---|---|
-| **Ollama** (default) | Free, offline | Nahi | `qwen2.5:7b` recommended (Hinglish + tools dono accha). 8 GB+ RAM. |
-| Groq | Free tier | Haan (free, console.groq.com) | Bahut fast. Internet chahiye. |
-| Google Gemini | Free tier | Haan (free, aistudio.google.com) | Internet chahiye. |
+| **Google Gemini** (recommended) | Free | Haan (free, aistudio.google.com) | Tez (~1 sec), badi free limit, Hindi/Hinglish achha. `gemini-flash-lite-latest` sabse tez. |
+| Ollama | Free, offline | Nahi | PC par chalta hai; bina graphics card ke slow. Online AI fail ho toh backup ki tarah apne aap kaam aata hai. |
+| Groq | Free tier | Haan (free, console.groq.com) | Bahut tez, lekin free limit chhoti (ek minute me kam tokens). |
 | OpenRouter | Free models available | Haan (openrouter.ai) | Model name `:free` wale choose karo. |
 | OpenAI-compatible | — | Optional | LM Studio, vLLM, etc. |
 | Anthropic Claude | Paid | Haan | Best quality; `claude-opus-5-5` default. Pehle `backend\.venv\Scripts\pip install anthropic` chalao. |

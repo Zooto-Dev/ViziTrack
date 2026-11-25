@@ -6,16 +6,16 @@ from pathlib import Path
 
 import pytest
 
+import tempfile
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-
-@pytest.fixture(scope="session", autouse=True)
-def _isolated_data_dir(tmp_path_factory: pytest.TempPathFactory):
-    """Point settings + DB at a temp dir before app modules import."""
-    d = tmp_path_factory.mktemp("jarvis-data")
-    os.environ["JARVIS_DATA_DIR"] = str(d)
-    yield d
+# Must happen before any app module is imported (test modules import them at
+# collection time), so tests never touch the real backend/data settings.
+_DATA = tempfile.mkdtemp(prefix="jarvis-test-data-")
+os.environ["JARVIS_DATA_DIR"] = _DATA
+os.environ.setdefault("JARVIS_WORKSPACE", str(Path(_DATA) / "workspace"))
 
 
 @pytest.fixture()

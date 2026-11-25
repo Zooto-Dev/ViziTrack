@@ -258,13 +258,17 @@ def test_free_tier_rate_limit_waits_and_retries(client):
         notice = next(m for m in msgs if m["type"] == "notice")
         assert "ruk kar" in notice["message"]
         assert msgs[-1]["text"] == "Mock reply to: how far is the moon"
-        # Still limited after retries: a clear message, not a raw error dump.
+        # Still limited after retries and no local fallback: a clear message, not a raw error dump.
+        ws.send_text(json.dumps({"type": "settings.set", "patch": {"offline_fallback": False}}))
+        _collect(ws, "settings")
         mock_provider.LIMITS["rate_limit_next"] = 5
         ws.send_text(json.dumps({"type": "chat", "text": "and the sun"}))
         err = _collect(ws, "error")[-1]["message"]
         assert "free limit" in err and "{" not in err
         mock_provider.LIMITS["rate_limit_next"] = 0
         _collect(ws, "state")
+        ws.send_text(json.dumps({"type": "settings.set", "patch": {"offline_fallback": True}}))
+        _collect(ws, "settings")
     _back_to_ollama(client)
 
 
@@ -280,3 +284,62 @@ def test_groq_gets_lean_tools_for_small_talk(client):
         names = {t["function"]["name"] for t in mock_provider.OPENAI_CHATS[-1]["tools"]}
         assert "read_file" not in names and "open_app" in names
     _back_to_ollama(client)
+
+
+def test_online_limit_falls_back_to_local_model(client):
+    from dev import mock_provider
+
+    _groq(client)
+    with client.websocket_connect("/ws") as ws:
+        json.loads(ws.receive_text())
+        mock_provider.LIMITS["rate_limit_next"] = 10  # online AI keeps refusing
+        ws.send_text(json.dumps({"type": "chat", "text": "who wrote ramayana"}))
+        msgs = _collect(ws, "assistant.end")
+        mock_provider.LIMITS["rate_limit_next"] = 0
+        notices = [m["message"] for m in msgs if m["type"] == "notice"]
+        assert any("local AI" in n for n in notices)
+        assert msgs[-1]["via"] == "ollama:mock-model"
+        assert msgs[-1]["text"] == "Mock reply to: who wrote ramayana"
+        assert not any(m["type"] == "error" for m in msgs)
+    _back_to_ollama(client)
+
+
+def test_network_down_falls_back_to_local_model(client):
+    # A provider URL that cannot be reached at all.
+    client.post("/api/settings", json={"patch": {"provider": {"name": "gemini", "base_url": "http://unreachable.invalid/v1", "model": "mock-model", "api_key": "k"}}})
+    import httpx
+
+    import app.brain.providers.openai_compat as oa
+
+    real = oa.httpx.AsyncClient
+
+    from httpx._client import AsyncClient as RealAsyncClient  # the class, not the test patch
+
+    from dev.mock_provider import app as mock_app
+
+    class OnlyOnlineDown(httpx.AsyncBaseTransport):
+        """The online AI host is unreachable; local Ollama still answers."""
+
+        def __init__(self) -> None:
+            self.local = httpx.ASGITransport(app=mock_app)
+
+        async def handle_async_request(self, request):
+            if request.url.host == "unreachable.invalid":
+                raise httpx.ConnectError("offline", request=request)
+            return await self.local.handle_async_request(request)
+
+    def down(*a, **kw):
+        kw["transport"] = OnlyOnlineDown()
+        return RealAsyncClient(*a, **kw)
+
+    oa.httpx.AsyncClient = down
+    try:
+        with client.websocket_connect("/ws") as ws:
+            json.loads(ws.receive_text())
+            ws.send_text(json.dumps({"type": "chat", "text": "what is the capital of japan"}))
+            msgs = _collect(ws, "assistant.end")
+            assert any("internet" in m.get("message", "") for m in msgs if m["type"] == "notice")
+            assert msgs[-1]["via"] == "ollama:mock-model"
+    finally:
+        oa.httpx.AsyncClient = real
+        _back_to_ollama(client)

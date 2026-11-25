@@ -39,6 +39,7 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
       assistant_name: draft.assistant_name,
       reply_language: draft.reply_language,
       confirm_all_system_actions: draft.confirm_all_system_actions,
+      offline_fallback: draft.offline_fallback,
       voice: {
         speak_replies: draft.voice.speak_replies,
         tts_voice: draft.voice.tts_voice,
@@ -137,9 +138,24 @@ export default function SettingsPanel({ onClose }: { onClose: () => void }) {
               Models that support tools: qwen2.5, llama3.1, llama3.2, mistral-nemo.
             </p>
           )}
-          {draft.provider.name === 'groq' && <p className="hint">Free key at console.groq.com. Very fast; generous free limits.</p>}
-          {draft.provider.name === 'gemini' && <p className="hint">Free key at aistudio.google.com.</p>}
+          {draft.provider.name === 'groq' && <p className="hint">Free key at console.groq.com. Bahut tez, lekin free limit chhoti hai (ek minute me kam shabd). Zyada use ke liye Gemini behtar hai.</p>}
+          {draft.provider.name === 'gemini' && (
+            <p className="hint">
+              Free key: aistudio.google.com kholo → Google se login → <b>Get API key</b> → <b>Create API key</b> → copy karke upar paste karo.
+              Model <code>gemini-flash-lite-latest</code> sabse tez hai; zyada samajhdaar jawab ke liye <code>gemini-flash-latest</code>.
+            </p>
+          )}
           {draft.provider.name === 'openrouter' && <p className="hint">Key at openrouter.ai. Models ending in “:free” cost nothing.</p>}
+          {draft.provider.name !== 'ollama' && (
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={draft.offline_fallback}
+                onChange={(e) => setDraft({ ...draft, offline_fallback: e.target.checked })}
+              />
+              Online AI ki limit lage ya internet jaaye, toh PC ke local AI (Ollama) se jawab do
+            </label>
+          )}
         </section>
 
         <section>
