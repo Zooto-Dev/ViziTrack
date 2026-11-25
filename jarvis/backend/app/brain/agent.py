@@ -16,7 +16,8 @@ from ..memory.store import MemoryStore
 from ..tools.registry import ToolRegistry, ToolResult
 from .prompts import build_system_prompt
 from .providers import build_provider
-from .providers.base import ProviderError, StreamEvent
+from .context import cap_tool_result, fit_history, select_tools
+from .providers.base import ProviderError, RateLimited, StreamEvent, TooLarge
 from .router import detect_language, phrase_result, route
 
 log = logging.getLogger("jarvis.agent")
@@ -25,6 +26,7 @@ Emit = Callable[[dict[str, Any]], Awaitable[None]]
 Confirm = Callable[[str, str, dict[str, Any], str], Awaitable[bool]]  # (request_id, tool, args, reason) -> approved
 
 MAX_TOOL_ROUNDS = 6
+MAX_WAIT_FOR_LIMIT_S = 30  # wait out a free-tier per-minute limit if it clears this soon
 
 
 class Agent:
@@ -33,11 +35,19 @@ class Agent:
         self.store = store
 
     # ------------------------------------------------------------------
-    async def context(self, settings: Settings, provider: Any) -> tuple[str, list[dict[str, Any]]]:
+    async def context(
+        self, settings: Settings, provider: Any, text: str = "", history: list[dict[str, Any]] | None = None
+    ) -> tuple[str, list[dict[str, Any]]]:
         """System prompt + tool schemas. Warmup uses the same so the prefix cache matches."""
         memories = await asyncio.to_thread(self.store.recent_memories, 8)
         system = build_system_prompt(settings, memories)
-        tools = self.registry.anthropic_schemas() if provider.name == "anthropic" else self.registry.openai_schemas()
+        chosen = self.registry.all()
+        if getattr(provider, "lean_tools", False) and text:
+            chosen = select_tools(chosen, text, history or [])
+        if provider.name == "anthropic":
+            tools = [t.anthropic_schema() for t in chosen]
+        else:
+            tools = [t.openai_schema() for t in chosen]
         return system, tools
 
     # ------------------------------------------------------------------
@@ -105,8 +115,9 @@ class Agent:
         except Exception as e:  # noqa: BLE001
             await emit({"type": "error", "message": f"AI provider configuration problem: {e}"})
             return new_entries
-        system, tools = await self.context(settings, provider)
-        messages = [*history[-settings.history_limit :], *new_entries]
+        system, tools = await self.context(settings, provider, text, history)
+        past = fit_history(history, provider.history_tokens, settings.history_limit)
+        messages = [*past, *new_entries]
 
         full_text = ""
         started = False
@@ -117,22 +128,50 @@ class Agent:
             tool_calls = []
             finish = "stop"
             try:
-                async for ev in provider.stream(messages, tools, system=system):
-                    if cancel.is_set():
+                for attempt in range(3):
+                    try:
+                        async for ev in provider.stream(messages, tools, system=system):
+                            if cancel.is_set():
+                                break
+                            if ev.type == "text":
+                                if not started:
+                                    started = True
+                                    await emit({"type": "assistant.start", "id": msg_id, "via": provider.describe()})
+                                round_text += ev.text
+                                full_text += ev.text
+                                await emit({"type": "assistant.delta", "id": msg_id, "text": ev.text})
+                            elif ev.type == "tool_call" and ev.tool_call:
+                                tool_calls.append(ev.tool_call)
+                            elif ev.type == "error":
+                                await emit({"type": "error", "message": ev.error})
+                            elif ev.type == "done":
+                                finish = ev.finish_reason
                         break
-                    if ev.type == "text":
-                        if not started:
-                            started = True
-                            await emit({"type": "assistant.start", "id": msg_id, "via": provider.describe()})
-                        round_text += ev.text
-                        full_text += ev.text
-                        await emit({"type": "assistant.delta", "id": msg_id, "text": ev.text})
-                    elif ev.type == "tool_call" and ev.tool_call:
-                        tool_calls.append(ev.tool_call)
-                    elif ev.type == "error":
-                        await emit({"type": "error", "message": ev.error})
-                    elif ev.type == "done":
-                        finish = ev.finish_reason
+                    except TooLarge:
+                        if attempt > 0 or round_text:
+                            raise
+                        # Too big for the free tier: drop earlier conversation and shorten results, then retry.
+                        messages = [*new_entries]
+                        for m in messages:
+                            if m.get("role") == "tool":
+                                m["content"] = cap_tool_result(str(m["content"]), 1500)
+                        log.info("request too large; retrying with the current turn only")
+                    except RateLimited as e:
+                        wait = e.retry_after if e.retry_after is not None else 10.0
+                        if attempt >= 2 or round_text or wait > MAX_WAIT_FOR_LIMIT_S:
+                            raise
+                        await emit(
+                            {
+                                "type": "notice",
+                                "message": f"{provider.name} ki free limit: {wait:.0f} second ruk kar dobara koshish kar rahi hoon…",
+                            }
+                        )
+                        try:
+                            await asyncio.wait_for(cancel.wait(), timeout=wait + 0.5)
+                        except asyncio.TimeoutError:
+                            pass
+                        if cancel.is_set():
+                            break
             except ProviderError as e:
                 await emit({"type": "error", "message": str(e)})
                 if started:
@@ -158,7 +197,8 @@ class Agent:
             new_entries.append(assistant_entry)
             results = await asyncio.gather(*(self.run_tool(tc.name, tc.args, emit, confirm, settings) for tc in tool_calls))
             for tc, res in zip(tool_calls, results):
-                entry = {"role": "tool", "tool_call_id": tc.id, "name": tc.name, "content": res.to_llm()}
+                content = cap_tool_result(res.to_llm(), provider.tool_result_chars)
+                entry = {"role": "tool", "tool_call_id": tc.id, "name": tc.name, "content": content}
                 messages.append(entry)
                 new_entries.append(entry)
             await emit({"type": "state", "value": "thinking"})

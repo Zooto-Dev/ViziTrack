@@ -26,13 +26,15 @@ NOT_RUNNING = (
     "keep the Ollama app running."
 )
 KEEP_ALIVE = "60m"
-NUM_CTX = 4096
+NUM_CTX = 8192  # room for prompt + tools + recent conversation; Ollama silently drops the start if exceeded
 # CPU-only machines can take minutes on the very first request.
 READ_TIMEOUT = 600.0
 
 
 class OllamaProvider(LLMProvider):
     name = "ollama"
+    history_tokens = 2500  # a CPU reads every token, so keep the context modest
+    tool_result_chars = 6000
 
     def __init__(self, base_url: str, model: str, timeout_s: float = 120, max_tokens: int = 1024) -> None:
         self.base_url = base_url.rstrip("/")

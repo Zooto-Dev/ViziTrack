@@ -38,9 +38,27 @@ class ProviderError(RuntimeError):
     """Raised for configuration/network problems; message is user-facing."""
 
 
+class TooLarge(ProviderError):
+    """The request is bigger than the provider allows (e.g. a free-tier token cap)."""
+
+
+class RateLimited(ProviderError):
+    """Too many tokens/requests this minute. ``retry_after`` is seconds, if known."""
+
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
 class LLMProvider(abc.ABC):
     name: str = "base"
     supports_tools: bool = True
+    # How much earlier conversation to send, in (estimated) tokens.
+    history_tokens: int = 6000
+    # A tool result in the current turn is cut to this many characters.
+    tool_result_chars: int = 8000
+    # Send only the tools that fit the message (for small free-tier limits).
+    lean_tools: bool = False
 
     @abc.abstractmethod
     def stream(

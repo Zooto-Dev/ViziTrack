@@ -11,7 +11,9 @@ from typing import Any, AsyncIterator
 
 import httpx
 
-from .base import LLMProvider, ProviderError, StreamEvent, ToolCall
+import re
+
+from .base import LLMProvider, ProviderError, RateLimited, StreamEvent, ToolCall, TooLarge
 
 
 def to_openai_messages(messages: list[dict[str, Any]], system: str | None) -> list[dict[str, Any]]:
@@ -56,6 +58,20 @@ PREFERRED_MODELS: dict[str, list[str]] = {
 NOT_CHAT = ("whisper", "tts", "guard", "embed", "orpheus", "playai", "distil", "compound", "vision", "audio", "image")
 
 
+def parse_retry_after(header: str | None, body: str) -> float | None:
+    """Seconds to wait, from the Retry-After header or text like 'try again in 1m2.5s'."""
+    if header:
+        try:
+            return float(header)
+        except ValueError:
+            pass
+    m = re.search(r"try again in (?:(\d+)m)?([\d.]+)(ms|s)", body)
+    if not m:
+        return None
+    secs = float(m.group(2)) / (1000 if m.group(3) == "ms" else 1)
+    return secs + 60 * int(m.group(1) or 0)
+
+
 def suggest_model(provider: str, available: list[str]) -> str | None:
     chat = [m for m in available if not any(x in m.lower() for x in NOT_CHAT)]
     for pattern in PREFERRED_MODELS.get(provider, []):
@@ -81,6 +97,11 @@ class OpenAICompatProvider(LLMProvider):
         self.api_key = api_key
         self.timeout_s = timeout_s
         self.max_tokens = max_tokens
+        if label == "groq":
+            # Groq's free tier allows only a few thousand tokens per minute per model.
+            self.history_tokens = 1500
+            self.tool_result_chars = 4000
+            self.lean_tools = True
 
     def _headers(self) -> dict[str, str]:
         h = {"Content-Type": "application/json"}
@@ -141,7 +162,19 @@ class OpenAICompatProvider(LLMProvider):
                     "POST", f"{self.base_url}/chat/completions", headers=self._headers(), json=body
                 ) as resp:
                     if resp.status_code >= 400:
-                        text = (await resp.aread()).decode("utf-8", "replace")[:400]
+                        full = (await resp.aread()).decode("utf-8", "replace")
+                        text = full[:400]
+                        if resp.status_code == 413 or "request too large" in full.lower():
+                            raise TooLarge(
+                                f"{self.name} ki free limit ke hisaab se message bahut bada hai. 'Clear chat' dabakar "
+                                "dobara poochiye, ya Settings me koi aur model chuniye."
+                            )
+                        if resp.status_code == 429:
+                            raise RateLimited(
+                                f"{self.name} ki free limit (ek minute me itne shabd) abhi poori ho gayi. "
+                                "Thodi der baad dobara poochiye.",
+                                parse_retry_after(resp.headers.get("retry-after"), full),
+                            )
                         if resp.status_code == 401:
                             raise ProviderError("API key rejected by the provider (401).")
                         if resp.status_code == 404 or "model_not_found" in text:
@@ -149,8 +182,6 @@ class OpenAICompatProvider(LLMProvider):
                                 f"Model '{self.model}' {self.name} par ab available nahi hai. Settings kholo aur "
                                 "Test connection dabao, FRIDAY sahi model khud chun lega."
                             )
-                        if resp.status_code == 429:
-                            raise ProviderError("Rate limit reached on the free tier (429). Try again in a moment.")
                         raise ProviderError(f"Provider error {resp.status_code}: {text}")
                     async for line in resp.aiter_lines():
                         if not line.startswith("data:"):

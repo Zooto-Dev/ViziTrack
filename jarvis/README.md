@@ -69,6 +69,9 @@ Mic button sirf backup hai, jab wake word band ho ya shor zyada ho.
 - Settings → Voice → **Awaaz ki quality** = **Fast (offline)** karo. Awaaz turant aayegi, bas thodi robotic hogi.
 - Natural awaaz agar 2.5 second me shuru na ho, toh FRIDAY khud offline awaaz se bol deti hai, aur do baar aisa hone par baaki session offline awaaz hi use karti hai.
 
+### Groq "Request too large" / "rate limit" error
+Groq ke free account me har model ke liye ek minute me limited tokens (shabdon ke tukde) milte hain. FRIDAY ab sirf zaroori purani baatcheet bhejti hai, files wale tools sirf files ki baat par bhejti hai, aur limit lagne par khud kuch second ruk kar dobara koshish karti hai. Phir bhi aaye toh **Clear chat** dabao, ya ek minute ruk kar poochho.
+
 ## 3. Kya bol sakte ho
 
 | Aap bologe / likhoge | FRIDAY karegi |

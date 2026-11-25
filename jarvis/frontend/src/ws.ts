@@ -163,6 +163,9 @@ function handle(msg: Record<string, any>): void {
       st.showToast(msg.message, 'error')
       st.addMessage({ id: `e${Date.now()}`, role: 'error', text: msg.message, ts: Date.now() })
       break
+    case 'notice':
+      st.showToast(msg.message, 'info')
+      break
     case 'pong':
       break
     default:

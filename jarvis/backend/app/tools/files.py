@@ -332,13 +332,13 @@ def _read_docx(p: Path) -> str:
         "type": "object",
         "properties": {
             "path": {"type": "string"},
-            "max_chars": {"type": "integer", "description": "default 12000"},
+            "max_chars": {"type": "integer", "description": "default 6000"},
         },
         "required": ["path"],
     },
     category="files",
 )
-def read_file(path: str, max_chars: int = 12000) -> ToolResult:
+def read_file(path: str, max_chars: int = 6000) -> ToolResult:
     p = _resolve(path)
     if not p.is_file():
         return ToolResult(False, f"file not found: {p}. Use find_files first to get the exact path.")

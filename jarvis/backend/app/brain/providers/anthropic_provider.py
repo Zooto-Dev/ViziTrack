@@ -38,6 +38,8 @@ def to_anthropic_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]
 
 class AnthropicProvider(LLMProvider):
     name = "anthropic"
+    history_tokens = 30000
+    tool_result_chars = 20000
 
     def __init__(self, api_key: str, model: str = "claude-opus-5-5", timeout_s: float = 120, max_tokens: int = 1024) -> None:
         self.api_key = api_key

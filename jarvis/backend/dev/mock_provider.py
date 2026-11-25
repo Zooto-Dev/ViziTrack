@@ -30,6 +30,10 @@ MODEL = "mock-model"
 # Recorded request bodies, for tests.
 WARMUPS: list[dict[str, Any]] = []
 CHATS: list[dict[str, Any]] = []
+OPENAI_CHATS: list[dict[str, Any]] = []
+# Free-tier simulation for tests: reject requests bigger than this many characters,
+# and answer the next N requests with a per-minute rate limit.
+LIMITS: dict[str, int] = {"max_chars": 0, "rate_limit_next": 0}
 
 
 def _last_user(messages: list[dict[str, Any]]) -> str:
@@ -114,6 +118,18 @@ async def chat_completions(req: Request) -> StreamingResponse | JSONResponse:
         return JSONResponse(
             {"error": {"message": f"The model `{body.get('model')}` does not exist", "code": "model_not_found"}},
             status_code=404,
+        )
+    OPENAI_CHATS.append(body)
+    if LIMITS["rate_limit_next"] > 0:
+        LIMITS["rate_limit_next"] -= 1
+        return JSONResponse(
+            {"error": {"message": "Rate limit reached on tokens per minute (TPM). Please try again in 0.3s.", "code": "rate_limit_exceeded"}},
+            status_code=429,
+        )
+    if LIMITS["max_chars"] and len(json.dumps(body["messages"])) > LIMITS["max_chars"]:
+        return JSONResponse(
+            {"error": {"message": "Request too large for model on tokens per minute (TPM): Limit 8000, Requested 8465", "code": "rate_limit_exceeded"}},
+            status_code=413,
         )
     decision = decide(body.get("messages", []), body.get("tools"))
     if not body.get("stream"):

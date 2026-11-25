@@ -215,3 +215,68 @@ def test_llm_writes_code_file_then_asks_before_overwrite(client, tmp_path, monke
         assert req["tool"] == "write_file" and "already exists" in req["reason"]
         ws.send_text(json.dumps({"type": "confirm", "request_id": req["request_id"], "approved": False}))
         _collect(ws, "assistant.end")
+
+
+def _groq(client):
+    client.post("/api/settings", json={"patch": {"provider": {"name": "groq", "base_url": "http://mock/v1", "model": "mock-model", "api_key": "k"}}})
+
+
+def _back_to_ollama(client):
+    client.post("/api/settings", json={"patch": {"provider": {"name": "ollama", "base_url": "http://mock", "model": "mock-model", "api_key": ""}}})
+
+
+def test_free_tier_request_too_large_retries_smaller(client):
+    from dev import mock_provider
+
+    _groq(client)
+    with client.websocket_connect("/ws") as ws:
+        json.loads(ws.receive_text())
+        for i in range(4):  # build up some conversation
+            ws.send_text(json.dumps({"type": "chat", "text": f"tell me a long story number {i} " + "please " * 60}))
+            _collect(ws, "assistant.end")
+        mock_provider.LIMITS["max_chars"] = 3500
+        mock_provider.OPENAI_CHATS.clear()
+        ws.send_text(json.dumps({"type": "chat", "text": "and one more short question"}))
+        msgs = _collect(ws, "assistant.end")
+        mock_provider.LIMITS["max_chars"] = 0
+        assert msgs[-1]["text"] == "Mock reply to: and one more short question"
+        assert not any(m["type"] == "error" for m in msgs)
+        first, retry = mock_provider.OPENAI_CHATS[0], mock_provider.OPENAI_CHATS[-1]
+        assert len(retry["messages"]) < len(first["messages"])
+    _back_to_ollama(client)
+
+
+def test_free_tier_rate_limit_waits_and_retries(client):
+    from dev import mock_provider
+
+    _groq(client)
+    with client.websocket_connect("/ws") as ws:
+        json.loads(ws.receive_text())
+        mock_provider.LIMITS["rate_limit_next"] = 1
+        ws.send_text(json.dumps({"type": "chat", "text": "how far is the moon"}))
+        msgs = _collect(ws, "assistant.end")
+        notice = next(m for m in msgs if m["type"] == "notice")
+        assert "ruk kar" in notice["message"]
+        assert msgs[-1]["text"] == "Mock reply to: how far is the moon"
+        # Still limited after retries: a clear message, not a raw error dump.
+        mock_provider.LIMITS["rate_limit_next"] = 5
+        ws.send_text(json.dumps({"type": "chat", "text": "and the sun"}))
+        err = _collect(ws, "error")[-1]["message"]
+        assert "free limit" in err and "{" not in err
+        mock_provider.LIMITS["rate_limit_next"] = 0
+        _collect(ws, "state")
+    _back_to_ollama(client)
+
+
+def test_groq_gets_lean_tools_for_small_talk(client):
+    from dev import mock_provider
+
+    _groq(client)
+    with client.websocket_connect("/ws") as ws:
+        json.loads(ws.receive_text())
+        mock_provider.OPENAI_CHATS.clear()
+        ws.send_text(json.dumps({"type": "chat", "text": "how are you today"}))
+        _collect(ws, "assistant.end")
+        names = {t["function"]["name"] for t in mock_provider.OPENAI_CHATS[-1]["tools"]}
+        assert "read_file" not in names and "open_app" in names
+    _back_to_ollama(client)
