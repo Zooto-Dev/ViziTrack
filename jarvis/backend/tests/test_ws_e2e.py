@@ -343,3 +343,51 @@ def test_network_down_falls_back_to_local_model(client):
     finally:
         oa.httpx.AsyncClient = real
         _back_to_ollama(client)
+
+
+def _gemini(client):
+    client.post("/api/settings", json={"patch": {"provider": {"name": "gemini", "base_url": "http://mock/v1", "model": "gemini-mock", "api_key": "k"}}})
+
+
+def test_gemini_thought_signatures_round_trip(client):
+    from dev import mock_provider
+
+    _gemini(client)
+    with client.websocket_connect("/ws") as ws:
+        json.loads(ws.receive_text())
+        # 1. A direct command leaves an unsigned tool call in the history.
+        ws.send_text(json.dumps({"type": "chat", "text": "youtube kholo"}))
+        _collect(ws, "assistant.end")
+        # 2. Gemini calls a tool (signed) and gets the history back: must be accepted.
+        mock_provider.OPENAI_CHATS.clear()
+        ws.send_text(json.dumps({"type": "chat", "text": "Could you check the clock time for me, in words"}))
+        msgs = _collect(ws, "assistant.end")
+        assert not any(m["type"] == "error" for m in msgs), msgs
+        assert msgs[-1]["text"].startswith("Done. Result:")
+        second = mock_provider.OPENAI_CHATS[-1]["messages"]
+        signed = [m for m in second if m.get("tool_calls")]
+        # The direct command went as text; Gemini's own call came back with its signature.
+        assert len(signed) == 1 and signed[0]["tool_calls"][0]["extra_content"]["google"]["thought_signature"].startswith("sig-")
+        assert any("[I used the open_website tool" in (m.get("content") or "") for m in second)
+        # 3. Next question: the earlier signed call is replayed with its signature, still accepted.
+        ws.send_text(json.dumps({"type": "chat", "text": "thanks, tell me a joke"}))
+        msgs = _collect(ws, "assistant.end")
+        assert not any(m["type"] == "error" for m in msgs)
+    _back_to_ollama(client)
+
+
+def test_gemini_signature_rejection_retries_with_text_history(client):
+    from dev import mock_provider
+
+    _gemini(client)
+    with client.websocket_connect("/ws") as ws:
+        json.loads(ws.receive_text())
+        mock_provider.LIMITS["reject_signatures_next"] = 1  # Gemini refuses even a signed call once
+        ws.send_text(json.dumps({"type": "chat", "text": "Could you check the clock time for me, in words"}))
+        msgs = _collect(ws, "assistant.end")
+        mock_provider.LIMITS["reject_signatures_next"] = 0
+        assert not any(m["type"] == "error" for m in msgs), msgs
+        assert msgs[-1]["text"].startswith("Done. Result:")
+        last = mock_provider.OPENAI_CHATS[-1]["messages"]
+        assert not any(m.get("tool_calls") for m in last)  # everything sent as text on the retry
+    _back_to_ollama(client)

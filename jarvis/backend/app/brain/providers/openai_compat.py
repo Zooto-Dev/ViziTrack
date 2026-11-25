@@ -13,34 +13,76 @@ import httpx
 
 import re
 
-from .base import LLMProvider, ProviderError, RateLimited, StreamEvent, ToolCall, TooLarge, Unavailable
+from .base import LLMProvider, ProviderError, RateLimited, SignatureRejected, StreamEvent, ToolCall, TooLarge, Unavailable
 
 
-def to_openai_messages(messages: list[dict[str, Any]], system: str | None) -> list[dict[str, Any]]:
+def _note_args(args: dict[str, Any]) -> str:
+    text = json.dumps(args, ensure_ascii=False)
+    return text if len(text) <= 200 else text[:200] + "...}"
+
+
+def to_openai_messages(
+    messages: list[dict[str, Any]], system: str | None, *, gemini: bool = False, flatten_all: bool = False
+) -> list[dict[str, Any]]:
+    """Neutral history -> OpenAI chat messages.
+
+    Gemini (thinking models) rejects a function call in the history unless it
+    carries the thought signature Gemini returned with it. Signed calls are sent
+    back with their ``extra_content`` unchanged. Calls without one (commands FRIDAY
+    ran directly, or history from another model) are sent as plain text instead,
+    so there is nothing to validate. ``flatten_all`` does that for every call.
+    """
     out: list[dict[str, Any]] = []
     if system:
         out.append({"role": "system", "content": system})
+    flattened: dict[str, str] = {}  # tool_call_id -> tool name
     for m in messages:
         role = m["role"]
         if role == "assistant" and m.get("tool_calls"):
-            out.append(
-                {
-                    "role": "assistant",
-                    "content": m.get("content") or None,
-                    "tool_calls": [
-                        {
-                            "id": tc["id"],
-                            "type": "function",
-                            "function": {"name": tc["name"], "arguments": json.dumps(tc["args"], ensure_ascii=False)},
-                        }
-                        for tc in m["tool_calls"]
-                    ],
+            calls = m["tool_calls"]
+            signed = any(tc.get("extra") for tc in calls)
+            if gemini and (flatten_all or not signed):
+                lines = [m["content"]] if m.get("content") else []
+                for tc in calls:
+                    flattened[tc["id"]] = tc["name"]
+                    lines.append(f"[I used the {tc['name']} tool with {_note_args(tc.get('args') or {})}]")
+                out.append({"role": "assistant", "content": "\n".join(lines)})
+                continue
+            msg_calls = []
+            for tc in calls:
+                call: dict[str, Any] = {
+                    "id": tc["id"],
+                    "type": "function",
+                    "function": {"name": tc["name"], "arguments": json.dumps(tc["args"], ensure_ascii=False)},
                 }
-            )
+                if gemini and tc.get("extra"):
+                    call["extra_content"] = tc["extra"]
+                msg_calls.append(call)
+            out.append({"role": "assistant", "content": m.get("content") or None, "tool_calls": msg_calls})
         elif role == "tool":
-            out.append({"role": "tool", "tool_call_id": m["tool_call_id"], "content": m["content"]})
+            if m["tool_call_id"] in flattened:
+                name = flattened[m["tool_call_id"]]
+                out.append({"role": "user", "content": f"[Result of {name}: {m['content']}]"})
+            else:
+                out.append({"role": "tool", "tool_call_id": m["tool_call_id"], "content": m["content"]})
         else:
             out.append({"role": role, "content": m.get("content", "")})
+    if gemini:
+        # Flattening can leave two plain messages of the same role in a row; join them.
+        merged: list[dict[str, Any]] = []
+        for msg in out:
+            prev = merged[-1] if merged else None
+            if (
+                prev
+                and prev["role"] == msg["role"]
+                and msg["role"] in ("user", "assistant")
+                and not prev.get("tool_calls")
+                and not msg.get("tool_calls")
+            ):
+                prev["content"] = f"{prev.get('content') or ''}\n{msg.get('content') or ''}".strip()
+            else:
+                merged.append(dict(msg))
+        out = merged
     return out
 
 
@@ -97,6 +139,9 @@ class OpenAICompatProvider(LLMProvider):
         self.api_key = api_key
         self.timeout_s = timeout_s
         self.max_tokens = max_tokens
+        self.gemini = label == "gemini" or "generativelanguage.googleapis.com" in base_url
+        # Set after Gemini rejects a signature: send every past tool call as text.
+        self.flatten_tools = False
         if label == "groq":
             # Groq's free tier allows only a few thousand tokens per minute per model.
             self.history_tokens = 1500
@@ -146,7 +191,7 @@ class OpenAICompatProvider(LLMProvider):
             raise ProviderError("No model selected for this provider. Open Settings and pick a model.")
         body: dict[str, Any] = {
             "model": self.model,
-            "messages": to_openai_messages(messages, system),
+            "messages": to_openai_messages(messages, system, gemini=self.gemini, flatten_all=self.flatten_tools),
             "stream": True,
             "max_tokens": self.max_tokens,
         }
@@ -164,6 +209,10 @@ class OpenAICompatProvider(LLMProvider):
                     if resp.status_code >= 400:
                         full = (await resp.aread()).decode("utf-8", "replace")
                         text = full[:400]
+                        if resp.status_code == 400 and "thought_signature" in full:
+                            raise SignatureRejected(
+                                f"{self.name} ne purane tool calls ka signature maana nahi. 'Clear chat' dabakar dobara poochiye."
+                            )
                         if resp.status_code == 413 or "request too large" in full.lower():
                             raise TooLarge(
                                 f"{self.name} ki free limit ke hisaab se message bahut bada hai. 'Clear chat' dabakar "
@@ -204,9 +253,11 @@ class OpenAICompatProvider(LLMProvider):
                                 yield StreamEvent("text", text=delta["content"])
                             for tc in delta.get("tool_calls") or []:
                                 idx = tc.get("index", 0)
-                                slot = pending.setdefault(idx, {"id": "", "name": "", "args": ""})
+                                slot = pending.setdefault(idx, {"id": "", "name": "", "args": "", "extra": None})
                                 if tc.get("id"):
                                     slot["id"] = tc["id"]
+                                if tc.get("extra_content"):
+                                    slot["extra"] = {**(slot["extra"] or {}), **tc["extra_content"]}
                                 fn = tc.get("function") or {}
                                 if fn.get("name"):
                                     slot["name"] += fn["name"]
@@ -225,6 +276,7 @@ class OpenAICompatProvider(LLMProvider):
                 yield StreamEvent("error", error=f"model produced invalid JSON for tool {slot['name']}")
                 continue
             yield StreamEvent(
-                "tool_call", tool_call=ToolCall(id=slot["id"] or f"call_{idx}", name=slot["name"], args=args)
+                "tool_call",
+                tool_call=ToolCall(id=slot["id"] or f"call_{idx}", name=slot["name"], args=args, extra=slot["extra"]),
             )
         yield StreamEvent("done", finish_reason=finish or "stop", usage=usage)

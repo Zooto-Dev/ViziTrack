@@ -22,6 +22,8 @@ class ToolCall:
     id: str
     name: str
     args: dict[str, Any]
+    # Provider data that must be sent back with this call (Gemini thought signatures).
+    extra: dict[str, Any] | None = None
 
 
 @dataclass
@@ -44,6 +46,10 @@ class TooLarge(ProviderError):
 
 class Unavailable(ProviderError):
     """Network down or the provider's servers failing; worth trying another provider."""
+
+
+class SignatureRejected(ProviderError):
+    """Gemini refused function calls in the history (thought signature check)."""
 
 
 class RateLimited(ProviderError):

@@ -33,7 +33,24 @@ CHATS: list[dict[str, Any]] = []
 OPENAI_CHATS: list[dict[str, Any]] = []
 # Free-tier simulation for tests: reject requests bigger than this many characters,
 # and answer the next N requests with a per-minute rate limit.
-LIMITS: dict[str, int] = {"max_chars": 0, "rate_limit_next": 0}
+LIMITS: dict[str, int] = {"max_chars": 0, "rate_limit_next": 0, "reject_signatures_next": 0}
+# Gemini emulation (model "gemini-mock"): thought signatures handed out with tool calls.
+GEMINI_MODEL = "gemini-mock"
+SIGNATURES: set[str] = set()
+
+
+def gemini_signature_error(messages: list[dict[str, Any]]) -> str | None:
+    """Like Gemini: every function call in the history needs its thought signature back."""
+    for pos, m in enumerate(messages):
+        calls = m.get("tool_calls") or []
+        if calls:
+            sig = ((calls[0].get("extra_content") or {}).get("google") or {}).get("thought_signature")
+            if sig not in SIGNATURES:
+                return (
+                    "Function call is missing a thought_signature in functionCall parts. Additional data, "
+                    f"function call `default_api:{calls[0]['function']['name']}` , position {pos}."
+                )
+    return None
 
 
 def _last_user(messages: list[dict[str, Any]]) -> str:
@@ -46,6 +63,10 @@ def _last_user(messages: list[dict[str, Any]]) -> str:
 def _last_tool_result(messages: list[dict[str, Any]]) -> str | None:
     if messages and messages[-1].get("role") == "tool":
         return str(messages[-1].get("content"))
+    # Tool results sent as text (Gemini fallback) end with a "[Result of ...]" user message.
+    last = str(messages[-1].get("content") or "") if messages else ""
+    if messages and messages[-1].get("role") == "user" and "[Result of " in last:
+        return last[last.rindex("[Result of ") :].split(": ", 1)[-1].rstrip("]")
     return None
 
 
@@ -79,12 +100,17 @@ def _words(text: str) -> list[str]:
 
 
 # ----------------------------------------------------------- OpenAI style --
-async def _openai_stream(decision: dict[str, Any]) -> AsyncIterator[bytes]:
+async def _openai_stream(decision: dict[str, Any], gemini: bool = False) -> AsyncIterator[bytes]:
     cid = "chatcmpl-" + uuid.uuid4().hex[:8]
     base = {"id": cid, "object": "chat.completion.chunk", "created": int(time.time()), "model": MODEL}
     if "tool" in decision:
         call_id = "call_" + uuid.uuid4().hex[:8]
-        yield f"data: {json.dumps({**base, 'choices': [{'index': 0, 'delta': {'role': 'assistant', 'tool_calls': [{'index': 0, 'id': call_id, 'type': 'function', 'function': {'name': decision['tool'], 'arguments': ''}}]}, 'finish_reason': None}]})}\n\n".encode()
+        first: dict[str, Any] = {"index": 0, "id": call_id, "type": "function", "function": {"name": decision["tool"], "arguments": ""}}
+        if gemini:
+            sig = "sig-" + uuid.uuid4().hex[:12]
+            SIGNATURES.add(sig)
+            first["extra_content"] = {"google": {"thought_signature": sig}}
+        yield f"data: {json.dumps({**base, 'choices': [{'index': 0, 'delta': {'role': 'assistant', 'tool_calls': [first]}, 'finish_reason': None}]})}\n\n".encode()
         args = json.dumps(decision["args"])
         for i in range(0, len(args), 6):
             yield f"data: {json.dumps({**base, 'choices': [{'index': 0, 'delta': {'tool_calls': [{'index': 0, 'function': {'arguments': args[i:i + 6]}}]}, 'finish_reason': None}]})}\n\n".encode()
@@ -105,6 +131,7 @@ async def models() -> dict[str, Any]:
             {"id": "whisper-large-v3", "object": "model", "active": True},
             {"id": "old-retired-model", "object": "model", "active": False},
             {"id": MODEL, "object": "model", "active": True},
+            {"id": GEMINI_MODEL, "object": "model", "active": True},
         ],
     }
 
@@ -114,12 +141,20 @@ async def chat_completions(req: Request) -> StreamingResponse | JSONResponse:
     body = await req.json()
     if req.headers.get("authorization", "") == "Bearer bad-key":
         return JSONResponse({"error": {"message": "invalid api key"}}, status_code=401)
-    if body.get("model") != MODEL:
+    gemini = body.get("model") == GEMINI_MODEL
+    if body.get("model") != MODEL and not gemini:
         return JSONResponse(
             {"error": {"message": f"The model `{body.get('model')}` does not exist", "code": "model_not_found"}},
             status_code=404,
         )
     OPENAI_CHATS.append(body)
+    if gemini:
+        err = gemini_signature_error(body.get("messages", []))
+        if LIMITS["reject_signatures_next"] > 0 and any(m.get("tool_calls") for m in body.get("messages", [])):
+            LIMITS["reject_signatures_next"] -= 1
+            err = err or "Function call is missing a thought_signature in functionCall parts."
+        if err:
+            return JSONResponse([{"error": {"code": 400, "message": err, "status": "INVALID_ARGUMENT"}}], status_code=400)
     if LIMITS["rate_limit_next"] > 0:
         LIMITS["rate_limit_next"] -= 1
         return JSONResponse(
@@ -134,7 +169,7 @@ async def chat_completions(req: Request) -> StreamingResponse | JSONResponse:
     decision = decide(body.get("messages", []), body.get("tools"))
     if not body.get("stream"):
         return JSONResponse({"choices": [{"message": {"role": "assistant", "content": decision.get("text", "")}}]})
-    return StreamingResponse(_openai_stream(decision), media_type="text/event-stream")
+    return StreamingResponse(_openai_stream(decision, gemini), media_type="text/event-stream")
 
 
 # ----------------------------------------------------------- Ollama style --

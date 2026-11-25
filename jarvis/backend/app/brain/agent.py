@@ -17,7 +17,7 @@ from ..tools.registry import ToolRegistry, ToolResult
 from .prompts import build_system_prompt
 from .providers import build_provider, local_fallback
 from .context import cap_tool_result, fit_history, select_tools
-from .providers.base import ProviderError, RateLimited, StreamEvent, TooLarge, Unavailable
+from .providers.base import ProviderError, RateLimited, SignatureRejected, StreamEvent, TooLarge, Unavailable
 from .router import detect_language, phrase_result, route
 
 log = logging.getLogger("jarvis.agent")
@@ -148,6 +148,12 @@ class Agent:
                             elif ev.type == "done":
                                 finish = ev.finish_reason
                         break
+                    except SignatureRejected:
+                        if attempt > 0 or round_text or getattr(provider, "flatten_tools", True):
+                            raise
+                        # Send every earlier tool call as plain text; nothing left to validate.
+                        provider.flatten_tools = True  # type: ignore[attr-defined]
+                        log.info("gemini rejected thought signatures; retrying with tool calls as text")
                     except TooLarge:
                         if attempt > 0 or round_text:
                             raise
@@ -209,7 +215,10 @@ class Agent:
             assistant_entry = {
                 "role": "assistant",
                 "content": round_text,
-                "tool_calls": [{"id": tc.id, "name": tc.name, "args": tc.args} for tc in tool_calls],
+                "tool_calls": [
+                    {"id": tc.id, "name": tc.name, "args": tc.args, **({"extra": tc.extra} if tc.extra else {})}
+                    for tc in tool_calls
+                ],
             }
             messages.append(assistant_entry)
             new_entries.append(assistant_entry)
